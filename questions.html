@@ -15,6 +15,10 @@
     }
     .yes { background: #ff4d88; color: white; }
     .no { background: #999; color: white; }
+    textarea {
+      border-radius: 10px; padding: 10px; font-size: 16px;
+      border: 2px solid #ff4d88; resize: none;
+    }
     button:hover { opacity: 0.8; }
   </style>
 </head>
@@ -34,67 +38,78 @@
   </div>
 
   <div id="q3" class="question">
-    <h2>When are you gonna introduce me to your momma?🎬</h2>
-    <button class="Soon" onclick="nextQuestion(4)">Yes 😘</button>
-    <button class="Next year" onclick="nextQuestion(4)">Next year🥺</button>
+    <h2>When are you gonna introduce me to your momma? 🎬</h2>
+    <button class="yes" onclick="nextQuestion(4)">Soon 😘</button>
+    <button class="no" onclick="nextQuestion(4)">Next year 🥺</button>
   </div>
 
-  <div id="q4" class="questions">
-    <h2>Do you secretly smile when you see my message?</h2>
-    <button class="Yes" onclick="nextQuestion(5)">Yes</button>
-    <button class="No" onclick="nextQuestion(5)">No</button>
+  <div id="q4" class="question">
+    <h2>Do you secretly smile when you see my message? 😊</h2>
+    <button class="yes" onclick="nextQuestion(5)">Yes 💖</button>
+    <button class="no" onclick="nextQuestion(5)">No 😢</button>
   </div>
-  
-  <div id="q6" class="question">
-    <h2>Will you always be mine? 💍</h2>
+
+  <div id="q5" class="question">
+    <h2>Do you believe we are soulmates? 💍</h2>
     <button class="yes" onclick="nextQuestion(6)">Yes 💞</button>
     <button class="no" onclick="nextQuestion(6)">No 😢</button>
   </div>
 
-  <div id="q7" class="question">
-    <h2>Do ou believe we are soulmates?💍</h2>
+  <div id="q6" class="question">
+    <h2>Do you see us together in the future? 🌹</h2>
     <button class="yes" onclick="nextQuestion(7)">Yes 💞</button>
     <button class="no" onclick="nextQuestion(7)">No 😢</button>
   </div>
- 
-<div id="q8" class="question">
-    <h2>Do you see us together in the future?</h2>
+
+  <div id="q7" class="question">
+    <h2>Do you believe we'll always find reasons to laugh together? 😂</h2>
     <button class="yes" onclick="nextQuestion(8)">Yes 💞</button>
     <button class="no" onclick="nextQuestion(8)">No 😢</button>
   </div>
-<div id="q9" class="question">
-    <h2>Do you believe we'll always find reasons to laugh together?</h2>
+
+  <div id="q8" class="question">
+    <h2>Would you hold my hand in public? 👫</h2>
     <button class="yes" onclick="nextQuestion(9)">Yes 💞</button>
     <button class="no" onclick="nextQuestion(9)">No 😢</button>
   </div>
-<div id="q10" class="question">
-    <h2>Would you hold my hand in public?</h2>
-    <button class="yes" onclick="nextQuestion(10)">Yes 💞</button>
-    <button class="no" onclick="nextQuestion(10)">No 😢</button>
-  </div>
-  
-<div id="q11" class="question">
-  <h2>How much do you love Lizzy?💌</h2>
-  <textarea id="Expression" rows="4" cols="40" placeholder="Type here... ✨"></textarea>
-  <br><br>
-  <button class="yes" onclick="nextQuestion(11)">Next ➡️</button>
-</div>
 
-<div id="q4" class="question">
-    <h2>Yay! Thanks for playing our love survey 💕🌹</h2>
-  <h2>More will be added soon,feel free to come here everytime you miss me</h2>
-    <a href="index.html">⬅ Back Home</a>
+  <div id="q9" class="question">
+    <h2>How much do you love Lizzy? 💌</h2>
+    <textarea id="Expression" rows="4" cols="40" placeholder="Type here... ✨"></textarea>
+    <br><br>
+    <button class="yes" onclick="nextQuestion(10)">Next ➡️</button>
   </div>
-  <p>KA GO RATA MOTHOWAQ NEH</p>
+
+  <div id="q10" class="question">
+    <h2>Yay! Thanks for playing our love survey 💕🌹</h2>
+    <h2>More will be added soon! Feel free to come back anytime you miss me 💖</h2>
+    <a href="index.html">⬅ Back Home</a>
+    <br><br>
+    <button id="saveBtn" class="yes">💾 Save My Answers</button>
+  </div>
 
   <script>
     function nextQuestion(n) {
       document.querySelectorAll('.question').forEach(q => q.classList.remove('active'));
       document.getElementById('q' + n).classList.add('active');
     }
+
+    // Save answers in localStorage
+    document.getElementById('saveBtn').addEventListener('click', function() {
+      const answers = {
+        q1: document.querySelector('#q1 .active')?.innerText || 'Not answered',
+        q2: document.querySelector('#q2 .active')?.innerText || 'Not answered',
+        q3: document.querySelector('#q3 .active')?.innerText || 'Not answered',
+        q4: document.querySelector('#q4 .active')?.innerText || 'Not answered',
+        q5: document.querySelector('#q5 .active')?.innerText || 'Not answered',
+        q6: document.querySelector('#q6 .active')?.innerText || 'Not answered',
+        q7: document.querySelector('#q7 .active')?.innerText || 'Not answered',
+        q8: document.querySelector('#q8 .active')?.innerText || 'Not answered',
+        q9: document.getElementById('Expression')?.value || 'No thoughts'
+      };
+      localStorage.setItem('loveSurveyAnswers', JSON.stringify(answers));
+      alert('Your answers are saved! 💾💕');
+    });
   </script>
 </body>
 </html>
-
-
-
