@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Love Survey 💖</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; }
+    h2 { color: #d63384; }
+    .question { display: none; margin-top: 40px; }
+    .active { display: block; }
+    button {
+      margin: 10px; padding: 10px 20px;
+      border: none; border-radius: 8px;
+      font-size: 18px; cursor: pointer;
+    }
+    .yes { background: #ff4d88; color: white; }
+    .no { background: #999; color: white; }
+    button:hover { opacity: 0.8; }
+  </style>
+</head>
+<body>
+  <h1>💌 Love Survey 💌</h1>
+
+  <div id="q1" class="question active">
+    <h2>Do you love me? ❤️</h2>
+    <button class="yes" onclick="nextQuestion(2)">Yes 😍</button>
+    <button class="no" onclick="nextQuestion(2)">No 🙈</button>
+  </div>
+
+  <div id="q2" class="question">
+    <h2>Will you always be mine? 💍</h2>
+    <button class="yes" onclick="nextQuestion(3)">Yes 💞</button>
+    <button class="no" onclick="nextQuestion(3)">No 😢</button>
+  </div>
+
+  <div id="q3" class="question">
+    <h2>Can we go on a date this weekend? 🍕🎬</h2>
+    <button class="yes" onclick="nextQuestion(4)">Yes 😘</button>
+    <button class="no" onclick="nextQuestion(4)">No 🥺</button>
+  </div>
+
+  <div id="q4" class="question">
+    <h2>Yay! Thanks for playing my love survey 💕🌹</h2>
+    <a href="index.html">⬅ Back Home</a>
+  </div>
+
+  <script>
+    function nextQuestion(n) {
+      document.querySelectorAll('.question').forEach(q => q.classList.remove('active'));
+      document.getElementById('q' + n).classList.add('active');
+    }
+  </script>
+</body>
+</html>
