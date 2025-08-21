@@ -28,7 +28,7 @@ const db = firebase.database();
 
 // --- Load songs in real-time ---
 function loadSongs() {
-  db.ref("vault").on("value", snapshot => {
+  db.ref("vault").on("child_added", snapshot => {
     const data = snapshot.val() || {};
     songListEl.innerHTML = "";
     Object.values(data).forEach(item => {
@@ -58,6 +58,7 @@ function saveSong() {
 // Initialize
 loadSongs();
 </script>
+
 
 
 
