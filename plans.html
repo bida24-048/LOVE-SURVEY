@@ -3,15 +3,55 @@
 <button onclick="savePlan()">Add ✨</button>
 <p id="status"></p>
 
+<h2>Plans 💖</h2>
+<ul id="planList"></ul>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
 <script>
-function savePlan() {
-  let plan = document.getElementById("plan").value;
-  if (plan) {
-    let plans = JSON.parse(localStorage.getItem("plans")) || [];
-    plans.push({ text: plan, date: new Date().toLocaleDateString() });
-    localStorage.setItem("plans", JSON.stringify(plans));
-    document.getElementById("status").innerText = "Plan Saved 🌟";
-    localStorage.setItem("newUpdate", "true");
-  }
+const planListEl = document.getElementById("planList");
+
+// --- Firebase Config ---
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// --- Load plans in real-time ---
+function loadPlans() {
+  db.ref("vault").on("value", snapshot => {
+    const data = snapshot.val() || {};
+    planListEl.innerHTML = ""; // clear list
+    Object.values(data).forEach(item => {
+      if(item.type === "plan") {
+        const li = document.createElement("li");
+        li.textContent = `📅 ${item.date} - ${item.text}`;
+        planListEl.appendChild(li);
+      }
+    });
+  });
 }
+
+// --- Save plan ---
+function savePlan() {
+  const planText = document.getElementById("plan").value.trim();
+  if (!planText) return alert("Please enter a plan!");
+
+  const data = { type: "plan", text: planText, date: new Date().toLocaleDateString() };
+  db.ref("vault").push(data); // Save to shared Vault
+
+  document.getElementById("status").innerText = "Plan Saved 🌟";
+  document.getElementById("plan").value = "";
+}
+
+// Initialize
+loadPlans();
 </script>
