@@ -6,6 +6,9 @@
 <h2>Messages 💖</h2>
 <ul id="messageList"></ul>
 
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
 <script>
 const messageListEl = document.getElementById("messageList");
 
@@ -22,24 +25,38 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-loadMessages();
+// --- Load all messages in real-time ---
+function loadMessages() {
+  db.ref("vault").on("value", snapshot => {
+    const data = snapshot.val() || {};
+    messageListEl.innerHTML = ""; // clear list
+    Object.values(data).forEach(item => {
+      if(item.type === "message") {
+        const li = document.createElement("li");
+        li.textContent = `📅 ${item.date} - ${item.text}`;
+        messageListEl.appendChild(li);
+      }
+    });
+  });
+}
 
-// Save message
+// --- Save message ---
 function saveMsg() {
   const msg = document.getElementById("msg").value.trim();
   if (!msg) return alert("Please type a message!");
 
   const data = { type: "message", text: msg, date: new Date().toLocaleString() };
-db.ref("vault").push(data); // Saves to shared Vault
-
+  db.ref("vault").push(data); // Saves to shared Vault
 
   document.getElementById("status").innerText = "Message Posted 💕";
   document.getElementById("msg").value = "";
-
-  loadMessages(); // show message immediately
 }
+
+// Initialize
+loadMessages();
 </script>
 
   
  
+
 
