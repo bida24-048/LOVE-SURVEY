@@ -4,19 +4,72 @@
   <meta charset="UTF-8">
   <title>Our Love Survey 💕</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; background: #ffe6f0; }
+    body { 
+      font-family: Arial, sans-serif; 
+      text-align: center; 
+      background: #ffe6f0; 
+    }
     h1 { color: #ff4d88; }
-    img { width: 250px; border-radius: 20px; margin-top: 20px; }
-    a { display: block; margin: 15px; text-decoration: none; color: white; background: #ff4d88; padding: 12px; border-radius: 10px; width: 200px; margin-left: auto; margin-right: auto; }
-    a:hover { background: #ff3385; }
+    p { font-size: 18px; }
+    img { 
+      width: 250px; 
+      border-radius: 20px; 
+      margin-top: 20px; 
+    }
+    a { 
+      display: block; 
+      margin: 15px; 
+      text-decoration: none; 
+      color: white; 
+      background: #ff4d88; 
+      padding: 12px; 
+      border-radius: 10px; 
+      width: 220px; 
+      margin-left: auto; 
+      margin-right: auto; 
+      font-weight: bold;
+      transition: 0.2s;
+    }
+    a:hover { background: #ff3385; transform: scale(1.05); }
+    .container { max-width: 500px; margin: auto; }
   </style>
 </head>
 <body>
-  <h1>Welcome to Our Love Survey 💖</h1>
-  <p>Let’s play a fun love survey together! 🌹</p>
-  <a href="about.html">About Us 💑</a>
-  <a href="questions.html">Start Survey 💌</a>
-<a href="memories.html">Our memories</a>
+  <div class="container">
+    <h1>Welcome to Our Love Space 💖</h1>
+    <p>Let’s play, write, and dream together 🌹</p>
+
+    <!-- Survey Section -->
+    <a href="about.html">About Us 💑</a>
+    <a href="questions.html">Start Survey 💌</a>
+    <a href="memories.html">Our Memories 📸</a>
+
+    <!-- New Love Pages -->
+    <a href="promises.html">Daily Promises 💍</a>
+    <a href="songs.html">Our Songs 🎶</a>
+    <a href="plans.html">Future Plans ✨</a>
+    <a href="messages.html">Message Wall 💬</a>
+    <a href="vault.html">Love Vault📖</a>
+
+    <!-- Protected Page -->
+    <a href="login.html">Secret Login 🔑</a>
+    <a href="vault.html">History</a>
+    <a href=plans.html">Plans</a>
+
+    <!-- Notification placeholder -->
+    <p id="notify"></p>
+  </div>
+
+  <script>
+    // Simple notification check
+    function checkUpdate() {
+      if (localStorage.getItem("newUpdate") === "true") {
+        document.getElementById("notify").innerText = 
+          "✨ New update added! Check the Vault 💕";
+        localStorage.setItem("newUpdate", "false");
+      }
+    }
+    checkUpdate();
+  </script>
 </body>
 </html>
-
