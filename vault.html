@@ -1,0 +1,20 @@
+<h1>📖 Our Love Vault</h1>
+<div id="vault"></div>
+<script>
+function loadVault() {
+  let vaultHTML = "";
+  const sections = ["promises", "songs", "plans", "messages"];
+  sections.forEach(sec => {
+    let items = JSON.parse(localStorage.getItem(sec)) || [];
+    if (items.length > 0) {
+      vaultHTML += `<h2>${sec.toUpperCase()} 💖</h2><ul>`;
+      items.forEach(i => {
+        vaultHTML += `<li>${i.date}: ${i.text || i.title + " - " + i.note}</li>`;
+      });
+      vaultHTML += "</ul>";
+    }
+  });
+  document.getElementById("vault").innerHTML = vaultHTML || "No entries yet 😘";
+}
+loadVault();
+</script>

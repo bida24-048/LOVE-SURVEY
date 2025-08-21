@@ -1,0 +1,17 @@
+<h1>🌍 Future Plans</h1>
+<input type="text" id="plan" placeholder="Write a dream...">
+<button onclick="savePlan()">Add ✨</button>
+<p id="status"></p>
+
+<script>
+function savePlan() {
+  let plan = document.getElementById("plan").value;
+  if (plan) {
+    let plans = JSON.parse(localStorage.getItem("plans")) || [];
+    plans.push({ text: plan, date: new Date().toLocaleDateString() });
+    localStorage.setItem("plans", JSON.stringify(plans));
+    document.getElementById("status").innerText = "Plan Saved 🌟";
+    localStorage.setItem("newUpdate", "true");
+  }
+}
+</script>

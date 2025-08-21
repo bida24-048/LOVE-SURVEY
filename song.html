@@ -1,0 +1,19 @@
+<h1>🎵 Our Songs</h1>
+<input type="text" id="songTitle" placeholder="Song title"><br>
+<textarea id="songNote" rows="3" cols="30" placeholder="Why this song?"></textarea><br>
+<button onclick="saveSong()">Add Song 💖</button>
+<p id="status"></p>
+
+<script>
+function saveSong() {
+  let title = document.getElementById("songTitle").value;
+  let note = document.getElementById("songNote").value;
+  if (title && note) {
+    let songs = JSON.parse(localStorage.getItem("songs")) || [];
+    songs.push({ title, note, date: new Date().toLocaleDateString() });
+    localStorage.setItem("songs", JSON.stringify(songs));
+    document.getElementById("status").innerText = "Song Saved 🎶";
+    localStorage.setItem("newUpdate", "true");
+  }
+}
+</script>

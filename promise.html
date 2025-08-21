@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Daily Promise 💍</title>
+</head>
+<body>
+  <h1>💞 Daily Promise</h1>
+  <textarea id="promiseText" rows="4" cols="40" placeholder="Write your promise..."></textarea><br>
+  <button onclick="savePromise()">Save 💌</button>
+  <p id="status"></p>
+
+  <script>
+    function savePromise() {
+      let promise = document.getElementById("promiseText").value;
+      if (promise) {
+        let promises = JSON.parse(localStorage.getItem("promises")) || [];
+        promises.push({ text: promise, date: new Date().toLocaleDateString() });
+        localStorage.setItem("promises", JSON.stringify(promises));
+        document.getElementById("status").innerText = "Saved! 💖";
+        localStorage.setItem("newUpdate", "true"); // notify
+      }
+    }
+  </script>
+</body>
+</html>

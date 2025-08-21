@@ -1,0 +1,17 @@
+<h1>💬 Message Wall</h1>
+<textarea id="msg" rows="3" cols="30" placeholder="Leave a message..."></textarea><br>
+<button onclick="saveMsg()">Post 📝</button>
+<p id="status"></p>
+
+<script>
+function saveMsg() {
+  let msg = document.getElementById("msg").value;
+  if (msg) {
+    let messages = JSON.parse(localStorage.getItem("messages")) || [];
+    messages.push({ text: msg, date: new Date().toLocaleDateString() });
+    localStorage.setItem("messages", JSON.stringify(messages));
+    document.getElementById("status").innerText = "Message Posted 💕";
+    localStorage.setItem("newUpdate", "true");
+  }
+}
+</script>
