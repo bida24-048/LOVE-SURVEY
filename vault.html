@@ -1,5 +1,12 @@
 <h1>📖 Our Love Vault</h1>
 <div id="vault"></div>
+
+  <script>
+  // Redirect back to login if not logged in
+  if (localStorage.getItem("loveLogin") !== "true") {
+    window.location.href = "index.html";
+  }
+</script>
 <script>
 function loadVault() {
   let vaultHTML = "";
@@ -18,3 +25,4 @@ function loadVault() {
 }
 loadVault();
 </script>
+
