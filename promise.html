@@ -1,11 +1,25 @@
-function savePlan() {
-  const text = document.getElementById("plan").value.trim();
-  if (!text) return alert("Please type your plan!");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>💞 Daily Promise</title>
+</head>
+<body>
+<h1>💞 Daily Promise</h1>
+<textarea id="promiseText" rows="4" cols="40" placeholder="Write your promise... 💌"></textarea><br>
+<button onclick="savePromise()">Save Promise 💖</button>
+<p id="status"></p>
 
-  const vault = JSON.parse(localStorage.getItem("vault")) || [];
-  vault.push({ type: "plan", text: text, date: new Date().toLocaleDateString() });
-  localStorage.setItem("vault", JSON.stringify(vault));
-
-  document.getElementById("plan").value = "";
-  alert("Plan saved to Vault 🌟");
+<script>
+function savePromise() {
+    const text = document.getElementById("promiseText").value.trim();
+    if(!text) return alert("Please type your promise!");
+    const vault = JSON.parse(localStorage.getItem("vault")) || [];
+    vault.push({ type: "promise", text, date: new Date().toLocaleString() });
+    localStorage.setItem("vault", JSON.stringify(vault));
+    document.getElementById("promiseText").value = "";
+    document.getElementById("status").innerText = "Promise saved to Vault 💌";
 }
+</script>
+</body>
+</html>

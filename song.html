@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>🎵 Songs</title>
+<meta charset="UTF-8">
+<title>🎵 Our Songs</title>
 </head>
 <body>
 <h1>🎵 Our Songs</h1>
@@ -9,63 +10,19 @@
 <textarea id="songNote" rows="3" cols="30" placeholder="Why this song?"></textarea><br>
 <button onclick="saveSong()">Add Song 💖</button>
 <p id="status"></p>
-<h2>My Songs 💖</h2>
-<ul id="songList"></ul>
-
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
 <script>
-const songListEl = document.getElementById("songList");
-
-// --- Firebase Config ---
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-// --- Load local songs ---
-function loadLocalSongs() {
-  const songs = JSON.parse(localStorage.getItem("songs")) || [];
-  songListEl.innerHTML = "";
-  songs.forEach(song => {
-    const li = document.createElement("li");
-    li.textContent = `📅 ${song.date} - ${song.title} - ${song.note}`;
-    songListEl.appendChild(li);
-  });
-}
-
-// --- Save song ---
 function saveSong() {
-  const title = document.getElementById("songTitle").value.trim();
-  const note = document.getElementById("songNote").value.trim();
-  if(!title || !note) return alert("Please enter both title and note!");
-
-  const data = { title, note, date: new Date().toLocaleString() };
-
-  // Save locally
-  let songs = JSON.parse(localStorage.getItem("songs")) || [];
-  songs.push(data);
-  localStorage.setItem("songs", JSON.stringify(songs));
-
-  // Save to shared vault
-  db.ref("vault").push({ type: "song", ...data });
-
-  document.getElementById("songTitle").value = "";
-  document.getElementById("songNote").value = "";
-  document.getElementById("status").innerText = "Song saved locally & shared 🎶";
-  loadLocalSongs();
+    const title = document.getElementById("songTitle").value.trim();
+    const note = document.getElementById("songNote").value.trim();
+    if(!title || !note) return alert("Enter both title and note!");
+    const vault = JSON.parse(localStorage.getItem("vault")) || [];
+    vault.push({ type: "song", title, note, date: new Date().toLocaleString() });
+    localStorage.setItem("vault", JSON.stringify(vault));
+    document.getElementById("songTitle").value = "";
+    document.getElementById("songNote").value = "";
+    document.getElementById("status").innerText = "Song saved to Vault 🎵";
 }
-
-// Initialize
-loadLocalSongs();
 </script>
 </body>
 </html>

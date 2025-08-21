@@ -1,24 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>💌 Daily Love Question</title>
+<meta charset="UTF-8">
+<title>💌 Daily Love Question</title>
 </head>
 <body>
 <h1>💌 Daily Love Question</h1>
-<h2 id="question">Loading question... ✨</h2>
-<button class="yes" onclick="saveAnswer('Yes 😍')">Yes 😍</button>
-<button class="no" onclick="saveAnswer('No 😢')">No 😢</button><br><br>
-<textarea id="thoughts" placeholder="Express your feelings here... ✨"></textarea><br>
-<button onclick="saveAnswer(document.getElementById('thoughts').value)">💾 Save</button>
+<h3 id="question">Loading question...</h3>
+<textarea id="thoughts" rows="4" cols="40" placeholder="Express your feelings here... ✨"></textarea><br>
+<button onclick="saveLoveAnswer()">Save Answer 💌</button>
 <p id="status"></p>
-<h2>My Answers 💖</h2>
-<ul id="answerList"></ul>
-
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
 <script>
-const answerListEl = document.getElementById("answerList");
 const questions = [
   "Do you love me more today than yesterday? ❤️",
   "Would you hug me tight if I was sad? 🤗",
@@ -43,55 +36,18 @@ const questions = [
   "Do you believe in our forever? 🌈",
   "Will you send me random cute messages just because? 💌"
 ];
-const randomIndex = Math.floor(Math.random()*questions.length);
-const questionText = questions[randomIndex];
-document.getElementById("question").innerText = questionText;
 
-// --- Firebase Config ---
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+document.getElementById("question").innerText = questions[Math.floor(Math.random()*questions.length)];
 
-// --- Load local answers ---
-function loadLocalAnswers() {
-  const answers = JSON.parse(localStorage.getItem("surveys")) || [];
-  answerListEl.innerHTML = "";
-  answers.forEach(a => {
-    const li = document.createElement("li");
-    li.textContent = `📅 ${a.date} - Q: ${a.question} A: ${a.answer}`;
-    answerListEl.appendChild(li);
-  });
+function saveLoveAnswer() {
+    const answer = document.getElementById("thoughts").value.trim();
+    if(!answer) return alert("Please enter your thoughts!");
+    const vault = JSON.parse(localStorage.getItem("vault")) || [];
+    vault.push({ type: "love", question: document.getElementById("question").innerText, answer, date: new Date().toLocaleString() });
+    localStorage.setItem("vault", JSON.stringify(vault));
+    document.getElementById("thoughts").value = "";
+    document.getElementById("status").innerText = "Answer saved to Vault 💌";
 }
-
-// --- Save answer ---
-function saveAnswer(answer) {
-  if(!answer) return alert("Please enter an answer!");
-
-  const data = { question: questionText, answer, date: new Date().toLocaleString() };
-
-  // Save locally
-  let answers = JSON.parse(localStorage.getItem("surveys")) || [];
-  answers.push(data);
-  localStorage.setItem("surveys", JSON.stringify(answers));
-
-  // Save to shared vault
-  db.ref("vault").push({ type: "survey", ...data });
-
-  document.getElementById("thoughts").value = "";
-  document.getElementById("status").innerText = "Answer saved locally & shared 💕";
-  loadLocalAnswers();
-}
-
-// Initialize
-loadLocalAnswers();
 </script>
 </body>
 </html>

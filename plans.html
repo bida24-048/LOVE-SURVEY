@@ -1,68 +1,25 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>🌍 Plans</title>
+<meta charset="UTF-8">
+<title>🌟 Future Plans</title>
 </head>
 <body>
-<h1>🌍 Future Plans</h1>
-<input type="text" id="plan" placeholder="Write a dream...">
-<button onclick="savePlan()">Add ✨</button>
+<h1>🌟 Future Plans</h1>
+<input type="text" id="plan" placeholder="Write a dream..."><br>
+<button onclick="savePlan()">Add Plan ✨</button>
 <p id="status"></p>
-<h2>My Plans 💖</h2>
-<ul id="planList"></ul>
-
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
 <script>
-const planListEl = document.getElementById("planList");
-
-// --- Firebase Config (same for all pages) ---
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-// --- Load local plans ---
-function loadLocalPlans() {
-  const plans = JSON.parse(localStorage.getItem("plans")) || [];
-  planListEl.innerHTML = "";
-  plans.forEach(plan => {
-    const li = document.createElement("li");
-    li.textContent = `📅 ${plan.date} - ${plan.text}`;
-    planListEl.appendChild(li);
-  });
-}
-
-// --- Save plan ---
 function savePlan() {
-  const text = document.getElementById("plan").value.trim();
-  if(!text) return alert("Please enter a plan!");
-
-  const data = { text, date: new Date().toLocaleString() };
-
-  // Save locally
-  let plans = JSON.parse(localStorage.getItem("plans")) || [];
-  plans.push(data);
-  localStorage.setItem("plans", JSON.stringify(plans));
-
-  // Save to shared vault
-  db.ref("vault").push({ type: "plan", ...data });
-
-  document.getElementById("plan").value = "";
-  document.getElementById("status").innerText = "Plan saved locally & shared 🌟";
-  loadLocalPlans();
+    const text = document.getElementById("plan").value.trim();
+    if(!text) return alert("Please type your plan!");
+    const vault = JSON.parse(localStorage.getItem("vault")) || [];
+    vault.push({ type: "plan", text, date: new Date().toLocaleString() });
+    localStorage.setItem("vault", JSON.stringify(vault));
+    document.getElementById("plan").value = "";
+    document.getElementById("status").innerText = "Plan saved to Vault 🌟";
 }
-
-// Initialize
-loadLocalPlans();
 </script>
 </body>
 </html>

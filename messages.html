@@ -1,68 +1,25 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>💬 Messages</title>
+<meta charset="UTF-8">
+<title>💬 Messages</title>
 </head>
 <body>
 <h1>💬 Message Wall</h1>
 <textarea id="msg" rows="3" cols="30" placeholder="Leave a message..."></textarea><br>
 <button onclick="saveMessage()">Post 📝</button>
 <p id="status"></p>
-<h2>My Messages 💖</h2>
-<ul id="messageList"></ul>
-
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
 <script>
-const messageListEl = document.getElementById("messageList");
-
-// --- Firebase Config ---
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-// --- Load local messages ---
-function loadLocalMessages() {
-  const messages = JSON.parse(localStorage.getItem("messages")) || [];
-  messageListEl.innerHTML = "";
-  messages.forEach(msg => {
-    const li = document.createElement("li");
-    li.textContent = `📅 ${msg.date} - ${msg.text}`;
-    messageListEl.appendChild(li);
-  });
-}
-
-// --- Save message ---
 function saveMessage() {
-  const text = document.getElementById("msg").value.trim();
-  if(!text) return alert("Please type a message!");
-
-  const data = { text, date: new Date().toLocaleString() };
-
-  // Save locally
-  let messages = JSON.parse(localStorage.getItem("messages")) || [];
-  messages.push(data);
-  localStorage.setItem("messages", JSON.stringify(messages));
-
-  // Save to shared vault
-  db.ref("vault").push({ type: "message", ...data });
-
-  document.getElementById("msg").value = "";
-  document.getElementById("status").innerText = "Message saved locally & shared 💕";
-  loadLocalMessages();
+    const text = document.getElementById("msg").value.trim();
+    if(!text) return alert("Please type a message!");
+    const vault = JSON.parse(localStorage.getItem("vault")) || [];
+    vault.push({ type: "message", text, date: new Date().toLocaleString() });
+    localStorage.setItem("vault", JSON.stringify(vault));
+    document.getElementById("msg").value = "";
+    document.getElementById("status").innerText = "Message saved to Vault 💕";
 }
-
-// Initialize
-loadLocalMessages();
 </script>
 </body>
 </html>
