@@ -4,88 +4,94 @@
 <meta charset="UTF-8">
 <title>📖 Shared Love Vault</title>
 <style>
-  body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; padding: 20px; }
+  body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; }
   h1 { color: #d63384; }
-  h2 { color: #a60073; margin-top: 20px; }
-  ul { list-style: none; padding: 0; }
-  li { margin: 5px 0; padding: 10px; background: #ffe6f0; border-radius: 10px; }
-  button { margin: 10px; padding: 10px 15px; border: none; border-radius: 12px; background: #25D366; color: white; cursor: pointer; }
-  button:hover { background: #128C7E; }
+  h2 { color: #b82d7a; margin: 20px 0; }
+  p { margin: 5px 0; }
+  button { 
+    margin: 10px; padding: 10px 20px; 
+    background: #25D366; color: white; border: none; border-radius: 8px; 
+    font-size: 16px; cursor: pointer;
+  }
 </style>
 </head>
 <body>
 
 <h1>📖 Shared Love Vault</h1>
 
-<h2>Vault History 💖</h2>
-<ul id="vaultList">Loading...</ul>
-
-<button onclick="shareVault()">📤 Share Today’s Vault on WhatsApp</button>
+<h2>Vault 💖</h2>
+<div id="vault">Loading vault...</div>
+<button onclick="shareVault()">Share Vault on WhatsApp 📲</button>
 
 <script>
-const vaultList = document.getElementById("vaultList");
-
-// --- Load vault from localStorage ---
+// Load vault
 function loadVault() {
   const vault = JSON.parse(localStorage.getItem("vault")) || [];
-  vaultList.innerHTML = "";
+  const vaultDiv = document.getElementById("vault");
+  if(vault.length === 0){
+    vaultDiv.innerText = "Vault is empty 😘";
+    return;
+  }
+  let html = "";
   vault.forEach(item => {
-    const li = document.createElement("li");
-    if(item.type === "message") li.textContent = `💬 ${item.date} - ${item.text}`;
-    else if(item.type === "plan") li.textContent = `📅 ${item.date} - ${item.text}`;
-    else if(item.type === "song") li.textContent = `🎵 ${item.date} - ${item.title}: ${item.note}`;
-    else if(item.type === "love") li.textContent = `💌 ${item.date} - Q: ${item.question} | A: ${item.answer}`;
-    vaultList.appendChild(li);
+    html += `📅 ${item.date} - ${item.type.toUpperCase()}: ${item.text} 💖<br>`;
   });
+  vaultDiv.innerHTML = html;
 }
+loadVault();
 
-// --- Share today's vault to WhatsApp ---
+// Share via WhatsApp
 function shareVault() {
   const vault = JSON.parse(localStorage.getItem("vault")) || [];
-  const today = new Date().toLocaleDateString();
-  const todayItems = vault.filter(item => item.date === today);
-  if(todayItems.length === 0) return alert("No entries for today!");
-  
-  let message = `📖💖 Vault for ${today} 💖📖\n\n`;
-  todayItems.forEach(item => {
-    if(item.type === "message") message += `💬 ${item.text}\n`;
-    else if(item.type === "plan") message += `📅 ${item.text}\n`;
-    else if(item.type === "song") message += `🎵 ${item.title}: ${item.note}\n`;
-    else if(item.type === "love") message += `💌 Q: ${item.question} | A: ${item.answer}\n`;
+  if(vault.length === 0) return alert("Vault is empty 😘");
+
+  let text = "📖💖 Shared Love Vault 💖📖\n\n";
+  vault.forEach(item => {
+    text += `📅 ${item.date} - ${item.type.toUpperCase()}: ${item.text} 💖\n`;
   });
-  
-  const whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(message);
+
+  // Open WhatsApp web, user chooses contact
+  const whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(text);
   window.open(whatsappUrl, "_blank");
 }
 
 // --- Notifications ---
-if (Notification.permission !== "granted") Notification.requestPermission();
-
-function showNotification(title, body) {
-  if (Notification.permission === "granted") {
-    new Notification(title, { body: body });
+function showReminder(){
+  if(Notification.permission === "granted"){
+    new Notification("💌 Love Vault Reminder", {
+      body: "Don't forget to add a message, plan, or promise today! 💖",
+      icon: ""
+    });
   }
 }
 
-// Check every minute for reminders
-setInterval(() => {
+// Request permission for notifications
+if("Notification" in window){
+  Notification.requestPermission();
+}
+
+// Schedule notifications at 10 AM and 8 PM
+function scheduleReminders(){
   const now = new Date();
-  const hours = now.getHours();
-  const minutes = now.getMinutes();
-
-  if (hours === 10 && minutes === 0) {
-    showNotification("💌 Reminder", "Don't forget to add a message, plan, song, or love answer today!");
-  }
-
-  if (hours === 20 && minutes === 0) {
-    showNotification("📤 Vault Reminder", "Share today's Vault to WhatsApp 💖");
-  }
-}, 60000);
-
-// --- Refresh vault display ---
-loadVault();
-setInterval(loadVault, 5000); // refresh every 5 seconds
-
+  const times = [10, 20]; // 10 AM and 8 PM
+  times.forEach(hour => {
+    let notifTime = new Date();
+    notifTime.setHours(hour,0,0,0);
+    let delay = notifTime - now;
+    if(delay < 0) delay += 24*60*60*1000; // next day if passed
+    setTimeout(function(){
+      showReminder();
+      setInterval(showReminder, 24*60*60*1000); // repeat daily
+    }, delay);
+  });
+}
+scheduleReminders();
 </script>
+
+<p style="text-align:center; color:#d63384; margin-top:30px; font-weight:bold;">
+❤️ CREATED WITH PURE LOVE ❤️ — I LOVE YOU SO MUCH 💖
+</p>
+
 </body>
 </html>
+
