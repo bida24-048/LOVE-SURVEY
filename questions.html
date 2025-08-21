@@ -38,6 +38,7 @@
   <button class="yes" onclick="saveAnswer(document.getElementById('thoughts').value)">💾 Save</button>
 
   <h3 id="savedMsg"></h3>
+  <h3 id="todayAnswer"></h3>
 
   <script>
     // --- Firebase Config ---
@@ -79,24 +80,38 @@
       "Will you send me random cute messages just because? 💌"
     ];
 
-    // Display a random question
     const randomIndex = Math.floor(Math.random() * questions.length);
     const questionText = questions[randomIndex];
     document.getElementById("question").innerText = questionText;
 
-    // --- Save answer to Firebase ---
+    const todayKey = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+    // --- Check if user already answered today ---
+    const todayAnswerEl = document.getElementById("todayAnswer");
+    const savedMsgEl = document.getElementById("savedMsg");
+
+    firebase.database().ref(`surveyAnswers/${todayKey}`).once("value").then(snapshot => {
+      const data = snapshot.val();
+      if (data) {
+        todayAnswerEl.innerText = `You already answered today: "${data.answer}" ❤️`;
+        document.querySelectorAll("button").forEach(b => b.disabled = true);
+        document.getElementById("thoughts").disabled = true;
+      }
+    });
+
+    // --- Save answer ---
     function saveAnswer(answer) {
       if (!answer) return alert("Please enter an answer!");
-      const data = { question: questionText, answer: answer, date: new Date().toLocaleString() };
-      
-      // Save under "surveyAnswers" node
-      const ref = firebase.database().ref("surveyAnswers");
-      ref.once("value").then(snapshot => {
-        const items = snapshot.val() || [];
-        items.push(data);
-        ref.set(items);
-        document.getElementById("savedMsg").innerText = "Answer saved 💕";
+      firebase.database().ref(`surveyAnswers/${todayKey}`).set({
+        question: questionText,
+        answer: answer,
+        timestamp: new Date().toLocaleString()
+      }).then(() => {
+        savedMsgEl.innerText = "Answer saved 💕";
+        todayAnswerEl.innerText = `You answered today: "${answer}" ❤️`;
         document.getElementById("thoughts").value = "";
+        document.querySelectorAll("button").forEach(b => b.disabled = true);
+        document.getElementById("thoughts").disabled = true;
       });
     }
   </script>
@@ -107,3 +122,4 @@
  
    
      
+
