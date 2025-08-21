@@ -7,18 +7,10 @@
     body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; }
     h1 { color: #d63384; }
     h2 { color: #b82d6a; margin: 30px 0; }
-    button {
-      margin: 10px; padding: 10px 20px;
-      border: none; border-radius: 8px;
-      font-size: 18px; cursor: pointer;
-    }
+    button { margin: 10px; padding: 10px 20px; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; }
     .yes { background: #ff4d88; color: white; }
     .no { background: #999; color: white; }
-    textarea {
-      margin-top: 15px; width: 80%; height: 80px;
-      border-radius: 10px; padding: 10px; font-size: 16px;
-      border: 2px solid #ff4d88; resize: none;
-    }
+    textarea { margin-top: 15px; width: 80%; height: 80px; border-radius: 10px; padding: 10px; font-size: 16px; border: 2px solid #ff4d88; resize: none; }
   </style>
 </head>
 <body>
@@ -36,7 +28,23 @@
   <h3 id="savedMsg"></h3>
   <h3 id="todayAnswer"></h3>
 
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
   <script>
+    // --- Firebase Config ---
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
     const questions = [
       "Do you love me more today than yesterday? ❤️",
       "Would you hug me tight if I was sad? 🤗",
@@ -70,21 +78,23 @@
     const todayAnswerEl = document.getElementById("todayAnswer");
     const savedMsgEl = document.getElementById("savedMsg");
 
-    // --- Check if already answered today ---
-    const vault = JSON.parse(localStorage.getItem("loveVault")) || [];
-    const todayEntry = vault.find(e => e.dateKey === todayKey);
-    if (todayEntry) {
-      todayAnswerEl.innerText = `You already answered today: "${todayEntry.answer}" ❤️`;
-      document.querySelectorAll("button").forEach(b => b.disabled = true);
-      document.getElementById("thoughts").disabled = true;
-    }
+    // --- Check Firebase for today's answer ---
+    db.ref("vault").orderByChild("dateKey").equalTo(todayKey).once("value").then(snapshot => {
+      const data = snapshot.val();
+      if (data) {
+        const answerObj = Object.values(data)[0]; // first entry for today
+        todayAnswerEl.innerText = `You already answered today: "${answerObj.answer}" ❤️`;
+        document.querySelectorAll("button").forEach(b => b.disabled = true);
+        document.getElementById("thoughts").disabled = true;
+      }
+    });
 
+    // --- Save answer ---
     function saveAnswer(answer) {
       if (!answer) return alert("Please enter an answer!");
-      const data = { question: questionText, answer: answer, date: new Date().toLocaleString(), dateKey: todayKey };
+      const data = { type: "survey", question: questionText, answer: answer, date: new Date().toLocaleString(), dateKey: todayKey };
 
-      vault.push(data);
-      localStorage.setItem("loveVault", JSON.stringify(vault));
+      db.ref("vault").push(data); // save to shared Vault
 
       savedMsgEl.innerText = "Answer saved 💕";
       todayAnswerEl.innerText = `You answered today: "${answer}" ❤️`;
@@ -97,7 +107,7 @@
 </html>
 
 
-  
+   
   
 
 
@@ -105,5 +115,6 @@
  
    
      
+
 
 
