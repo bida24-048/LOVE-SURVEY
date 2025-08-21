@@ -9,11 +9,13 @@
   h2 { color: #b82d7a; margin: 20px 0; }
   p { margin: 5px 0; }
   button { 
-    margin: 10px; padding: 10px 20px; 
+    margin: 5px; padding: 10px 20px; 
     background: #25D366; color: white; border: none; border-radius: 8px; 
     font-size: 16px; cursor: pointer;
   }
   #vault { margin-top:20px; max-height:400px; overflow-y:auto; border:1px solid #d63384; padding:10px; border-radius:8px; background:#ffe6f0; }
+  .vault-entry { margin-bottom: 10px; padding: 8px; border-bottom: 1px solid #d63384; border-radius: 5px; background: #fff0f5; }
+  .share-btn { background: #128C7E; font-size: 14px; margin-top:5px; }
 </style>
 </head>
 <body>
@@ -22,10 +24,22 @@
 
 <h2>Vault 💖</h2>
 <div id="vault">Loading vault...</div>
-<button onclick="shareVault()">Share Vault on WhatsApp 📲</button>
+<button onclick="shareVault()">Share Whole Vault on WhatsApp 📲</button>
+
+<h2>Add Entry 💌</h2>
+<input type="text" id="entryText" placeholder="Write something..." style="width:70%; padding:8px; border-radius:5px; border:1px solid #d63384;">
+<select id="entryType" style="padding:8px; border-radius:5px; border:1px solid #d63384;">
+  <option value="message">Message</option>
+  <option value="plan">Plan</option>
+  <option value="promise">Promise</option>
+  <option value="song">Song</option>
+  <option value="question">Yes/No Question</option>
+</select>
+<input type="text" id="entryAnswer" placeholder="Answer (for question)" style="width:30%; padding:8px; border-radius:5px; border:1px solid #d63384;">
+<button onclick="addEntry()">Add Entry 💖</button>
 
 <script>
-// --- Load vault ---
+// --- Vault Functions ---
 function loadVault() {
   const vault = JSON.parse(localStorage.getItem("vault")) || [];
   const vaultDiv = document.getElementById("vault");
@@ -33,27 +47,47 @@ function loadVault() {
     vaultDiv.innerText = "Vault is empty 😘";
     return;
   }
-  let html = "";
-  vault.forEach(item => {
-    // Yes/No questions
-    if(item.question && item.answer){
-      html += `📅 ${item.date} - ${item.type.toUpperCase()}: ${item.question} → ${item.answer} 💖<br>`;
-    } 
-    // Other types (messages, plans, promises, songs)
-    else if(item.text){
-      html += `📅 ${item.date} - ${item.type.toUpperCase()}: ${item.text} 💖<br>`;
-    } 
-    // Fallback if something is missing
-    else {
-      html += `📅 ${item.date} - ${item.type.toUpperCase()}: Data unavailable 💖<br>`;
-    }
-  });
-  vaultDiv.innerHTML = html;
-  vaultDiv.scrollTop = vaultDiv.scrollHeight; // auto scroll to latest
-}
-loadVault();
 
-// --- Share via WhatsApp ---
+  vaultDiv.innerHTML = "";
+  vault.forEach((item, index) => {
+    const entryDiv = document.createElement("div");
+    entryDiv.className = "vault-entry";
+    let content = "";
+    if(item.question && item.answer){
+      content = `📅 ${item.date} - ${item.type.toUpperCase()}: ${item.question} → ${item.answer} 💖`;
+    } else if(item.text){
+      content = `📅 ${item.date} - ${item.type.toUpperCase()}: ${item.text} 💖`;
+    } else {
+      content = `📅 ${item.date} - ${item.type.toUpperCase()}: Data unavailable 💖`;
+    }
+    entryDiv.innerHTML = content + `<br><button class="share-btn" onclick="shareSingle(${index})">Share This Entry 📲</button>`;
+    vaultDiv.appendChild(entryDiv);
+  });
+  vaultDiv.scrollTop = vaultDiv.scrollHeight;
+}
+
+function addEntry() {
+  const text = document.getElementById("entryText").value.trim();
+  const type = document.getElementById("entryType").value;
+  const answer = document.getElementById("entryAnswer").value.trim();
+  if(!text && type !== "question") return alert("Please enter something 💖");
+  if(type === "question" && !text) return alert("Please enter a question 💖");
+
+  const vault = JSON.parse(localStorage.getItem("vault")) || [];
+  vault.push({
+    date: new Date().toLocaleDateString(),
+    type: type,
+    text: type !== "question" ? text : undefined,
+    question: type === "question" ? text : undefined,
+    answer: type === "question" ? answer : undefined
+  });
+  localStorage.setItem("vault", JSON.stringify(vault));
+  document.getElementById("entryText").value = "";
+  document.getElementById("entryAnswer").value = "";
+  loadVault();
+}
+
+// --- Share Vault ---
 function shareVault() {
   const vault = JSON.parse(localStorage.getItem("vault")) || [];
   if(vault.length === 0) return alert("Vault is empty 😘");
@@ -68,7 +102,23 @@ function shareVault() {
       text += `📅 ${item.date} - ${item.type.toUpperCase()}: Data unavailable 💖\n`;
     }
   });
+  const whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(text);
+  window.open(whatsappUrl, "_blank");
+}
 
+// --- Share Single Entry ---
+function shareSingle(index) {
+  const vault = JSON.parse(localStorage.getItem("vault")) || [];
+  if(!vault[index]) return;
+  const item = vault[index];
+  let text = "📖💖 Shared Love Vault Entry 💖📖\n\n";
+  if(item.question && item.answer){
+    text += `📅 ${item.date} - ${item.type.toUpperCase()}: ${item.question} → ${item.answer} 💖`;
+  } else if(item.text){
+    text += `📅 ${item.date} - ${item.type.toUpperCase()}: ${item.text} 💖`;
+  } else {
+    text += `📅 ${item.date} - ${item.type.toUpperCase()}: Data unavailable 💖`;
+  }
   const whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(text);
   window.open(whatsappUrl, "_blank");
 }
@@ -83,12 +133,10 @@ function showReminder(){
   }
 }
 
-// Request permission
 if("Notification" in window){
   Notification.requestPermission();
 }
 
-// Schedule notifications at 10 AM and 8 PM
 function scheduleReminders(){
   const now = new Date();
   const times = [10, 20]; // 10 AM and 8 PM
@@ -96,14 +144,16 @@ function scheduleReminders(){
     let notifTime = new Date();
     notifTime.setHours(hour,0,0,0);
     let delay = notifTime - now;
-    if(delay < 0) delay += 24*60*60*1000; // schedule next day if passed
+    if(delay < 0) delay += 24*60*60*1000;
     setTimeout(function(){
       showReminder();
-      setInterval(showReminder, 24*60*60*1000); // repeat daily
+      setInterval(showReminder, 24*60*60*1000);
     }, delay);
   });
 }
+
 scheduleReminders();
+loadVault();
 </script>
 
 <p style="text-align:center; color:#d63384; margin-top:30px; font-weight:bold;">
