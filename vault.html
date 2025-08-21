@@ -8,27 +8,17 @@
   h1 { color: #d63384; margin-top: 20px; }
   h2 { color: #b82d7a; margin: 20px 0; }
   p { margin: 5px 0; }
-  input, select { padding:10px; margin:5px; border-radius:5px; border:1px solid #ccc; font-size:16px; }
   button { 
     margin: 10px; padding: 10px 20px; 
     background: #25D366; color: white; border: none; border-radius: 8px; 
     font-size: 16px; cursor: pointer;
   }
-  #vault { margin-top:20px; max-height:300px; overflow-y:auto; border:1px solid #d63384; padding:10px; border-radius:8px; background:#ffe6f0; }
+  #vault { margin-top:20px; max-height:400px; overflow-y:auto; border:1px solid #d63384; padding:10px; border-radius:8px; background:#ffe6f0; }
 </style>
 </head>
 <body>
 
 <h1>📖 Shared Love Vault</h1>
-
-<h2>Add to Vault 💌</h2>
-<input type="text" id="vaultText" placeholder="Enter your message" style="width:60%;">
-<select id="vaultType">
-  <option value="message">Message</option>
-  <option value="plan">Plan</option>
-  <option value="promise">Promise</option>
-</select>
-<button onclick="addToVault()">Add 💖</button>
 
 <h2>Vault 💖</h2>
 <div id="vault">Loading vault...</div>
@@ -51,19 +41,6 @@ function loadVault() {
   vaultDiv.scrollTop = vaultDiv.scrollHeight; // auto scroll to latest
 }
 
-// --- Add entry ---
-function addToVault(){
-  const text = document.getElementById("vaultText").value.trim();
-  const type = document.getElementById("vaultType").value;
-  if(!text) return alert("Please enter something 💌");
-
-  const vault = JSON.parse(localStorage.getItem("vault")) || [];
-  vault.push({ date: new Date().toLocaleDateString(), type, text });
-  localStorage.setItem("vault", JSON.stringify(vault));
-  loadVault();
-  document.getElementById("vaultText").value = "";
-}
-
 loadVault();
 
 // --- Share via WhatsApp ---
@@ -84,7 +61,7 @@ function shareVault() {
 function showReminder(){
   if(Notification.permission === "granted"){
     new Notification("💌 Love Vault Reminder", {
-      body: "Don't forget to add a message, plan, or promise today! 💖",
+      body: "Don't forget to add something new to your Love Vault today! 💖",
       icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Heart_font_awesome.svg/1024px-Heart_font_awesome.svg.png"
     });
   }
