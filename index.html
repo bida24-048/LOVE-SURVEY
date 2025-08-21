@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Love Login 💖</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #ffe6f0;
+    }
+    h1 {
+      color: #ff4d88;
+    }
+    input {
+      padding: 10px;
+      margin: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      background: #ff4d88;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #ff3385;
+    }
+    #error {
+      color: red;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>💌 Welcome to Our Love World 💌</h1>
+  <p>Enter our secret passkey to continue 💕</p>
+
+  <input type="password" id="passkey" placeholder="Enter passkey 🔐">
+  <br>
+  <button onclick="checkLogin()">Login</button>
+  <p id="error"></p>
+
+  <script>
+    const secretKey = "LeslyLizzyForever2025"; // 💖 your passkey
+
+    function checkLogin() {
+      const entered = document.getElementById("passkey").value;
+      if (entered === secretKey) {
+        // Save login state
+        localStorage.setItem("loveLogin", "true");
+        // Redirect to homepage
+        window.location.href = "home.html";
+      } else {
+        document.getElementById("error").innerText = "❌ Wrong passkey! Try again 💔";
+      }
+    }
+  </script>
+</body>
+</html>
