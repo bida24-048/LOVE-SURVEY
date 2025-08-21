@@ -1,145 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>💌 Our Vault</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; padding: 20px; }
-    h1 { color: #d63384; }
-    h2 { color: #a60073; margin-top: 20px; }
-    input, textarea { margin: 8px; padding: 8px; border-radius: 8px; border: 1px solid #ccc; }
-    button { margin: 5px; padding: 10px 15px; border: none; border-radius: 12px; background: #ff4da6; color: white; cursor: pointer; }
-    button:hover { background: #d63384; }
-    ul { list-style: none; padding: 0; }
-    li { margin: 5px 0; padding: 10px; background: #ffe6f0; border-radius: 10px; }
-  </style>
+<meta charset="UTF-8">
+<title>📖 Shared Love Vault</title>
+<style>
+  body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; padding: 20px; }
+  h1 { color: #d63384; }
+  h2 { color: #a60073; margin-top: 20px; }
+  ul { list-style: none; padding: 0; }
+  li { margin: 5px 0; padding: 10px; background: #ffe6f0; border-radius: 10px; }
+  button { margin: 10px; padding: 10px 15px; border: none; border-radius: 12px; background: #25D366; color: white; cursor: pointer; }
+  button:hover { background: #128C7E; }
+</style>
 </head>
 <body>
 
-  <h1>💌 Our Vault</h1>
+<h1>📖 Shared Love Vault</h1>
+
+<h2>Vault History 💖</h2>
+<ul id="vaultList">Loading...</ul>
+
+<button onclick="shareVault()">📤 Share Today’s Vault on WhatsApp</button>
+
+<script>
+const vaultList = document.getElementById("vaultList");
+
+// --- Load vault from localStorage ---
+function loadVault() {
+  const vault = JSON.parse(localStorage.getItem("vault")) || [];
+  vaultList.innerHTML = "";
+  vault.forEach(item => {
+    const li = document.createElement("li");
+    if(item.type === "message") li.textContent = `💬 ${item.date} - ${item.text}`;
+    else if(item.type === "plan") li.textContent = `📅 ${item.date} - ${item.text}`;
+    else if(item.type === "song") li.textContent = `🎵 ${item.date} - ${item.title}: ${item.note}`;
+    else if(item.type === "love") li.textContent = `💌 ${item.date} - Q: ${item.question} | A: ${item.answer}`;
+    vaultList.appendChild(li);
+  });
+}
+
+// --- Share today's vault to WhatsApp ---
+function shareVault() {
+  const vault = JSON.parse(localStorage.getItem("vault")) || [];
+  const today = new Date().toLocaleDateString();
+  const todayItems = vault.filter(item => item.date === today);
+  if(todayItems.length === 0) return alert("No entries for today!");
   
-  <!-- Add Song -->
-  <h2>🎵 Add Song</h2>
-  <input type="text" id="songTitle" placeholder="Song title"><br>
-  <textarea id="songNote" rows="2" cols="30" placeholder="Why this song?"></textarea><br>
-  <button onclick="saveSong()">Add Song 💖</button>
+  let message = `📖💖 Vault for ${today} 💖📖\n\n`;
+  todayItems.forEach(item => {
+    if(item.type === "message") message += `💬 ${item.text}\n`;
+    else if(item.type === "plan") message += `📅 ${item.text}\n`;
+    else if(item.type === "song") message += `🎵 ${item.title}: ${item.note}\n`;
+    else if(item.type === "love") message += `💌 Q: ${item.question} | A: ${item.answer}\n`;
+  });
   
-  <!-- Add Message -->
-  <h2>💬 Add Message</h2>
-  <textarea id="messageText" rows="2" cols="30" placeholder="Type a message..."></textarea><br>
-  <button onclick="saveMessage()">Save Message ✨</button>
+  const whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(message);
+  window.open(whatsappUrl, "_blank");
+}
 
-  <!-- Add Plan -->
-  <h2>📅 Add Plan</h2>
-  <input type="text" id="planText" placeholder="Our plan"><br>
-  <button onclick="savePlan()">Save Plan 🌸</button>
+// --- Notifications ---
+if (Notification.permission !== "granted") Notification.requestPermission();
 
-  <h2>📖 Vault History</h2>
-  <ul id="vaultList"></ul>
+function showNotification(title, body) {
+  if (Notification.permission === "granted") {
+    new Notification(title, { body: body });
+  }
+}
 
-  <!-- Share button -->
-  <button onclick="shareVault()">📤 Share Vault to WhatsApp</button>
+// Check every minute for reminders
+setInterval(() => {
+  const now = new Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
 
-  <script>
-  // Load from localStorage
-  function loadVault() {
-    const vault = JSON.parse(localStorage.getItem("vault")) || [];
-    const list = document.getElementById("vaultList");
-    list.innerHTML = "";
-    vault.forEach(item => {
-      const li = document.createElement("li");
-      if (item.type === "song") {
-        li.textContent = `🎵 ${item.date} - ${item.title} : ${item.note}`;
-      } else if (item.type === "message") {
-        li.textContent = `💬 ${item.date} - ${item.text}`;
-      } else if (item.type === "plan") {
-        li.textContent = `📅 ${item.date} - ${item.text}`;
-      }
-      list.appendChild(li);
-    });
+  if (hours === 10 && minutes === 0) {
+    showNotification("💌 Reminder", "Don't forget to add a message, plan, song, or love answer today!");
   }
 
-  // Save Song
-  function saveSong() {
-    const title = document.getElementById("songTitle").value.trim();
-    const note = document.getElementById("songNote").value.trim();
-    if (!title || !note) return alert("Please enter song and note!");
-    addToVault({ type: "song", title, note, date: new Date().toLocaleDateString() });
-    document.getElementById("songTitle").value = "";
-    document.getElementById("songNote").value = "";
+  if (hours === 20 && minutes === 0) {
+    showNotification("📤 Vault Reminder", "Share today's Vault to WhatsApp 💖");
   }
+}, 60000);
 
-  // Save Message
-  function saveMessage() {
-    const text = document.getElementById("messageText").value.trim();
-    if (!text) return alert("Please enter a message!");
-    addToVault({ type: "message", text, date: new Date().toLocaleDateString() });
-    document.getElementById("messageText").value = "";
-  }
+// --- Refresh vault display ---
+loadVault();
+setInterval(loadVault, 5000); // refresh every 5 seconds
 
-  // Save Plan
-  function savePlan() {
-    const text = document.getElementById("planText").value.trim();
-    if (!text) return alert("Please enter a plan!");
-    addToVault({ type: "plan", text, date: new Date().toLocaleDateString() });
-    document.getElementById("planText").value = "";
-  }
-
-  // Add to Vault
-  function addToVault(entry) {
-    const vault = JSON.parse(localStorage.getItem("vault")) || [];
-    vault.push(entry);
-    localStorage.setItem("vault", JSON.stringify(vault));
-    loadVault();
-  }
-
-  // Share to WhatsApp
-  function shareVault() {
-    const vault = JSON.parse(localStorage.getItem("vault")) || [];
-    if (vault.length === 0) return alert("Nothing to share today!");
-    const today = new Date().toLocaleDateString();
-    const todayEntries = vault.filter(item => item.date === today);
-    if (todayEntries.length === 0) return alert("No entries for today!");
-    let message = `✨ Vault History for ${today} ✨\n\n`;
-    todayEntries.forEach(item => {
-      if (item.type === "song") message += `🎵 ${item.title}: ${item.note}\n`;
-      if (item.type === "message") message += `💬 ${item.text}\n`;
-      if (item.type === "plan") message += `📅 ${item.text}\n`;
-    });
-    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank");
-  }
-
-  // Notifications
-  if ("Notification" in window && Notification.permission !== "granted") {
-    Notification.requestPermission();
-  }
-
-  function showReminder(title, body) {
-    if (Notification.permission === "granted") {
-      new Notification(title, { body: body, icon: "https://cdn-icons-png.flaticon.com/512/893/893292.png" });
-    }
-  }
-
-  // 8PM Reminder
-  setInterval(() => {
-    let now = new Date();
-    if (now.getHours() === 20 && now.getMinutes() === 0) {
-      showReminder("💌 Vault Reminder", "Don’t forget to share something on the Vault today ✨");
-    }
-  }, 60000);
-
-  // Midnight Reminder
-  setInterval(() => {
-    let now = new Date();
-    if (now.getHours() === 0 && now.getMinutes() === 0) {
-      showReminder("📤 Vault History", "✨ Time to share today’s Vault on WhatsApp 💖");
-    }
-  }, 60000);
-
-  // Initialize
-  loadVault();
-  </script>
-
+</script>
 </body>
 </html>
