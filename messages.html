@@ -25,18 +25,15 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// --- Load all messages in real-time ---
+// ---Load messages
 function loadMessages() {
   db.ref("vault").on("child_added", snapshot => {
-    const data = snapshot.val() || {};
-    messageListEl.innerHTML = ""; // clear list
-    Object.values(data).forEach(item => {
-      if(item.type === "message") {
-        const li = document.createElement("li");
-        li.textContent = `📅 ${item.date} - ${item.text}`;
-        messageListEl.appendChild(li);
-      }
-    });
+    const item = snapshot.val();
+    if(item.type === "message") {
+      const li = document.createElement("li");
+      li.textContent = `📅 ${item.date} - ${item.text}`;
+      messageListEl.appendChild(li); // append without clearing
+    }
   });
 }
 
@@ -58,6 +55,7 @@ loadMessages();
 
   
  
+
 
 
 
