@@ -4,16 +4,58 @@
 <button onclick="saveSong()">Add Song 💖</button>
 <p id="status"></p>
 
+<h2>Songs 💖</h2>
+<ul id="songList"></ul>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
 <script>
-function saveSong() {
-  let title = document.getElementById("songTitle").value;
-  let note = document.getElementById("songNote").value;
-  if (title && note) {
-    let songs = JSON.parse(localStorage.getItem("songs")) || [];
-    songs.push({ title, note, date: new Date().toLocaleDateString() });
-    localStorage.setItem("songs", JSON.stringify(songs));
-    document.getElementById("status").innerText = "Song Saved 🎶";
-    localStorage.setItem("newUpdate", "true");
-  }
+const songListEl = document.getElementById("songList");
+
+// --- Firebase Config ---
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// --- Load songs in real-time ---
+function loadSongs() {
+  db.ref("vault").on("value", snapshot => {
+    const data = snapshot.val() || {};
+    songListEl.innerHTML = "";
+    Object.values(data).forEach(item => {
+      if(item.type === "song") {
+        const li = document.createElement("li");
+        li.textContent = `📅 ${item.date} - ${item.title} - ${item.note}`;
+        songListEl.appendChild(li);
+      }
+    });
+  });
 }
+
+// --- Save song ---
+function saveSong() {
+  const title = document.getElementById("songTitle").value.trim();
+  const note = document.getElementById("songNote").value.trim();
+  if (!title || !note) return alert("Please enter both title and note!");
+
+  const data = { type: "song", title, note, date: new Date().toLocaleDateString() };
+  db.ref("vault").push(data); // Save to shared Vault
+
+  document.getElementById("status").innerText = "Song Saved 🎶";
+  document.getElementById("songTitle").value = "";
+  document.getElementById("songNote").value = "";
+}
+
+// Initialize
+loadSongs();
 </script>
+
