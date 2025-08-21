@@ -2,24 +2,68 @@
 <html>
 <head>
   <title>Daily Promise 💍</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; }
+    textarea { width: 80%; height: 80px; border-radius: 10px; padding: 10px; border: 2px solid #ff4d88; resize: none; }
+    button { margin: 10px; padding: 10px 20px; border-radius: 8px; font-size: 16px; cursor: pointer; background: #ff4d88; color: white; border: none; }
+  </style>
 </head>
 <body>
   <h1>💞 Daily Promise</h1>
-  <textarea id="promiseText" rows="4" cols="40" placeholder="Write your promise..."></textarea><br>
+  <textarea id="promiseText" placeholder="Write your promise..."></textarea><br>
   <button onclick="savePromise()">Save 💌</button>
   <p id="status"></p>
 
+  <h2>Promises 💖</h2>
+  <ul id="promiseList"></ul>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
   <script>
-    function savePromise() {
-      let promise = document.getElementById("promiseText").value;
-      if (promise) {
-        let promises = JSON.parse(localStorage.getItem("promises")) || [];
-        promises.push({ text: promise, date: new Date().toLocaleDateString() });
-        localStorage.setItem("promises", JSON.stringify(promises));
-        document.getElementById("status").innerText = "Saved! 💖";
-        localStorage.setItem("newUpdate", "true"); // notify
-      }
+    const promiseListEl = document.getElementById("promiseList");
+
+    // --- Firebase Config ---
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // --- Load promises in real-time ---
+    function loadPromises() {
+      db.ref("vault").on("value", snapshot => {
+        const data = snapshot.val() || {};
+        promiseListEl.innerHTML = ""; // clear list
+        Object.values(data).forEach(item => {
+          if(item.type === "promise") {
+            const li = document.createElement("li");
+            li.textContent = `📅 ${item.date} - ${item.text}`;
+            promiseListEl.appendChild(li);
+          }
+        });
+      });
     }
+
+    // --- Save promise ---
+    function savePromise() {
+      const text = document.getElementById("promiseText").value.trim();
+      if (!text) return alert("Please write a promise!");
+
+      const data = { type: "promise", text: text, date: new Date().toLocaleDateString() };
+      db.ref("vault").push(data); // Save to shared Vault
+
+      document.getElementById("status").innerText = "Saved! 💖";
+      document.getElementById("promiseText").value = "";
+    }
+
+    loadPromises();
   </script>
 </body>
 </html>
