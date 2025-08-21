@@ -70,8 +70,18 @@
     }
     checkUpdate();
   </script>
+  <button onclick="logout()">Logout 🔒</button>
+
+<script>
+  function logout() {
+    localStorage.removeItem("loveLogin");
+    window.location.href = "index.html";
+  }
+</script>
+
 </body>
 </html>
+
 
 
 
