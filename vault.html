@@ -6,89 +6,68 @@
 <style>
   body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; }
   h1 { color: #d63384; }
-  h2 { color: #b82d7a; }
+  h2 { color: #b82d7a; margin: 20px 0; }
   ul { list-style: none; padding: 0; }
   li { margin: 5px 0; }
-  button { padding: 5px 10px; margin: 5px; cursor: pointer; }
-  input, textarea { padding: 5px; margin: 5px; width: 200px; }
 </style>
 
-<!-- Firebase SDKs -->
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
 <body>
-<h1>📖 Our Love Vault</h1>
 
+<h1>📖 Our Love Vault</h1>
 <div id="vault">Loading vault... 😘</div>
 
-
 <script>
-// ---- Firebase Config ----
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
+  // ---- Firebase Config ----
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
 
-// ---- Login check ----
-if (localStorage.getItem("loveLogin") !== "true") {
-  window.location.href = "index.html";
-}
-
-// ---- Load Vault ----
-function loadVault() {
+  const sections = ["promises", "plans", "messages", "surveys"];
   const vaultDiv = document.getElementById("vault");
-  const sections = ["promises", "songs", "plans", "messages", "surveys"];
-  vaultDiv.innerHTML = "Loading vault... 😘";
 
-  let vaultHTML = "";
-  let loadedSections = 0;
+  function loadVault() {
+    vaultDiv.innerHTML = "Loading vault... 😘";
+    let html = "";
+    let sectionsLoaded = 0;
 
-  sections.forEach(sec => {
-    firebase.database().ref(sec).once("value").then(snapshot => {
-      const items = snapshot.val() || [];
-      if (items.length > 0) {
-        vaultHTML += `<h2>${sec.toUpperCase()} 💖</h2><ul>`;
-        items.forEach(i => {
-          vaultHTML += `<li>${i.date}: ${i.text || i.title + " - " + i.note}</li>`;
-        });
-        vaultHTML += "</ul>";
-      }
-      loadedSections++;
-      if (loadedSections === sections.length) {
-        vaultDiv.innerHTML = vaultHTML || "No entries yet 😘";
-      }
+    sections.forEach(sec => {
+      const ref = firebase.database().ref(sec);
+      ref.on("value", snapshot => {
+        const items = snapshot.val() || [];
+        if (items.length > 0) {
+          html += `<h2>${sec.toUpperCase()} 💖</h2><ul>`;
+          items.forEach(item => {
+            // Handle different structures: text vs title/note
+            if (item.text) {
+              html += `<li><b>${item.date}</b> - ${item.text}</li>`;
+            } else if (item.title) {
+              html += `<li><b>${item.date}</b> - ${item.title} ${item.note ? "- " + item.note : ""}</li>`;
+            }
+          });
+          html += "</ul>";
+        }
+        sectionsLoaded++;
+        if (sectionsLoaded === sections.length) {
+          vaultDiv.innerHTML = html || "No entries yet 😘";
+        }
+      });
     });
-  });
-}
+  }
 
-// ---- Add Survey ----
-function addSurvey() {
-  const text = document.getElementById("surveyText").value.trim();
-  if (!text) return alert("Please enter something!");
-  const data = { date: new Date().toLocaleString(), text };
-  const ref = firebase.database().ref("surveys");
-  ref.once("value").then(snapshot => {
-    const items = snapshot.val() || [];
-    items.push(data);
-    ref.set(items);
-    document.getElementById("surveyText").value = "";
-    loadVault(); // refresh vault
-  });
-}
-
-// ---- Initial load ----
-loadVault();
+  loadVault();
 </script>
 </body>
 </html>
-
-
 
