@@ -2,15 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>📖 Our Love Vault</title>
+<title>📖 Shared Love Vault</title>
 <style>
   body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; }
   h1 { color: #d63384; }
   h2 { color: #b82d7a; margin: 20px 0; }
   ul { list-style: none; padding: 0; }
   li { margin: 5px 0; }
+  textarea { width: 80%; height: 80px; border-radius: 10px; padding: 10px; border: 2px solid #ff4d88; resize: none; }
   button { 
-    margin: 15px; padding: 10px 20px; 
+    margin: 10px; padding: 10px 20px; 
     background: #25D366; color: white; border: none; border-radius: 8px; 
     font-size: 16px; cursor: pointer;
   }
@@ -18,70 +19,89 @@
 </head>
 <body>
 
-<h1>📖 Our Love Vault</h1>
-<div id="vault">Loading vault... 😘</div>
+<h1>📖 Shared Love Vault</h1>
+
+<h2>Leave a Message 💌</h2>
+<textarea id="msg" placeholder="Type your message here..."></textarea><br>
+<button onclick="saveMessage()">Post 📝</button>
+
+<h2>Vault 💖</h2>
+<div id="vault">Loading vault...</div>
 <button onclick="shareVault()">Share Vault on WhatsApp 📲</button>
 
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
 <script>
-const vaultDiv = document.getElementById("vault");
-const sections = ["messages", "plans", "promises", "loveVault"]; // loveVault = surveys
+  // --- Firebase Config ---
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-function loadVault() {
-  let html = "";
-  let hasEntries = false;
-
-  sections.forEach(sec => {
-    const items = JSON.parse(localStorage.getItem(sec)) || [];
-    if (items.length > 0) {
-      hasEntries = true;
-      html += `<h2>${sec.toUpperCase()} 💖</h2><ul>`;
-      items.forEach(item => {
-        if (item.text) html += `<li>📅 ${item.date} - ${item.text}</li>`;
-        else if (item.question) html += `<li>📅 ${item.date} - ❓ ${item.question}<br>💌 Answer: ${item.answer}</li>`;
-        else if (item.title) html += `<li>📅 ${item.date} - ${item.title}${item.note ? " - " + item.note : ""}</li>`;
-      });
-      html += "</ul>";
-    }
-  });
-
-  vaultDiv.innerHTML = hasEntries ? html : "No entries yet 😘";
-}
-
-// --- Share vault via WhatsApp ---
-function shareVault() {
-  const contact = prompt("Enter WhatsApp number including country code (e.g. 2677xxxxxxx):");
-  if (!contact) return;
-
-  let text = "📖💖 My Love Vault Today 💖📖\n\n";
-  sections.forEach(sec => {
-    const items = JSON.parse(localStorage.getItem(sec)) || [];
-    if (items.length > 0) {
-      text += `📂 ${sec.toUpperCase()} 💖\n`;
-      items.forEach(item => {
-        if (item.text) text += `📅 ${item.date} - ${item.text}\n`;
-        else if (item.question) text += `📅 ${item.date} - ❓ ${item.question}\n💌 Answer: ${item.answer}\n`;
-        else if (item.title) text += `📅 ${item.date} - ${item.title}${item.note ? " - " + item.note : ""}\n`;
-      });
-      text += "\n";
-    }
-  });
-
-  if (text.trim() === "📖💖 My Love Vault Today 💖📖") {
-    alert("Vault is empty! 😘");
-    return;
+  const vaultDiv = document.getElementById("vault");
+  
+  // --- Save a message ---
+  function saveMessage() {
+    const text = document.getElementById("msg").value.trim();
+    if (!text) return alert("Please type a message!");
+    
+    const data = {
+      type: "message",
+      text: text,
+      date: new Date().toLocaleString()
+    };
+    
+    db.ref("vault").push(data);
+    document.getElementById("msg").value = "";
   }
 
-  const whatsappUrl = "https://wa.me/" + contact + "?text=" + encodeURIComponent(text);
-  window.open(whatsappUrl, "_blank");
-}
+  // --- Load Vault in real-time ---
+  db.ref("vault").on("value", snapshot => {
+    const data = snapshot.val() || {};
+    let html = "";
+    Object.values(data).forEach(item => {
+      if(item.type === "message") {
+        html += `<p>📅 ${item.date} - ${item.text}</p>`;
+      }
+      // You can add other types later: surveys, plans, promises
+    });
+    vaultDiv.innerHTML = html || "Vault is empty 😘";
+  });
 
-// Load vault on page open
-loadVault();
-setInterval(loadVault, 5000);
+  // --- Share vault via WhatsApp ---
+  function shareVault() {
+    const contact = prompt("Enter WhatsApp number including country code (e.g. 2677xxxxxxx):");
+    if (!contact) return;
+
+    db.ref("vault").once("value").then(snapshot => {
+      const data = snapshot.val() || {};
+      let text = "📖💖 Shared Love Vault 💖📖\n\n";
+      Object.values(data).forEach(item => {
+        if(item.type === "message") text += `📅 ${item.date} - ${item.text}\n`;
+      });
+      if(text.trim() === "📖💖 Shared Love Vault 💖📖") return alert("Vault is empty 😘");
+      
+      const whatsappUrl = "https://wa.me/" + "?text=" + encodeURIComponent(text);
+      window.open(whatsappUrl, "_blank");
+    });
+  }
+
 </script>
 
 </body>
 </html>
+
+      
+
 
 
 
