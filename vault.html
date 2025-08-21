@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -23,25 +23,12 @@
 <h1>📖 Love Vault</h1>
 
 <div class="row">
-  <a href="songs.html"><button class="link-btn">🎵 Add Songs</button></a>
   <button onclick="shareVault()">Share Whole Vault on WhatsApp 📲</button>
   <button onclick="clearVault()" style="background:#d63333;">Clear Entire Vault ❌</button>
 </div>
 
 <h2>Vault 💖</h2>
 <div id="vault">Loading vault...</div>
-
-<h2>Add Entry 💌</h2>
-<!-- keep simple text entries here; songs are added on songs.html -->
-<input type="text" id="entryText" placeholder="Write something..." style="width:60%; padding:8px; border-radius:5px; border:1px solid #d63384;">
-<select id="entryType" style="padding:8px; border-radius:5px; border:1px solid #d63384;">
-  <option value="message">Message</option>
-  <option value="plan">Plan</option>
-  <option value="promise">Promise</option>
-  <option value="question">Yes/No Question</option>
-</select>
-<input type="text" id="entryAnswer" placeholder="Answer (for question)" style="width:30%; padding:8px; border-radius:5px; border:1px solid #d63384;">
-<button onclick="addEntry()">Add Entry 💖</button>
 
 <script>
 // ---- Load Vault ----
@@ -58,9 +45,6 @@ function loadVault() {
     const entryDiv = document.createElement("div");
     entryDiv.className = "vault-entry";
 
-    // Support songs saved as:
-    // { type:"song", songTitle, songLink, songDesc, date }  <-- from songs.html
-    // or older shape { type:"song", title, link, note, date }
     const isSong = item.type === "song";
     const title = isSong ? (item.songTitle || item.title) : null;
     const link  = isSong ? (item.songLink  || item.link)  : null;
@@ -75,41 +59,15 @@ function loadVault() {
       content = `📅 ${item.date || ""} — ${item.type?.toUpperCase() || "QUESTION"}: ${escapeHTML(item.question)} → ${escapeHTML(item.answer)} 💖`;
     } else if (item.text) {
       content = `📅 ${item.date || ""} — ${item.type?.toUpperCase() || "ENTRY"}: ${escapeHTML(item.text)} 💖`;
-    } else {
-      content = `📅 ${item.date || ""} — ${item.type?.toUpperCase() || "ENTRY"}: Data unavailable 💖`;
     }
 
     entryDiv.innerHTML = content + `<br>
-      <button class="action-btn share-btn" onclick="shareSingle(${index})">Share This Entry 📲</button>
+      <button class="action-btn share-btn" onclick="shareSingle(${index})">Share 📲</button>
       <button class="action-btn delete-btn" onclick="deleteEntry(${index})">Delete ❌</button>`;
     vaultDiv.appendChild(entryDiv);
   });
 
   vaultDiv.scrollTop = vaultDiv.scrollHeight;
-}
-
-// ---- Add non-song entry here (songs are added on songs.html) ----
-function addEntry() {
-  const text = document.getElementById("entryText").value.trim();
-  const type = document.getElementById("entryType").value;
-  const answer = document.getElementById("entryAnswer").value.trim();
-
-  if (!text && type !== "question") return alert("Please enter something 💖");
-  if (type === "question" && !text) return alert("Please enter a question 💖");
-
-  const vault = JSON.parse(localStorage.getItem("vault")) || [];
-  vault.push({
-    date: new Date().toLocaleString(),
-    type,
-    text: type !== "question" ? text : undefined,
-    question: type === "question" ? text : undefined,
-    answer: type === "question" ? answer : undefined
-  });
-
-  localStorage.setItem("vault", JSON.stringify(vault));
-  document.getElementById("entryText").value = "";
-  document.getElementById("entryAnswer").value = "";
-  loadVault();
 }
 
 // ---- Share whole vault ----
@@ -174,7 +132,7 @@ function clearVault() {
   }
 }
 
-// ---- Helpers (basic escaping for safety) ----
+// ---- Helpers ----
 function escapeHTML(str="") {
   return String(str)
     .replaceAll("&","&amp;").replaceAll("<","&lt;")
@@ -194,4 +152,4 @@ loadVault();
 </p>
 
 </body>
-</html>    
+</html>
