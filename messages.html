@@ -9,16 +9,19 @@
 <script>
 const messageListEl = document.getElementById("messageList");
 
-// Load messages from localStorage
-function loadMessages() {
-  const messages = JSON.parse(localStorage.getItem("messages")) || [];
-  messageListEl.innerHTML = "";
-  messages.forEach(m => {
-    const li = document.createElement("li");
-    li.innerHTML = `<b>${m.date}</b> - ${m.text}`;
-    messageListEl.appendChild(li);
-  });
-}
+// --- Firebase Config ---
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
 loadMessages();
 
 // Save message
@@ -26,9 +29,9 @@ function saveMsg() {
   const msg = document.getElementById("msg").value.trim();
   if (!msg) return alert("Please type a message!");
 
-  const messages = JSON.parse(localStorage.getItem("messages")) || [];
-  messages.push({ text: msg, date: new Date().toLocaleString() });
-  localStorage.setItem("messages", JSON.stringify(messages));
+  const data = { type: "message", text: msg, date: new Date().toLocaleString() };
+db.ref("vault").push(data); // Saves to shared Vault
+
 
   document.getElementById("status").innerText = "Message Posted 💕";
   document.getElementById("msg").value = "";
@@ -39,3 +42,4 @@ function saveMsg() {
 
   
  
+
