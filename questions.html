@@ -7,7 +7,6 @@
   body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; padding:20px; }
   h1 { color: #d63384; }
   h3 { color: #b82d7a; margin: 20px 0; }
-  textarea { padding:10px; border-radius:5px; border:1px solid #ccc; }
   button { margin:10px; padding:10px 20px; border:none; border-radius:8px; font-size:16px; cursor:pointer; }
   .yes { background: #25D366; color:white; }
   .no { background: #ff4d4d; color:white; }
@@ -15,16 +14,14 @@
 </head>
 <body>
 
-<h1>💌 Daily Love Question</h1>
+<h1>💌Love Question</h1>
 <h3 id="question">Loading question...</h3>
 
 <div>
-  <button class="yes" onclick="selectAnswer('Yes')">Yes ✅</button>
-  <button class="no" onclick="selectAnswer('No')">No ❌</button>
+  <button class="yes" onclick="saveLoveAnswer('Yes')">Yes ✅</button>
+  <button class="no" onclick="saveLoveAnswer('No')">No ❌</button>
 </div>
 
-<textarea id="why" rows="4" cols="40" placeholder="Explain why... ✨"></textarea><br>
-<button onclick="saveLoveAnswer()">Save Answer 💌</button>
 <p id="status"></p>
 
 <script>
@@ -51,15 +48,7 @@ const questions = [
   "Do you feel connected to me even when apart? 💖",
   "Will you dance with me at every wedding? 💃🕺",
   "Do you believe in our forever? 🌈",
-  "Will you send me random cute messages just because? 💌",
-  "Do you enjoy our silly inside jokes? 😄",
-  "Would you read a book together with me? 📖",
-  "Do you feel proud of us as a couple? 🌟",
-  "Will you always hold my hand in public? 🤝",
-  "Do you think we balance each other perfectly? ⚖️",
-  "Would you plan a surprise date for me? 💝",
-  "Do you love my cooking? 🍲",
-  "Would you sing with me in the shower? 🎤🚿"
+  "Will you send me random cute messages just because? 💌"
 ];
 
 // --- Limit answers per day ---
@@ -69,20 +58,10 @@ const MAX_PER_DAY = 5;
 let currentQuestion = questions[Math.floor(Math.random()*questions.length)];
 document.getElementById("question").innerText = currentQuestion;
 
-// --- Selected answer ---
-let selectedAnswer = null;
-function selectAnswer(ans) {
-  selectedAnswer = ans;
-  document.getElementById("status").innerText = "You selected: " + ans;
-}
-
 // --- Save answer ---
-function saveLoveAnswer() {
-  const why = document.getElementById("why").value.trim();
-  if(!selectedAnswer) return alert("Please select Yes or No!");
-  
+function saveLoveAnswer(selectedAnswer) {
   const vault = JSON.parse(localStorage.getItem("vault")) || [];
-  
+
   // --- Count answers today ---
   const today = new Date().toLocaleDateString();
   const todayCount = vault.filter(item => item.date.startsWith(today) && item.type === "love").length;
@@ -93,14 +72,10 @@ function saveLoveAnswer() {
     type: "love", 
     question: currentQuestion, 
     answer: selectedAnswer, 
-    why: why, 
     date: new Date().toLocaleString() 
   });
   localStorage.setItem("vault", JSON.stringify(vault));
 
-  // --- Reset ---
-  document.getElementById("why").value = "";
-  selectedAnswer = null;
   document.getElementById("status").innerText = "Answer saved to Vault 💌";
 
   // --- Load new question ---
