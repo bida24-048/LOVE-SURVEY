@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Secret Login 🔑</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #ffe6f0;
+      text-align: center;
+      padding-top: 100px;
+    }
+    h1 { color: #ff4d88; }
+    input {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin: 10px;
+      width: 220px;
+      font-size: 16px;
+    }
+    button {
+      background: #ff4d88;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover { background: #ff3385; }
+    p { color: red; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Enter Love Hub Passkey 🔒</h1>
+  <input type="password" id="passkey" placeholder="Enter secret code 💕">
+  <br>
+  <button onclick="checkLogin()">Unlock ❤️</button>
+  <p id="error"></p>
+
+  <script>
+    // Set your secret passkey here
+    const secretKey = "LeslyAndLizzyForever";  
+
+    function checkLogin() {
+      const entered = document.getElementById("passkey").value;
+      if (entered === secretKey) {
+        // if correct, go to vault
+        window.location.href = "vault.html";
+      } else {
+        document.getElementById("error").innerText = "❌ Wrong passkey! Try again 💔";
+      }
+    }
+  </script>
+</body>
+</html>
