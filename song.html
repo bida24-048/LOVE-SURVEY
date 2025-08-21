@@ -2,70 +2,75 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>🎵 Add Song</title>
+<title>📖 Love Vault</title>
 <style>
-  body { font-family: Arial, sans-serif; text-align: center; background: #f0f8ff; margin:0; padding:20px; }
-  h1 { color: #1d4ed8; }
-  input, textarea {
-    width: 80%; padding: 10px; margin: 10px 0;
-    border: 1px solid #1d4ed8; border-radius: 8px;
-  }
-  button {
-    padding: 10px 20px; margin: 10px;
-    border: none; border-radius: 8px;
-    font-size: 16px; cursor: pointer;
-  }
-  .save-btn { background: #1d4ed8; color:white; }
-  .back-btn { background: #10b981; color:white; }
+  body { font-family: Arial, sans-serif; background:#fff0f5; margin:0; padding:20px; text-align:center; }
+  h1 { color:#c94f4f; margin-bottom:20px; }
+  .song-entry { background:white; padding:15px; margin:10px auto; max-width:500px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.2); text-align:left; }
+  .song-entry h3 { margin:0 0 5px; color:#1d4ed8; }
+  .song-entry p { margin:5px 0; }
+  a { color:#128C7E; text-decoration:none; font-weight:bold; }
+  a:hover { text-decoration:underline; }
+  audio { width:100%; margin-top:5px; }
+  button { margin-top:10px; margin-right:10px; padding:8px 15px; border:none; border-radius:6px; cursor:pointer; }
+  .delete { background:#e63946; color:white; }
+  .share { background:#25D366; color:white; }
+  .back-btn { background:#10b981; color:white; }
 </style>
 </head>
 <body>
 
-<h1>🎶 Add a Song</h1>
-
-<input type="text" id="songTitle" placeholder="Song Title"><br>
-<textarea id="songDesc" placeholder="Why this song is special 💖"></textarea><br>
-<input type="url" id="songLink" placeholder="Paste song link (YouTube, Spotify, etc.)"><br>
-
-<!-- Select Song from Phone -->
-<input type="file" id="songFile" accept="audio/*"><br>
-
-<button class="save-btn" onclick="saveSong()">Save to Vault 💖</button>
-<button class="back-btn" onclick="window.location.href='vault.html'">Go to Vault 📖</button>
+<h1>📖 Love Vault</h1>
+<a href="songs.html"><button class="back-btn">🎵 Add More Songs</button></a>
+<div id="vaultContainer"></div>
 
 <script>
-function saveSong() {
-  const title = document.getElementById("songTitle").value.trim();
-  const desc = document.getElementById("songDesc").value.trim();
-  const link = document.getElementById("songLink").value.trim();
-  const fileInput = document.getElementById("songFile");
-  let fileUrl = "";
+function loadVault() {
+  const vault = JSON.parse(localStorage.getItem("vault")) || [];
+  const container = document.getElementById("vaultContainer");
+  container.innerHTML = "";
 
-  if(fileInput.files.length > 0){
-    fileUrl = URL.createObjectURL(fileInput.files[0]); // temporary file path
+  if(vault.length === 0) {
+    container.innerHTML = "<p>No songs saved yet 💔</p>";
+    return;
   }
 
-  if(!title) return alert("Please enter a song title 🎵");
-
-  const vault = JSON.parse(localStorage.getItem("vault")) || [];
-  vault.push({
-    date: new Date().toLocaleDateString(),
-    type: "song",
-    title: title,
-    desc: desc,
-    link: link,
-    file: fileUrl
+  vault.forEach((item, index) => {
+    if(item.type === "song") {
+      const div = document.createElement("div");
+      div.className = "song-entry";
+      div.innerHTML = `
+        <h3>🎵 ${item.title}</h3>
+        <p>💖 ${item.desc || "(No description)"}</p>
+        ${item.link ? `<p><a href="${item.link}" target="_blank">▶️ Open Link</a></p>` : ""}
+        ${item.file ? `<audio controls src="${item.file}"></audio>` : ""}
+        <p><small>Saved on: ${item.date}</small></p>
+        <button class="share" onclick="shareSong(${index})">Share 💌</button>
+        <button class="delete" onclick="deleteSong(${index})">Delete ❌</button>
+      `;
+      container.appendChild(div);
+    }
   });
-
-  localStorage.setItem("vault", JSON.stringify(vault));
-  alert("Song saved to Vault 💖");
-  
-  // clear form
-  document.getElementById("songTitle").value = "";
-  document.getElementById("songDesc").value = "";
-  document.getElementById("songLink").value = "";
-  document.getElementById("songFile").value = "";
 }
+
+function deleteSong(index) {
+  const vault = JSON.parse(localStorage.getItem("vault")) || [];
+  vault.splice(index,1);
+  localStorage.setItem("vault", JSON.stringify(vault));
+  loadVault();
+}
+
+function shareSong(index) {
+  const vault = JSON.parse(localStorage.getItem("vault")) || [];
+  const item = vault[index];
+  if(!item) return;
+  let text = `🎵 ${item.title}\n💖 ${item.desc || ""}`;
+  if(item.link) text += `\n▶️ ${item.link}`;
+  alert("Sharing via WhatsApp...");
+  window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
+}
+
+loadVault();
 </script>
 
 </body>
