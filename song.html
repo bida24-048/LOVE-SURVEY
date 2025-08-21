@@ -2,56 +2,69 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>🎵 Add Our Songs</title>
+<title>🎵 Add Song</title>
 <style>
-  body { font-family: Arial, sans-serif; background:#fff0f5; text-align:center; padding:20px; }
-  h1 { color:#d63384; }
-  input, textarea { width:80%; margin:8px 0; padding:10px; border-radius:8px; border:1px solid #ccc; }
-  button { margin-top:10px; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; background:#25D366; color:white; font-size:16px; }
-  a { display:block; margin-top:20px; color:#d63384; font-weight:bold; }
+  body { font-family: Arial, sans-serif; text-align: center; background: #f0f8ff; margin:0; padding:20px; }
+  h1 { color: #1d4ed8; }
+  input, textarea {
+    width: 80%; padding: 10px; margin: 10px 0;
+    border: 1px solid #1d4ed8; border-radius: 8px;
+  }
+  button {
+    padding: 10px 20px; margin: 10px;
+    border: none; border-radius: 8px;
+    font-size: 16px; cursor: pointer;
+  }
+  .save-btn { background: #1d4ed8; color:white; }
+  .back-btn { background: #10b981; color:white; }
 </style>
 </head>
 <body>
 
-<h1>🎵 Add a Song</h1>
+<h1>🎶 Add a Song</h1>
 
-<input type="text" id="songTitle" placeholder="Song title"><br>
-<input type="url" id="songLink" placeholder="Song link (YouTube, Spotify, Apple Music...)"><br>
-<textarea id="songNote" rows="3" placeholder="Why this song?"></textarea><br>
+<input type="text" id="songTitle" placeholder="Song Title"><br>
+<textarea id="songDesc" placeholder="Why this song is special 💖"></textarea><br>
+<input type="url" id="songLink" placeholder="Paste song link (YouTube, Spotify, etc.)"><br>
 
-<button onclick="saveSong()">Save Song 💖</button>
-<p id="status"></p>
+<!-- Select Song from Phone -->
+<input type="file" id="songFile" accept="audio/*"><br>
 
-<a href="vault.html">📖 Go to Vault</a>
+<button class="save-btn" onclick="saveSong()">Save to Vault 💖</button>
+<button class="back-btn" onclick="window.location.href='vault.html'">Go to Vault 📖</button>
 
 <script>
 function saveSong() {
-    const title = document.getElementById("songTitle").value.trim();
-    const link = document.getElementById("songLink").value.trim();
-    const note = document.getElementById("songNote").value.trim();
+  const title = document.getElementById("songTitle").value.trim();
+  const desc = document.getElementById("songDesc").value.trim();
+  const link = document.getElementById("songLink").value.trim();
+  const fileInput = document.getElementById("songFile");
+  let fileUrl = "";
 
-    if(!title || !link || !note) {
-        alert("Please fill in all fields!");
-        return;
-    }
+  if(fileInput.files.length > 0){
+    fileUrl = URL.createObjectURL(fileInput.files[0]); // temporary file path
+  }
 
-    const vault = JSON.parse(localStorage.getItem("vault")) || [];
-    vault.push({
-        type: "song",
-        title,
-        link,
-        note,
-        date: new Date().toLocaleString()
-    });
+  if(!title) return alert("Please enter a song title 🎵");
 
-    localStorage.setItem("vault", JSON.stringify(vault));
+  const vault = JSON.parse(localStorage.getItem("vault")) || [];
+  vault.push({
+    date: new Date().toLocaleDateString(),
+    type: "song",
+    title: title,
+    desc: desc,
+    link: link,
+    file: fileUrl
+  });
 
-    // clear input
-    document.getElementById("songTitle").value = "";
-    document.getElementById("songLink").value = "";
-    document.getElementById("songNote").value = "";
-
-    document.getElementById("status").innerText = "🎵 Song saved to Vault!";
+  localStorage.setItem("vault", JSON.stringify(vault));
+  alert("Song saved to Vault 💖");
+  
+  // clear form
+  document.getElementById("songTitle").value = "";
+  document.getElementById("songDesc").value = "";
+  document.getElementById("songLink").value = "";
+  document.getElementById("songFile").value = "";
 }
 </script>
 
