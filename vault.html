@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>📖 Shared Love Vault</title>
+<title>📖Love Vault</title>
 <style>
   body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; margin:0; padding:20px; }
   h1 { color: #d63384; margin-top: 20px; }
@@ -20,7 +20,7 @@
 </head>
 <body>
 
-<h1>📖 Shared Love Vault</h1>
+<h1>📖Love Vault</h1>
 
 <h2>Vault 💖</h2>
 <div id="vault">Loading vault...</div>
@@ -44,7 +44,7 @@ function loadVault() {
   const vault = JSON.parse(localStorage.getItem("vault")) || [];
   const vaultDiv = document.getElementById("vault");
   if(vault.length === 0){
-    vaultDiv.innerText = "Vault is empty 😘";
+    vaultDiv.innerText = "Vault is empty";
     return;
   }
 
@@ -92,7 +92,7 @@ function shareVault() {
   const vault = JSON.parse(localStorage.getItem("vault")) || [];
   if(vault.length === 0) return alert("Vault is empty 😘");
 
-  let text = "📖💖 Shared Love Vault 💖📖\n\n";
+  let text = "📖💖 Love Vault 💖📖\n\n";
   vault.forEach(item => {
     if(item.question && item.answer){
       text += `📅 ${item.date} - ${item.type.toUpperCase()}: ${item.question} → ${item.answer} 💖\n`;
@@ -157,8 +157,9 @@ loadVault();
 </script>
 
 <p style="text-align:center; color:#d63384; margin-top:30px; font-weight:bold;">
-❤️ CREATED WITH PURE LOVE ❤️ — I LOVE YOU SO MUCH 💖
+❤️I LOVE YOU SO MUCH 💖
 </p>
 
 </body>
 </html>
+
