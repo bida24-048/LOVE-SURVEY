@@ -1,72 +1,68 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Daily Promise 💍</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; }
-    textarea { width: 80%; height: 80px; border-radius: 10px; padding: 10px; border: 2px solid #ff4d88; resize: none; }
-    button { margin: 10px; padding: 10px 20px; border-radius: 8px; font-size: 16px; cursor: pointer; background: #ff4d88; color: white; border: none; }
-  </style>
+  <title>💞 Promises</title>
 </head>
 <body>
-  <h1>💞 Daily Promise</h1>
-  <textarea id="promiseText" placeholder="Write your promise..."></textarea><br>
-  <button onclick="savePromise()">Save 💌</button>
-  <p id="status"></p>
+<h1>💞 Daily Promise</h1>
+<textarea id="promiseText" rows="4" cols="40" placeholder="Write your promise..."></textarea><br>
+<button onclick="savePromise()">Save 💌</button>
+<p id="status"></p>
+<h2>My Promises 💖</h2>
+<ul id="promiseList"></ul>
 
-  <h2>Promises 💖</h2>
-  <ul id="promiseList"></ul>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script>
+const promiseListEl = document.getElementById("promiseList");
 
-  <script>
-    const promiseListEl = document.getElementById("promiseList");
+// --- Firebase Config ---
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-    // --- Firebase Config ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyCngJIx5fSznQSb9LX9ViP0JqX_homhycw",
-      authDomain: "website-hub-80846.firebaseapp.com",
-      databaseURL: "databaseURL: "https://website-hub-80846-default-rtdb.firebaseio.com",
-      projectId: "website-hub-80846",
-      storageBucket: "website-hub-80846.firebasestorage.app",
-      messagingSenderId: "58637132004",
-      appId: "1:58637132004:web:8741fc3173ca41a8c20cf1"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+// --- Load local promises ---
+function loadLocalPromises() {
+  const promises = JSON.parse(localStorage.getItem("promises")) || [];
+  promiseListEl.innerHTML = "";
+  promises.forEach(p => {
+    const li = document.createElement("li");
+    li.textContent = `📅 ${p.date} - ${p.text}`;
+    promiseListEl.appendChild(li);
+  });
+}
 
-    // --- Load promises in real-time ---
-    function loadPromises() {
-      db.ref("vault").on("value", snapshot => {
-        const data = snapshot.val() || {};
-        promiseListEl.innerHTML = ""; // clear list
-        Object.values(data).forEach(item => {
-          if(item.type === "promise") {
-            const li = document.createElement("li");
-            li.textContent = `📅 ${item.date} - ${item.text}`;
-            promiseListEl.appendChild(li);
-          }
-        });
-      });
-    }
+// --- Save promise ---
+function savePromise() {
+  const text = document.getElementById("promiseText").value.trim();
+  if(!text) return alert("Please enter a promise!");
 
-    // --- Save promise ---
-    function savePromise() {
-      const text = document.getElementById("promiseText").value.trim();
-      if (!text) return alert("Please write a promise!");
+  const data = { text, date: new Date().toLocaleString() };
 
-      const data = { type: "promise", text: text, date: new Date().toLocaleDateString() };
-      db.ref("vault").push(data); // Save to shared Vault
+  // Save locally
+  let promises = JSON.parse(localStorage.getItem("promises")) || [];
+  promises.push(data);
+  localStorage.setItem("promises", JSON.stringify(promises));
 
-      document.getElementById("status").innerText = "Saved! 💖";
-      document.getElementById("promiseText").value = "";
-    }
+  // Save to shared vault
+  db.ref("vault").push({ type: "promise", ...data });
 
-    loadPromises();
-  </script>
+  document.getElementById("promiseText").value = "";
+  document.getElementById("status").innerText = "Promise saved locally & shared 💖";
+  loadLocalPromises();
+}
+
+// Initialize
+loadLocalPromises();
+</script>
 </body>
 </html>
-
-
-

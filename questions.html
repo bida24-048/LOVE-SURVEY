@@ -1,123 +1,97 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Daily Love Question 💖</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; }
-    h1 { color: #d63384; }
-    h2 { color: #b82d6a; margin: 30px 0; }
-    button { margin: 10px; padding: 10px 20px; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; }
-    .yes { background: #ff4d88; color: white; }
-    .no { background: #999; color: white; }
-    textarea { margin-top: 15px; width: 80%; height: 80px; border-radius: 10px; padding: 10px; font-size: 16px; border: 2px solid #ff4d88; resize: none; }
-  </style>
+  <title>💌 Daily Love Question</title>
 </head>
 <body>
-  <h1>💌 Daily Love Question 💌</h1>
-  <h2 id="question">Loading question... ✨</h2>
+<h1>💌 Daily Love Question</h1>
+<h2 id="question">Loading question... ✨</h2>
+<button class="yes" onclick="saveAnswer('Yes 😍')">Yes 😍</button>
+<button class="no" onclick="saveAnswer('No 😢')">No 😢</button><br><br>
+<textarea id="thoughts" placeholder="Express your feelings here... ✨"></textarea><br>
+<button onclick="saveAnswer(document.getElementById('thoughts').value)">💾 Save</button>
+<p id="status"></p>
+<h2>My Answers 💖</h2>
+<ul id="answerList"></ul>
 
-  <button class="yes" onclick="saveAnswer('Yes 😍')">Yes 😍</button>
-  <button class="no" onclick="saveAnswer('No 😢')">No 😢</button>
-  <br><br>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
-  <textarea id="thoughts" placeholder="Express your feelings here... ✨"></textarea>
-  <br><br>
-  <button class="yes" onclick="saveAnswer(document.getElementById('thoughts').value)">💾 Save</button>
+<script>
+const answerListEl = document.getElementById("answerList");
+const questions = [
+  "Do you love me more today than yesterday? ❤️",
+  "Would you hug me tight if I was sad? 🤗",
+  "Do you see us together forever? 💍",
+  "Would you surprise me with chocolate? 🍫",
+  "Do you secretly smile when you see my texts? 😊",
+  "Would you dance with me in the rain? 🌧️💃",
+  "Do you believe we are soulmates? ✨",
+  "Do you want to travel the world with me? 🌍✈️",
+  "Will you always support my dreams? 🌟",
+  "Do you like my smile? 😁",
+  "Would you cuddle with me every night? 🛌❤️",
+  "Do you want to grow old together? 👵👴",
+  "Will you keep our secrets safe? 🤫",
+  "Do you like writing love notes to me? 💌",
+  "Will you forgive me if I make mistakes? 💞",
+  "Do you want to make me breakfast someday? 🍳",
+  "Do you love my quirks? 😘",
+  "Would you laugh with me even on bad days? 😂",
+  "Do you feel connected to me even when apart? 💖",
+  "Will you dance with me at every wedding? 💃🕺",
+  "Do you believe in our forever? 🌈",
+  "Will you send me random cute messages just because? 💌"
+];
+const randomIndex = Math.floor(Math.random()*questions.length);
+const questionText = questions[randomIndex];
+document.getElementById("question").innerText = questionText;
 
-  <h3 id="savedMsg"></h3>
-  <h3 id="todayAnswer"></h3>
+// --- Firebase Config ---
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+// --- Load local answers ---
+function loadLocalAnswers() {
+  const answers = JSON.parse(localStorage.getItem("surveys")) || [];
+  answerListEl.innerHTML = "";
+  answers.forEach(a => {
+    const li = document.createElement("li");
+    li.textContent = `📅 ${a.date} - Q: ${a.question} A: ${a.answer}`;
+    answerListEl.appendChild(li);
+  });
+}
 
-  <script>
-    // --- Firebase Config ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyCngJIx5fSznQSb9LX9ViP0JqX_homhycw",
-      authDomain: "website-hub-80846.firebaseapp.com",
-      databaseURL: "databaseURL: "https://website-hub-80846-default-rtdb.firebaseio.com",
-      projectId: "website-hub-80846",
-      storageBucket: "website-hub-80846.firebasestorage.app",
-      messagingSenderId: "58637132004",
-      appId: "1:58637132004:web:8741fc3173ca41a8c20cf1"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+// --- Save answer ---
+function saveAnswer(answer) {
+  if(!answer) return alert("Please enter an answer!");
 
-    const questions = [
-      "Do you love me more today than yesterday? ❤️",
-      "Would you hug me tight if I was sad? 🤗",
-      "Do you see us together forever? 💍",
-      "Would you surprise me with chocolate? 🍫",
-      "Do you secretly smile when you see my texts? 😊",
-      "Would you dance with me in the rain? 🌧️💃",
-      "Do you believe we are soulmates? ✨",
-      "Do you want to travel the world with me? 🌍✈️",
-      "Will you always support my dreams? 🌟",
-      "Do you like my smile? 😁",
-      "Would you cuddle with me every night? 🛌❤️",
-      "Do you want to grow old together? 👵👴",
-      "Will you keep our secrets safe? 🤫",
-      "Do you like writing love notes to me? 💌",
-      "Will you forgive me if I make mistakes? 💞",
-      "Do you want to make me breakfast someday? 🍳",
-      "Do you love my quirks? 😘",
-      "Would you laugh with me even on bad days? 😂",
-      "Do you feel connected to me even when apart? 💖",
-      "Will you dance with me at every wedding? 💃🕺",
-      "Do you believe in our forever? 🌈",
-      "Will you send me random cute messages just because? 💌"
-    ];
+  const data = { question: questionText, answer, date: new Date().toLocaleString() };
 
-    const randomIndex = Math.floor(Math.random() * questions.length);
-    const questionText = questions[randomIndex];
-    document.getElementById("question").innerText = questionText;
+  // Save locally
+  let answers = JSON.parse(localStorage.getItem("surveys")) || [];
+  answers.push(data);
+  localStorage.setItem("surveys", JSON.stringify(answers));
 
-    const todayKey = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-    const todayAnswerEl = document.getElementById("todayAnswer");
-    const savedMsgEl = document.getElementById("savedMsg");
+  // Save to shared vault
+  db.ref("vault").push({ type: "survey", ...data });
 
-    // --- Check Firebase for today's answer ---
-    db.ref("vault").orderByChild("dateKey").equalTo(todayKey).once("value").then(snapshot => {
-      const data = snapshot.val();
-      if (data) {
-        const answerObj = Object.values(data)[0]; // first entry for today
-        todayAnswerEl.innerText = `You already answered today: "${answerObj.answer}" ❤️`;
-        document.querySelectorAll("button").forEach(b => b.disabled = true);
-        document.getElementById("thoughts").disabled = true;
-      }
-    });
+  document.getElementById("thoughts").value = "";
+  document.getElementById("status").innerText = "Answer saved locally & shared 💕";
+  loadLocalAnswers();
+}
 
-    // --- Save answer ---
-    function saveAnswer(answer) {
-      if (!answer) return alert("Please enter an answer!");
-      const data = { type: "survey", question: questionText, answer: answer, date: new Date().toLocaleString(), dateKey: todayKey };
-
-      db.ref("vault").push(data); // save to shared Vault
-
-      savedMsgEl.innerText = "Answer saved 💕";
-      todayAnswerEl.innerText = `You answered today: "${answer}" ❤️`;
-      document.getElementById("thoughts").value = "";
-      document.querySelectorAll("button").forEach(b => b.disabled = true);
-      document.getElementById("thoughts").disabled = true;
-    }
-  </script>
+// Initialize
+loadLocalAnswers();
+</script>
 </body>
 </html>
-
-
-   
-  
-
-
-     
- 
-   
-     
-
-
-
-
-
-

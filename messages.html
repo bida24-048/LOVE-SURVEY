@@ -1,9 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>💬 Messages</title>
+</head>
+<body>
 <h1>💬 Message Wall</h1>
 <textarea id="msg" rows="3" cols="30" placeholder="Leave a message..."></textarea><br>
-<button onclick="saveMsg()">Post 📝</button>
+<button onclick="saveMessage()">Post 📝</button>
 <p id="status"></p>
-
-<h2>Messages 💖</h2>
+<h2>My Messages 💖</h2>
 <ul id="messageList"></ul>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -14,49 +19,50 @@ const messageListEl = document.getElementById("messageList");
 
 // --- Firebase Config ---
 const firebaseConfig = {
-    apiKey: "AIzaSyCngJIx5fSznQSb9LX9ViP0JqX_homhycw",
-      authDomain: "website-hub-80846.firebaseapp.com",
-      databaseURL: "databaseURL: "https://website-hub-80846-default-rtdb.firebaseio.com",
-      projectId: "website-hub-80846",
-      storageBucket: "website-hub-80846.firebasestorage.app",
-      messagingSenderId: "58637132004",
-      appId: "1:58637132004:web:8741fc3173ca41a8c20cf1"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// ---Load messages
-function loadMessages() {
-  db.ref("vault").on("child_added", snapshot => {
-    const item = snapshot.val();
-    if(item.type === "message") {
-      const li = document.createElement("li");
-      li.textContent = `📅 ${item.date} - ${item.text}`;
-      messageListEl.appendChild(li); // append without clearing
-    }
+// --- Load local messages ---
+function loadLocalMessages() {
+  const messages = JSON.parse(localStorage.getItem("messages")) || [];
+  messageListEl.innerHTML = "";
+  messages.forEach(msg => {
+    const li = document.createElement("li");
+    li.textContent = `📅 ${msg.date} - ${msg.text}`;
+    messageListEl.appendChild(li);
   });
 }
 
 // --- Save message ---
-function saveMsg() {
-  const msg = document.getElementById("msg").value.trim();
-  if (!msg) return alert("Please type a message!");
+function saveMessage() {
+  const text = document.getElementById("msg").value.trim();
+  if(!text) return alert("Please type a message!");
 
-  const data = { type: "message", text: msg, date: new Date().toLocaleString() };
-  db.ref("vault").push(data); // Saves to shared Vault
+  const data = { text, date: new Date().toLocaleString() };
 
-  document.getElementById("status").innerText = "Message Posted 💕";
+  // Save locally
+  let messages = JSON.parse(localStorage.getItem("messages")) || [];
+  messages.push(data);
+  localStorage.setItem("messages", JSON.stringify(messages));
+
+  // Save to shared vault
+  db.ref("vault").push({ type: "message", ...data });
+
   document.getElementById("msg").value = "";
+  document.getElementById("status").innerText = "Message saved locally & shared 💕";
+  loadLocalMessages();
 }
 
 // Initialize
-loadMessages();
+loadLocalMessages();
 </script>
-
-  
- 
-
-
-
-
-
+</body>
+</html>

@@ -1,77 +1,145 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>📖 Shared Love Vault</title>
-<style>
-  body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; }
-  h1 { color: #d63384; }
-  h2 { color: #b82d7a; margin: 20px 0; }
-  ul { list-style: none; padding: 0; }
-  li { margin: 5px 0; }
-  button { 
-    margin: 10px; padding: 10px 20px; 
-    background: #25D366; color: white; border: none; border-radius: 8px; 
-    font-size: 16px; cursor: pointer;
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>💌 Our Vault</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; padding: 20px; }
+    h1 { color: #d63384; }
+    h2 { color: #a60073; margin-top: 20px; }
+    input, textarea { margin: 8px; padding: 8px; border-radius: 8px; border: 1px solid #ccc; }
+    button { margin: 5px; padding: 10px 15px; border: none; border-radius: 12px; background: #ff4da6; color: white; cursor: pointer; }
+    button:hover { background: #d63384; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 5px 0; padding: 10px; background: #ffe6f0; border-radius: 10px; }
+  </style>
 </head>
 <body>
 
-<h1>📖 Shared Love Vault</h1>
-
-<h2>Vault 💖</h2>
-<div id="vault">Loading vault...</div>
-<button onclick="shareVault()">Share Vault on WhatsApp 📲</button>
-
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-
-<script>
-  // --- Firebase Config ---
-  const firebaseConfig = {
-    apiKey: "AIzaSyCngJIx5fSznQSb9LX9ViP0JqX_homhycw",
-    authDomain: "website-hub-80846.firebaseapp.com",
-    databaseURL: "https://website-hub-80846-default-rtdb.firebaseio.com",
-    projectId: "website-hub-80846",
-    storageBucket: "website-hub-80846.appspot.com",
-    messagingSenderId: "58637132004",
-    appId: "1:58637132004:web:8741fc3173ca41a8c20cf1"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-
-  const vaultDiv = document.getElementById("vault");
+  <h1>💌 Our Vault</h1>
   
-  // --- Load Vault in real-time ---
-  db.ref("vault").on("child_added", snapshot => {
-    const item = snapshot.val();
-    if(item.type === "message") {
-      vaultDiv.innerHTML += `<p>📅 ${item.date} - ${item.text}</p>`;
-    }
-    // Add other types later: surveys, plans, promises
-  });
+  <!-- Add Song -->
+  <h2>🎵 Add Song</h2>
+  <input type="text" id="songTitle" placeholder="Song title"><br>
+  <textarea id="songNote" rows="2" cols="30" placeholder="Why this song?"></textarea><br>
+  <button onclick="saveSong()">Add Song 💖</button>
+  
+  <!-- Add Message -->
+  <h2>💬 Add Message</h2>
+  <textarea id="messageText" rows="2" cols="30" placeholder="Type a message..."></textarea><br>
+  <button onclick="saveMessage()">Save Message ✨</button>
 
-  // --- Share vault via WhatsApp ---
-  function shareVault() {
-    db.ref("vault").once("value").then(snapshot => {
-      const data = snapshot.val() || {};
-      let text = "📖💖 Shared Love Vault 💖📖\n\n";
-      Object.values(data).forEach(item => {
-        if(item.type === "message") text += `📅 ${item.date} - ${item.text}\n`;
-      });
-      if(text.trim() === "📖💖 Shared Love Vault 💖📖") return alert("Vault is empty 😘");
-      
-      // Open WhatsApp share with blank contact (user selects)
-      const whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(text);
-      window.open(whatsappUrl, "_blank");
+  <!-- Add Plan -->
+  <h2>📅 Add Plan</h2>
+  <input type="text" id="planText" placeholder="Our plan"><br>
+  <button onclick="savePlan()">Save Plan 🌸</button>
+
+  <h2>📖 Vault History</h2>
+  <ul id="vaultList"></ul>
+
+  <!-- Share button -->
+  <button onclick="shareVault()">📤 Share Vault to WhatsApp</button>
+
+  <script>
+  // Load from localStorage
+  function loadVault() {
+    const vault = JSON.parse(localStorage.getItem("vault")) || [];
+    const list = document.getElementById("vaultList");
+    list.innerHTML = "";
+    vault.forEach(item => {
+      const li = document.createElement("li");
+      if (item.type === "song") {
+        li.textContent = `🎵 ${item.date} - ${item.title} : ${item.note}`;
+      } else if (item.type === "message") {
+        li.textContent = `💬 ${item.date} - ${item.text}`;
+      } else if (item.type === "plan") {
+        li.textContent = `📅 ${item.date} - ${item.text}`;
+      }
+      list.appendChild(li);
     });
   }
-</script>
+
+  // Save Song
+  function saveSong() {
+    const title = document.getElementById("songTitle").value.trim();
+    const note = document.getElementById("songNote").value.trim();
+    if (!title || !note) return alert("Please enter song and note!");
+    addToVault({ type: "song", title, note, date: new Date().toLocaleDateString() });
+    document.getElementById("songTitle").value = "";
+    document.getElementById("songNote").value = "";
+  }
+
+  // Save Message
+  function saveMessage() {
+    const text = document.getElementById("messageText").value.trim();
+    if (!text) return alert("Please enter a message!");
+    addToVault({ type: "message", text, date: new Date().toLocaleDateString() });
+    document.getElementById("messageText").value = "";
+  }
+
+  // Save Plan
+  function savePlan() {
+    const text = document.getElementById("planText").value.trim();
+    if (!text) return alert("Please enter a plan!");
+    addToVault({ type: "plan", text, date: new Date().toLocaleDateString() });
+    document.getElementById("planText").value = "";
+  }
+
+  // Add to Vault
+  function addToVault(entry) {
+    const vault = JSON.parse(localStorage.getItem("vault")) || [];
+    vault.push(entry);
+    localStorage.setItem("vault", JSON.stringify(vault));
+    loadVault();
+  }
+
+  // Share to WhatsApp
+  function shareVault() {
+    const vault = JSON.parse(localStorage.getItem("vault")) || [];
+    if (vault.length === 0) return alert("Nothing to share today!");
+    const today = new Date().toLocaleDateString();
+    const todayEntries = vault.filter(item => item.date === today);
+    if (todayEntries.length === 0) return alert("No entries for today!");
+    let message = `✨ Vault History for ${today} ✨\n\n`;
+    todayEntries.forEach(item => {
+      if (item.type === "song") message += `🎵 ${item.title}: ${item.note}\n`;
+      if (item.type === "message") message += `💬 ${item.text}\n`;
+      if (item.type === "plan") message += `📅 ${item.text}\n`;
+    });
+    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank");
+  }
+
+  // Notifications
+  if ("Notification" in window && Notification.permission !== "granted") {
+    Notification.requestPermission();
+  }
+
+  function showReminder(title, body) {
+    if (Notification.permission === "granted") {
+      new Notification(title, { body: body, icon: "https://cdn-icons-png.flaticon.com/512/893/893292.png" });
+    }
+  }
+
+  // 8PM Reminder
+  setInterval(() => {
+    let now = new Date();
+    if (now.getHours() === 20 && now.getMinutes() === 0) {
+      showReminder("💌 Vault Reminder", "Don’t forget to share something on the Vault today ✨");
+    }
+  }, 60000);
+
+  // Midnight Reminder
+  setInterval(() => {
+    let now = new Date();
+    if (now.getHours() === 0 && now.getMinutes() === 0) {
+      showReminder("📤 Vault History", "✨ Time to share today’s Vault on WhatsApp 💖");
+    }
+  }, 60000);
+
+  // Initialize
+  loadVault();
+  </script>
 
 </body>
 </html>
-
-
-
