@@ -10,7 +10,7 @@
 <script>
 function loadVault() {
   let vaultHTML = "";
-  const sections = ["promises", "songs", "plans", "messages"];
+  const sections = ["promises", "songs", "plans", "messages", "surveys", ];
   sections.forEach(sec => {
     let items = JSON.parse(localStorage.getItem(sec)) || [];
     if (items.length > 0) {
@@ -25,4 +25,5 @@ function loadVault() {
 }
 loadVault();
 </script>
+
 
