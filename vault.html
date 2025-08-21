@@ -36,13 +36,9 @@ function loadVault() {
       hasEntries = true;
       html += `<h2>${sec.toUpperCase()} 💖</h2><ul>`;
       items.forEach(item => {
-        if (item.text) {
-          html += `<li><b>${item.date}</b> - ${item.text}</li>`;
-        } else if (item.question) {
-          html += `<li><b>${item.date}</b> - Q: ${item.question} <br> A: ${item.answer}</li>`;
-        } else if (item.title) {
-          html += `<li><b>${item.date}</b> - ${item.title} ${item.note ? "- " + item.note : ""}</li>`;
-        }
+        if (item.text) html += `<li>📅 ${item.date} - ${item.text}</li>`;
+        else if (item.question) html += `<li>📅 ${item.date} - ❓ ${item.question}<br>💌 Answer: ${item.answer}</li>`;
+        else if (item.title) html += `<li>📅 ${item.date} - ${item.title}${item.note ? " - " + item.note : ""}</li>`;
       });
       html += "</ul>";
     }
@@ -53,26 +49,29 @@ function loadVault() {
 
 // --- Share vault via WhatsApp ---
 function shareVault() {
-  let text = "💖 My Love Vault Today 💖\n\n";
+  const contact = prompt("Enter WhatsApp number including country code (e.g. 2677xxxxxxx):");
+  if (!contact) return;
+
+  let text = "📖💖 My Love Vault Today 💖📖\n\n";
   sections.forEach(sec => {
     const items = JSON.parse(localStorage.getItem(sec)) || [];
     if (items.length > 0) {
-      text += `${sec.toUpperCase()}:\n`;
+      text += `📂 ${sec.toUpperCase()} 💖\n`;
       items.forEach(item => {
-        if (item.text) text += `- ${item.date}: ${item.text}\n`;
-        else if (item.question) text += `- ${item.date}: Q: ${item.question} | A: ${item.answer}\n`;
-        else if (item.title) text += `- ${item.date}: ${item.title} ${item.note ? "- " + item.note : ""}\n`;
+        if (item.text) text += `📅 ${item.date} - ${item.text}\n`;
+        else if (item.question) text += `📅 ${item.date} - ❓ ${item.question}\n💌 Answer: ${item.answer}\n`;
+        else if (item.title) text += `📅 ${item.date} - ${item.title}${item.note ? " - " + item.note : ""}\n`;
       });
       text += "\n";
     }
   });
 
-  if (!text) {
+  if (text.trim() === "📖💖 My Love Vault Today 💖📖") {
     alert("Vault is empty! 😘");
     return;
   }
 
-  const whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(text);
+  const whatsappUrl = "https://wa.me/" + contact + "?text=" + encodeURIComponent(text);
   window.open(whatsappUrl, "_blank");
 }
 
@@ -83,6 +82,8 @@ setInterval(loadVault, 5000);
 
 </body>
 </html>
+
+
 
 
 
