@@ -41,13 +41,13 @@
 
   <script>
     // Set your secret passkey here
-    const secretKey = "LeslyAndLizzyForever";  
+    const secretKey = "LeslyLovesLizzy";  
 
     function checkLogin() {
       const entered = document.getElementById("passkey").value;
       if (entered === secretKey) {
-        // if correct, go to vault
-        window.location.href = "vault.html";
+        // if correct, go to home
+        window.location.href = "index.html";
       } else {
         document.getElementById("error").innerText = "❌ Wrong passkey! Try again 💔";
       }
