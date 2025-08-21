@@ -20,6 +20,10 @@
       border: 2px solid #ff4d88; resize: none;
     }
   </style>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
 <body>
   <h1>💌 Daily Love Question 💌</h1>
@@ -29,14 +33,27 @@
   <button class="no" onclick="saveAnswer('No 😢')">No 😢</button>
   <br><br>
 
-  <textarea id="thoughts" placeholder="Write your thoughts here... ✨"></textarea>
+  <textarea id="thoughts" placeholder="Express your feelings further here... ✨"></textarea>
   <br><br>
   <button class="yes" onclick="saveAnswer(document.getElementById('thoughts').value)">💾 Save</button>
 
   <h3 id="savedMsg"></h3>
 
   <script>
-    // Expanded list of 20+ questions
+    // --- Firebase Config ---
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // --- Questions ---
     const questions = [
       "Do you love me more today than yesterday? ❤️",
       "Would you hug me tight if I was sad? 🤗",
@@ -62,22 +79,26 @@
       "Will you send me random cute messages just because? 💌"
     ];
 
-    // Display a random question from the list
+    // Display a random question
     const randomIndex = Math.floor(Math.random() * questions.length);
     const questionText = questions[randomIndex];
     document.getElementById("question").innerText = questionText;
 
+    // --- Save answer to Firebase ---
     function saveAnswer(answer) {
-      const data = { question: questionText, answer: answer };
-
-      // Save in vault array
-      let vault = JSON.parse(localStorage.getItem("loveVault")) || [];
-      vault.push(data);
-      localStorage.setItem("loveVault", JSON.stringify(vault));
-
-      document.getElementById("savedMsg").innerText = "Answer saved 💕";
+      if (!answer) return alert("Please enter an answer!");
+      const data = { question: questionText, answer: answer, date: new Date().toLocaleString() };
+      
+      // Save under "surveyAnswers" node
+      const ref = firebase.database().ref("surveyAnswers");
+      ref.once("value").then(snapshot => {
+        const items = snapshot.val() || [];
+        items.push(data);
+        ref.set(items);
+        document.getElementById("savedMsg").innerText = "Answer saved 💕";
+        document.getElementById("thoughts").value = "";
+      });
     }
   </script>
 </body>
 </html>
-
