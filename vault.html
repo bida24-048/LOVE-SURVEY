@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>📖  Love Vault</title>
+<title>📖 Shared Love Vault</title>
 <style>
-  body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; margin:0; padding:0; }
+  body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; margin:0; padding:20px; }
   h1 { color: #d63384; margin-top: 20px; }
   h2 { color: #b82d7a; margin: 20px 0; }
   p { margin: 5px 0; }
@@ -35,12 +35,22 @@ function loadVault() {
   }
   let html = "";
   vault.forEach(item => {
-    html += `📅 ${item.date} - ${item.type.toUpperCase()}: ${item.text} 💖<br>`;
+    // Yes/No questions
+    if(item.question && item.answer){
+      html += `📅 ${item.date} - ${item.type.toUpperCase()}: ${item.question} → ${item.answer} 💖<br>`;
+    } 
+    // Other types (messages, plans, promises, songs)
+    else if(item.text){
+      html += `📅 ${item.date} - ${item.type.toUpperCase()}: ${item.text} 💖<br>`;
+    } 
+    // Fallback if something is missing
+    else {
+      html += `📅 ${item.date} - ${item.type.toUpperCase()}: Data unavailable 💖<br>`;
+    }
   });
   vaultDiv.innerHTML = html;
   vaultDiv.scrollTop = vaultDiv.scrollHeight; // auto scroll to latest
 }
-
 loadVault();
 
 // --- Share via WhatsApp ---
@@ -50,7 +60,13 @@ function shareVault() {
 
   let text = "📖💖 Shared Love Vault 💖📖\n\n";
   vault.forEach(item => {
-    text += `📅 ${item.date} - ${item.type.toUpperCase()}: ${item.text} 💖\n`;
+    if(item.question && item.answer){
+      text += `📅 ${item.date} - ${item.type.toUpperCase()}: ${item.question} → ${item.answer} 💖\n`;
+    } else if(item.text){
+      text += `📅 ${item.date} - ${item.type.toUpperCase()}: ${item.text} 💖\n`;
+    } else {
+      text += `📅 ${item.date} - ${item.type.toUpperCase()}: Data unavailable 💖\n`;
+    }
   });
 
   const whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(text);
@@ -61,7 +77,7 @@ function shareVault() {
 function showReminder(){
   if(Notification.permission === "granted"){
     new Notification("💌 Love Vault Reminder", {
-      body: "Don't forget to add something new to your Love Vault today! 💖",
+      body: "Don't forget to add a message, plan, or promise today! 💖",
       icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Heart_font_awesome.svg/1024px-Heart_font_awesome.svg.png"
     });
   }
@@ -96,4 +112,3 @@ scheduleReminders();
 
 </body>
 </html>
-
