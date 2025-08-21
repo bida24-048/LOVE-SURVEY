@@ -6,46 +6,36 @@
 <h2>Messages 💖</h2>
 <ul id="messageList"></ul>
 
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <script>
-  // --- Firebase Config ---
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const database = firebase.database();
+const messageListEl = document.getElementById("messageList");
 
-  const messageListEl = document.getElementById("messageList");
-
-  // --- Save Message ---
-  function saveMsg() {
-    let msg = document.getElementById("msg").value.trim();
-    if (!msg) return alert("Please type a message!");
-
-    const data = { text: msg, date: new Date().toLocaleString() };
-
-    // Push to Firebase under vault/messages
-    firebase.database().ref('vault/messages').push(data).then(() => {
-      document.getElementById("status").innerText = "Message Posted 💕";
-      document.getElementById("msg").value = "";
-    });
-  }
-
-  // --- Load Messages ---
-  firebase.database().ref('vault/messages').on('value', snapshot => {
-    const messages = snapshot.val() || {};
-    messageListEl.innerHTML = '';
-    Object.values(messages).forEach(m => {
-      const li = document.createElement('li');
-      li.innerHTML = `<b>${m.date}</b> - ${m.text}`;
-      messageListEl.appendChild(li);
-    });
+// Load messages from localStorage
+function loadMessages() {
+  const messages = JSON.parse(localStorage.getItem("messages")) || [];
+  messageListEl.innerHTML = "";
+  messages.forEach(m => {
+    const li = document.createElement("li");
+    li.innerHTML = `<b>${m.date}</b> - ${m.text}`;
+    messageListEl.appendChild(li);
   });
+}
+loadMessages();
+
+// Save message
+function saveMsg() {
+  const msg = document.getElementById("msg").value.trim();
+  if (!msg) return alert("Please type a message!");
+
+  const messages = JSON.parse(localStorage.getItem("messages")) || [];
+  messages.push({ text: msg, date: new Date().toLocaleString() });
+  localStorage.setItem("messages", JSON.stringify(messages));
+
+  document.getElementById("status").innerText = "Message Posted 💕";
+  document.getElementById("msg").value = "";
+
+  loadMessages(); // show message immediately
+}
 </script>
+
+  
+ 
