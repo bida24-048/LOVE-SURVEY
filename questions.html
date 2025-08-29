@@ -4,17 +4,55 @@
 <meta charset="UTF-8">
 <title>💌 Daily Love Question</title>
 <style>
-  body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; padding:20px; }
-  h1 { color: #d63384; }
-  h3 { color: #b82d7a; margin: 20px 0; }
-  button { margin:10px; padding:10px 20px; border:none; border-radius:8px; font-size:16px; cursor:pointer; }
-  .yes { background: #25D366; color:white; }
-  .no { background: #ff4d4d; color:white; }
+  body { 
+    font-family: Arial, sans-serif; 
+    text-align: center; 
+    background: white; 
+    color: #b30000; 
+    min-height: 100vh; 
+    position: relative;
+    padding: 20px;
+  }
+  /* Big heart background */
+  body::before {
+    content: "❤";
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    font-size: 40rem;
+    color: rgba(179,0,0,0.08);
+    transform: translate(-50%,-50%);
+    z-index: -1;
+  }
+  h1 { 
+    color: #b30000; 
+    animation: pulse 2s infinite; 
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  h3 { color: #b30000; margin: 20px 0; }
+  button { 
+    margin: 10px; 
+    padding: 10px 20px; 
+    border: none; 
+    border-radius: 8px; 
+    font-size: 16px; 
+    cursor: pointer; 
+    transition: 0.3s;
+  }
+  .yes { background: #b30000; color: white; }
+  .yes:hover { background: white; color: #b30000; border:2px solid #b30000; }
+  .no { background: #ff4d4d; color: white; }
+  .no:hover { background: white; color: #ff4d4d; border:2px solid #ff4d4d; }
+  #status { margin-top: 10px; font-weight: bold; }
 </style>
 </head>
 <body>
 
-<h1>💌Love Question</h1>
+<h1>💌 Love Question</h1>
 <h3 id="question">Loading question...</h3>
 
 <div>
@@ -62,7 +100,7 @@ document.getElementById("question").innerText = currentQuestion;
 function saveLoveAnswer(selectedAnswer) {
   const vault = JSON.parse(localStorage.getItem("vault")) || [];
 
-  // --- Count answers today ---
+  // --- Count today's answers ---
   const today = new Date().toLocaleDateString();
   const todayCount = vault.filter(item => item.date.startsWith(today) && item.type === "love").length;
   if(todayCount >= MAX_PER_DAY) return alert("You have reached the limit of 5 questions today! 💌");
@@ -80,10 +118,11 @@ function saveLoveAnswer(selectedAnswer) {
 
   // --- Load new question ---
   let remainingQuestions = questions.filter(q => !vault.some(v => v.question === q));
-  currentQuestion = remainingQuestions.length ? remainingQuestions[Math.floor(Math.random()*remainingQuestions.length)] : "No more new questions today!";
+  currentQuestion = remainingQuestions.length ? remainingQuestions[Math.floor(Math.random()*remainingQuestions.length)] : "No more new questions today! 💖";
   document.getElementById("question").innerText = currentQuestion;
 }
 </script>
 
 </body>
 </html>
+
