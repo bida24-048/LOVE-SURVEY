@@ -1,17 +1,20 @@
-  <!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>📖 Love Vault</title>
 <style>
-  body { font-family: Arial, sans-serif; text-align: center; background: #fff0f5; margin:0; padding:20px; }
-  h1 { color: #d63384; margin-top: 20px; }
-  #vault { margin-top:20px; max-height:500px; overflow-y:auto; border:1px solid #d63384; padding:10px; border-radius:8px; background:#ffe6f0; }
-  .vault-entry { margin-bottom: 15px; padding: 10px; border-bottom: 1px solid #d63384; border-radius: 5px; background: #fff0f5; text-align:left; }
-  .action-btn { font-size: 14px; margin-top:5px; padding:6px 10px; border-radius:5px; border:none; cursor:pointer; }
-  .share-btn { background: #128C7E; color:white; }
-  .delete-btn { background: #d63333; color:white; }
-  audio { width: 100%; margin-top:5px; }
+body { font-family: Arial, sans-serif; text-align: center; background: white; color: #b30000; min-height: 100vh; position: relative; margin:0; padding:20px; }
+body::before { content:"❤"; position: fixed; top:50%; left:50%; font-size:40rem; color: rgba(179,0,0,0.08); transform: translate(-50%,-50%); z-index:-1; }
+
+h1 { color:#b30000; margin-top:20px; }
+h2 { color:#b30000; margin-top:25px; }
+#vault { margin-top:20px; max-height:600px; overflow-y:auto; border:1px solid #b30000; padding:10px; border-radius:8px; background: #ffe6e6; text-align:left; }
+.vault-entry { margin-bottom: 15px; padding: 10px; border-bottom: 1px solid #b30000; border-radius: 5px; background: #fff0f0; }
+.action-btn { font-size: 14px; margin-top:5px; padding:6px 10px; border-radius:5px; border:none; cursor:pointer; }
+.share-btn { background: #128C7E; color:white; }
+.delete-btn { background: #d63333; color:white; }
+audio { width: 100%; margin-top:5px; }
 </style>
 </head>
 <body>
@@ -33,96 +36,106 @@ function loadVault() {
   const vaultDiv = document.getElementById("vault");
   vaultDiv.innerHTML = "";
 
-  if (vault.length === 0) {
-    vaultDiv.innerText = "Vault is empty 😘";
-    return;
-  }
+  if(vault.length===0){ vaultDiv.innerText="Vault is empty 😘"; return; }
 
-  vault.forEach((item, index) => {
-    const entryDiv = document.createElement("div");
-    entryDiv.className = "vault-entry";
-
-    if(item.type === "song") {
-      const title = item.title || "Untitled";
-      const desc = item.desc || "";
-      const link  = item.link || "";
-      const file  = item.file || "";
-
-      let content = `
-        📅 ${item.date || ""} — 🎵 <b>${escapeHTML(title)}</b><br>
-        💖 ${escapeHTML(desc)}<br>
-        ${link ? `<a href="${escapeURL(link)}" target="_blank">▶️ Open Link</a><br>` : ""}
-        ${file ? `<audio controls src="${file}"></audio>` : ""}
-      `;
+  const sections = { promise:"💌 Promises", plan:"🌟 Plans", message:"💬 Messages", love:"❓ Love Questions", song:"🎵 Songs" };
+  
+  for(const type in sections){
+    const items = vault.filter(item=>item.type===type);
+    if(items.length===0) continue;
+    
+    const header = document.createElement("h3");
+    header.innerText = sections[type];
+    vaultDiv.appendChild(header);
+    
+    items.forEach((item,index)=>{
+      const entryDiv = document.createElement("div");
+      entryDiv.className="vault-entry";
+      let content="";
+      
+      if(type==="song"){
+        content = `📅 ${item.date||""} — <b>${escapeHTML(item.title||"Untitled")}</b><br>💖 ${escapeHTML(item.desc||"")}<br>
+          ${item.link ? `<a href="${escapeURL(item.link)}" target="_blank">▶️ Open Link</a><br>` : ""}
+          ${item.file ? `<audio controls src="${item.file}"></audio>` : ""}`;
+      } else if(type==="love"){
+        content = `📅 ${item.date||""} — ❓ <b>${escapeHTML(item.question)}</b><br>Answer: <b>${escapeHTML(item.answer)}</b>`;
+      } else {
+        content = `📅 ${item.date||""} — 💖 ${escapeHTML(item.text)}`;
+      }
+      
       entryDiv.innerHTML = content + `<br>
-        <button class="action-btn share-btn" onclick="shareSingle(${index})">Share 📲</button>
-        <button class="action-btn delete-btn" onclick="deleteEntry(${index})">Delete ❌</button>`;
-    }
-
-    vaultDiv.appendChild(entryDiv);
-  });
+        <button class="action-btn share-btn" onclick="shareSingle(${vault.indexOf(item)})">Share 📲</button>
+        <button class="action-btn delete-btn" onclick="deleteEntry(${vault.indexOf(item)})">Delete ❌</button>`;
+      
+      vaultDiv.appendChild(entryDiv);
+    });
+  }
 }
 
 // ---- Share Vault ----
-function shareVault() {
+function shareVault(){
   const vault = JSON.parse(localStorage.getItem("vault")) || [];
-  if (vault.length === 0) return alert("Vault is empty 😘");
-
-  let text = "📖💖 Love Vault 💖📖\n\n";
-  vault.forEach(item => {
-    if(item.type === "song") {
-      text += `🎵 ${item.title}\n💖 ${item.desc || ""}\n${item.link || ""}\n${item.date || ""}\n\n`;
+  if(vault.length===0) return alert("Vault is empty 😘");
+  let text="📖💖 Love Vault 💖📖\n\n";
+  vault.forEach(item=>{
+    if(item.type==="song"){
+      text+=`🎵 ${item.title}\n💖 ${item.desc||""}\n${item.link||""}\n${item.date||""}\n\n`;
+    } else if(item.type==="love"){
+      text+=`❓ ${item.question}\nAnswer: ${item.answer}\n${item.date||""}\n\n`;
+    } else{
+      text+=`💖 ${item.text}\n${item.date||""}\n\n`;
     }
   });
-  window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
+  window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
 }
 
 // ---- Share Single Entry ----
-function shareSingle(index) {
+function shareSingle(index){
   const vault = JSON.parse(localStorage.getItem("vault")) || [];
   const item = vault[index];
   if(!item) return;
-  let text = `🎵 ${item.title}\n💖 ${item.desc || ""}\n${item.link || ""}`;
-  window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
+  let text="";
+  if(item.type==="song"){
+    text=`🎵 ${item.title}\n💖 ${item.desc||""}\n${item.link||""}`;
+  } else if(item.type==="love"){
+    text=`❓ ${item.question}\nAnswer: ${item.answer}`;
+  } else{
+    text=`💖 ${item.text}`;
+  }
+  window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
 }
 
 // ---- Delete Entry ----
-function deleteEntry(index) {
+function deleteEntry(index){
   const vault = JSON.parse(localStorage.getItem("vault")) || [];
   if(!vault[index]) return;
-  if(confirm("Delete this entry? 💔")) {
-    vault.splice(index, 1);
-    localStorage.setItem("vault", JSON.stringify(vault));
+  if(confirm("Delete this entry? 💔")){
+    vault.splice(index,1);
+    localStorage.setItem("vault",JSON.stringify(vault));
     loadVault();
   }
 }
 
-// ---- Clear Entire Vault ----
-function clearVault() {
-  if(confirm("Delete all vault entries? 💔")) {
+// ---- Clear Vault ----
+function clearVault(){
+  if(confirm("Delete all vault entries? 💔")){
     localStorage.removeItem("vault");
     loadVault();
   }
 }
 
 // ---- Helpers ----
-function escapeHTML(str="") {
-  return String(str)
-    .replaceAll("&","&amp;").replaceAll("<","&lt;")
-    .replaceAll(">","&gt;").replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-function escapeURL(u="") {
-  try { return new URL(u).toString(); } catch { return "#"; }
-}
+function escapeHTML(str=""){ return String(str).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
+function escapeURL(u=""){ try{return new URL(u).toString();} catch{return "#";} }
 
-// ---- Init ----
 loadVault();
 </script>
 
-<p style="text-align:center; color:#d63384; margin-top:30px; font-weight:bold;">
+<p style="text-align:center; color:#b30000; margin-top:30px; font-weight:bold;">
 ❤️ I LOVE YOU SO MUCH 💖
 </p>
-
 </body>
 </html>
+
+</html>
+
