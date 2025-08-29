@@ -1,25 +1,34 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>💞 Daily Promise</title>
-</head>
-<body>
-<h1>💞 Daily Promise</h1>
-<textarea id="promiseText" rows="4" cols="40" placeholder="Write your promise... 💌"></textarea><br>
-<button onclick="savePromise()">Save Promise 💖</button>
-<p id="status"></p>
+<h2>📜 Vault</h2>
+<ul id="vaultList"></ul>
 
 <script>
 function savePromise() {
     const text = document.getElementById("promiseText").value.trim();
-    if(!text) return alert("Please type your promise!");
+    if (!text) return alert("Please type your promise!");
+    
     const vault = JSON.parse(localStorage.getItem("vault")) || [];
     vault.push({ type: "promise", text, date: new Date().toLocaleString() });
     localStorage.setItem("vault", JSON.stringify(vault));
+    
     document.getElementById("promiseText").value = "";
     document.getElementById("status").innerText = "Promise saved to Vault 💌";
+    
+    loadVault(); // refresh display
 }
+
+function loadVault() {
+    const vault = JSON.parse(localStorage.getItem("vault")) || [];
+    const list = document.getElementById("vaultList");
+    list.innerHTML = ""; // clear old items
+    
+    vault.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.textContent = `${item.date} → ${item.text}`;
+        list.appendChild(li);
+    });
+}
+
+// load on page open
+window.onload = loadVault;
 </script>
-</body>
-</html>
+
