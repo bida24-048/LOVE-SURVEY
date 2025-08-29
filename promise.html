@@ -1,34 +1,53 @@
-<h2>📜 Vault</h2>
-<ul id="vaultList"></ul>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>💌 Daily Promises</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background: white;
+  color: #b30000;
+  min-height: 100vh;
+  position: relative;
+}
+body::before {
+  content: "❤";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  font-size: 40rem;
+  color: rgba(179,0,0,0.08);
+  transform: translate(-50%, -50%);
+  z-index: -1;
+}
+h1 { color: #b30000; margin-top: 30px; animation: pulse 2s infinite; }
+@keyframes pulse {0%{transform:scale(1);}50%{transform:scale(1.05);}100%{transform:scale(1);}}
+textarea { padding:10px; width:70%; height:100px; border-radius:8px; border:2px solid #b30000; }
+button { padding:10px 20px; background:#b30000; color:white; border:none; border-radius:8px; cursor:pointer; margin-top:10px; transition:.3s; }
+button:hover { background:white; color:#b30000; border:2px solid #b30000; }
+#status { margin-top:10px; font-weight:bold; }
+</style>
+</head>
+<body>
+<h1>💌 Daily Promises</h1>
+<textarea id="promiseText" placeholder="Write your promise... 💖"></textarea><br>
+<button onclick="saveItem()">Save Promise 💖</button>
+<p id="status"></p>
 
 <script>
-function savePromise() {
+function saveItem() {
     const text = document.getElementById("promiseText").value.trim();
-    if (!text) return alert("Please type your promise!");
-    
+    if(!text) return alert("Please type your promise!");
     const vault = JSON.parse(localStorage.getItem("vault")) || [];
-    vault.push({ type: "promise", text, date: new Date().toLocaleString() });
+    vault.push({ type:"promise", text:text, date:new Date().toLocaleString() });
     localStorage.setItem("vault", JSON.stringify(vault));
-    
     document.getElementById("promiseText").value = "";
     document.getElementById("status").innerText = "Promise saved to Vault 💌";
-    
-    loadVault(); // refresh display
 }
-
-function loadVault() {
-    const vault = JSON.parse(localStorage.getItem("vault")) || [];
-    const list = document.getElementById("vaultList");
-    list.innerHTML = ""; // clear old items
-    
-    vault.forEach((item, index) => {
-        const li = document.createElement("li");
-        li.textContent = `${item.date} → ${item.text}`;
-        list.appendChild(li);
-    });
-}
-
-// load on page open
-window.onload = loadVault;
 </script>
+</body>
+</html>
 
+ 
