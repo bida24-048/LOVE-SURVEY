@@ -10,16 +10,40 @@
 <button onclick="savePlan()">Add Plan ✨</button>
 <p id="status"></p>
 
+<h2>📜 Saved Plans</h2>
+<ul id="planList"></ul>
+
 <script>
 function savePlan() {
     const text = document.getElementById("plan").value.trim();
-    if(!text) return alert("Please type your plan!");
+    if (!text) return alert("Please type your plan!");
+    
     const vault = JSON.parse(localStorage.getItem("vault")) || [];
     vault.push({ type: "plan", text, date: new Date().toLocaleString() });
     localStorage.setItem("vault", JSON.stringify(vault));
+    
     document.getElementById("plan").value = "";
     document.getElementById("status").innerText = "Plan saved to Vault 🌟";
+    
+    loadPlans(); // refresh list
 }
+
+function loadPlans() {
+    const vault = JSON.parse(localStorage.getItem("vault")) || [];
+    const planList = document.getElementById("planList");
+    planList.innerHTML = "";
+    
+    vault
+        .filter(item => item.type === "plan") // only show plans
+        .forEach(item => {
+            const li = document.createElement("li");
+            li.textContent = `${item.date} → ${item.text}`;
+            planList.appendChild(li);
+        });
+}
+
+window.onload = loadPlans;
 </script>
 </body>
 </html>
+
