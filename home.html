@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,31 +8,96 @@
     body { 
       font-family: Arial, sans-serif; 
       text-align: center; 
-      background: #ffe6f0; 
+      margin: 0;
+      padding: 0;
+      background: white; /* White background */
+      color: #b30000;   /* Deep red text */
+      position: relative;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
-    h1 { color: #ff4d88; }
+
+    /* Big red heart background */
+    body::before {
+      content: "❤";
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      font-size: 40rem; /* Heart size */
+      color: rgba(179, 0, 0, 0.08); /* Light transparent red */
+      transform: translate(-50%, -50%);
+      z-index: -1;
+    }
+
+    h1 {
+      color: #b30000;
+      margin-top: 30px;
+      font-size: 2.5rem;
+      animation: pulse 2.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
     p { font-size: 18px; }
-    img { 
-      width: 250px; 
-      border-radius: 20px; 
-      margin-top: 20px; 
-    }
+
+    .container { max-width: 500px; margin: auto; }
+
     a { 
       display: block; 
       margin: 15px; 
       text-decoration: none; 
       color: white; 
-      background: #ff4d88; 
+      background: #b30000; 
       padding: 12px; 
       border-radius: 10px; 
       width: 220px; 
       margin-left: auto; 
       margin-right: auto; 
       font-weight: bold;
-      transition: 0.2s;
+      transition: 0.3s;
     }
-    a:hover { background: #ff3385; transform: scale(1.05); }
-    .container { max-width: 500px; margin: auto; }
+
+    a:hover { 
+      background: white; 
+      color: #b30000; 
+      border: 2px solid #b30000;
+      transform: scale(1.05); 
+    }
+
+    /* Highlight the Vault button */
+    a[href="vault.html"] {
+      background: #e60000;
+      box-shadow: 0 0 15px rgba(230, 0, 0, 0.6);
+    }
+
+    #notify {
+      margin-top: 20px;
+      font-weight: bold;
+      color: #b30000;
+    }
+
+    button {
+      background: #b30000;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 25px;
+      font-size: 1rem;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: white;
+      color: #b30000;
+      border: 2px solid #b30000;
+      transform: scale(1.05);
+    }
   </style>
 </head>
 <body>
@@ -39,28 +105,22 @@
     <h1>GORATA AND LESLY'S LOVE SPACE💖</h1>
     <p>Let’s play, write, and dream together 🌹</p>
 
-    <!-- Survey Section -->
+    <!-- Links -->
     <a href="about.html">OUR LOVE STORY 💑</a>
     <a href="questions.html">SURVEY💌</a>
     <a href="memories.html">MEMORIES📸</a>
-
-    <!-- New Love Pages -->
     <a href="promise.html">PROMISES💍</a>
     <a href="song.html">FAVOURITE SONGS🎶</a>
     <a href="plans.html">PLANS✨</a>
     <a href="messages.html">MESSAGE WALL💬</a>
-    
-
-    <!-- Protected Page -->
     <a href="vault.html">LOVE VAULT</a>
-    
 
-    <!-- Notification placeholder -->
     <p id="notify"></p>
+    <button onclick="logout()">Logout 🔒</button>
   </div>
 
   <script>
-    // Simple notification check
+    // Notification check
     function checkUpdate() {
       if (localStorage.getItem("newUpdate") === "true") {
         document.getElementById("notify").innerText = 
@@ -69,16 +129,12 @@
       }
     }
     checkUpdate();
+
+    function logout() {
+      localStorage.removeItem("loveLogin");
+      window.location.href = "index.html";
+    }
   </script>
-  <button onclick="logout()">Logout 🔒</button>
-
-<script>
-  function logout() {
-    localStorage.removeItem("loveLogin");
-    window.location.href = "index.html";
-  }
-</script>
-
 </body>
 </html>
 
