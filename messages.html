@@ -10,16 +10,39 @@
 <button onclick="saveMessage()">Post 📝</button>
 <p id="status"></p>
 
+<h2>📜 All Messages</h2>
+<ul id="msgList"></ul>
+
 <script>
 function saveMessage() {
     const text = document.getElementById("msg").value.trim();
     if(!text) return alert("Please type a message!");
+    
     const vault = JSON.parse(localStorage.getItem("vault")) || [];
     vault.push({ type: "message", text, date: new Date().toLocaleString() });
     localStorage.setItem("vault", JSON.stringify(vault));
+    
     document.getElementById("msg").value = "";
     document.getElementById("status").innerText = "Message saved to Vault 💕";
+    
+    loadMessages(); // refresh list
 }
+
+function loadMessages() {
+    const vault = JSON.parse(localStorage.getItem("vault")) || [];
+    const msgList = document.getElementById("msgList");
+    msgList.innerHTML = "";
+    
+    vault
+        .filter(item => item.type === "message") // only show messages
+        .forEach(item => {
+            const li = document.createElement("li");
+            li.textContent = `${item.date} → ${item.text}`;
+            msgList.appendChild(li);
+        });
+}
+
+window.onload = loadMessages;
 </script>
 </body>
 </html>
