@@ -65,13 +65,22 @@ function renderVault(data) {
     return;
   }
 
-  vaultDiv.innerHTML = data.map(entry => `
-    <div class="vault-entry">
-      <p>${entry.caption || entry.text || entry.url}</p>
-      <p class="author">— ${entry.author || "Anonymous"} (${entry.date || new Date(entry.created_at).toLocaleString()})</p>
-      <button class="action-btn share-btn" onclick="shareSingle('${entry.caption || entry.text || entry.url}','${entry.author || "Anonymous"}','${entry.date || entry.created_at}')">Share 📲</button>
-    </div>
-  `).join("");
+  vaultDiv.innerHTML = data.map(entry => {
+    // Decide label
+    let label = "General";
+    if(entry.type) label = entry.type; // localStorage entries (Message, Plan, etc.)
+    else if(entry.caption) label = "Caption";
+    else if(entry.url) label = "URL";
+
+    return `
+      <div class="vault-entry">
+        <h3>[${label.toUpperCase()}]</h3>
+        <p>${entry.caption || entry.text || entry.url}</p>
+        <p class="author">— ${entry.author || "Anonymous"} (${entry.date || new Date(entry.created_at).toLocaleString()})</p>
+        <button class="action-btn share-btn" onclick="shareSingle('${label}','${entry.caption || entry.text || entry.url}','${entry.author || "Anonymous"}','${entry.date || entry.created_at}')">Share 📲</button>
+      </div>
+    `;
+  }).join("");
 }
 
 // 🔍 Search filter
@@ -81,7 +90,8 @@ document.getElementById("search").addEventListener("input", e => {
     (entry.caption && entry.caption.toLowerCase().includes(term)) ||
     (entry.text && entry.text.toLowerCase().includes(term)) ||
     (entry.url && entry.url.toLowerCase().includes(term)) ||
-    (entry.author && entry.author.toLowerCase().includes(term))
+    (entry.author && entry.author.toLowerCase().includes(term)) ||
+    (entry.type && entry.type.toLowerCase().includes(term))
   );
   renderVault(filtered);
 });
@@ -91,14 +101,15 @@ function shareVault(){
   if(vaultData.length===0) return alert("Vault is empty 😘");
   let text="📖💖 Love Vault 💖📖\n\n";
   vaultData.forEach(entry=>{
-    text+=`${entry.caption || entry.text || entry.url}\n— ${entry.author||"Anonymous"}\n${entry.date || new Date(entry.created_at).toLocaleString()}\n\n`;
+    let label = entry.type || (entry.caption ? "Caption" : (entry.url ? "URL" : "General"));
+    text+=`[${label}] ${entry.caption || entry.text || entry.url}\n— ${entry.author||"Anonymous"}\n${entry.date || new Date(entry.created_at).toLocaleString()}\n\n`;
   });
   window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
 }
 
 // 📲 Share single entry
-function shareSingle(content, author, created_at){
-  let text=`${content}\n— ${author||"Anonymous"}\n${created_at}`;
+function shareSingle(label, content, author, created_at){
+  let text=`[${label}] ${content}\n— ${author||"Anonymous"}\n${created_at}`;
   window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
 }
 
@@ -142,6 +153,7 @@ loadVault();
 </p>
 </body>
 </html>
+
 
 
 
