@@ -55,45 +55,116 @@
   <button onclick="uploadMemory()">Upload 📸</button>
 
   <div class="gallery" id="gallery">
-    <!-- Existing hardcoded memories -->
+    <!-- Existing hardcoded memories stay -->
     <div class="memory"><img src="butt.jpg"><p>AWW💕</p></div>
     <div class="memory"><img src="hand.jpg"><p>OH BABY</p></div>
     <div class="memory"><img src="huh.jpg"><p>💕</p></div>
     <div class="memory"><img src="legs.jpg"><p>😊📸</p></div>
     <div class="memory"><img src="outfit.jpg"><p>HIS CLOTHES LOOK GOOD ON ME OHH😝💖</p></div>
+    <div class="memory"><img src="call.jpg"><p>😍</p></div>
+    <div class="memory"><img src="bae.jpg"><p>HER FAVOURITE PIC💖</p></div>
+    <div class="memory"><img src="girl.jpg"><p>HIS FAVOURITE PIC💖</p></div>
   </div>
 
   <a href="index.html">⬅ Back Home</a>
 
+  <!-- Firebase for notifications -->
   <script type="module">
-    import { getStorage, ref, uploadBytes, getDownloadURL } 
-      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
-    const firebaseConfig = { /* same config as before */ };
+    const firebaseConfig = {
+      apiKey: "AIzaSyAI-xop8tZ71-UDuG9rCH0dy72-FheWFwE",
+      authDomain: "love-hub-b4dbd.firebaseapp.com",
+      projectId: "love-hub-b4dbd",
+      storageBucket: "love-hub-b4dbd.firebasestorage.app",
+      messagingSenderId: "804508115256",
+      appId: "1:804508115256:web:611e1671d62c7b5a48e1cd",
+      measurementId: "G-D5QQ523R5L"
+    };
+
     const app = initializeApp(firebaseConfig);
-    const storage = getStorage(app);
+    const messaging = getMessaging(app);
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    }
+
+    Notification.requestPermission().then(permission => {
+      if (permission === "granted") {
+        getToken(messaging, { vapidKey: "YOUR_VAPID_KEY" })
+          .then(token => console.log("FCM Token:", token));
+      }
+    });
+
+    onMessage(messaging, payload => {
+      new Notification(payload.notification.title, {
+        body: payload.notification.body
+      });
+    });
+  </script>
+
+  <!-- Supabase for memories -->
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    const supabaseUrl = "https://YOUR_PROJECT.supabase.co";
+    const supabaseKey = "YOUR_ANON_KEY";
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     async function uploadMemory() {
       const file = document.getElementById("uploadPic").files[0];
       const caption = document.getElementById("caption").value;
       if (!file) return alert("Please select a picture 💕");
 
-      const storageRef = ref(storage, "memories/" + file.name);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      const { data, error } = await supabase.storage
+        .from("memories")
+        .upload(Date.now() + "-" + file.name, file);
 
-      // Add to gallery
-      const div = document.createElement("div");
-      div.className = "memory";
-      div.innerHTML = `<img src="${url}"><p>${caption}</p>`;
-      document.getElementById("gallery").appendChild(div);
+      if (error) return console.error(error);
+
+      const { data: publicUrl } = supabase.storage
+        .from("memories")
+        .getPublicUrl(data.path);
+
+      await supabase.from("memories").insert([
+        { url: publicUrl.publicUrl, caption, author: "Shosho" }
+      ]);
 
       alert("Memory uploaded successfully 💖");
+      loadMemories();
     }
+
+    async function loadMemories() {
+      const { data, error } = await supabase
+        .from("memories")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) return console.error(error);
+
+      const gallery = document.getElementById("gallery");
+      // Keep existing hardcoded images, then append Supabase ones
+      data.forEach(mem => {
+        const div = document.createElement("div");
+        div.className = "memory";
+        div.innerHTML = `<img src="${mem.url}"><p>${mem.caption} — ${mem.author}</p>`;
+        gallery.appendChild(div);
+      });
+    }
+
+    loadMemories();
+
+    // Realtime updates
+    supabase.channel("memories-channel")
+      .on("postgres_changes", { event: "*", schema: "public", table: "memories" }, () => {
+        loadMemories();
+      })
+      .subscribe();
   </script>
 </body>
 </html>
+
 
 
 
