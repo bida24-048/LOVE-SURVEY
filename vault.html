@@ -4,17 +4,16 @@
 <meta charset="UTF-8">
 <title>📖 Love Vault</title>
 <style>
-body { font-family: Arial, sans-serif; text-align: center; background: white; color: #b30000; min-height: 100vh; position: relative; margin:0; padding:20px; }
-body::before { content:"❤"; position: fixed; top:50%; left:50%; font-size:40rem; color: rgba(179,0,0,0.08); transform: translate(-50%,-50%); z-index:-1; }
+body { font-family: Arial, sans-serif; text-align: center; background: white; color: #b30000; min-height:100vh; position:relative; margin:0; padding:20px; }
+body::before { content:"❤"; position:fixed; top:50%; left:50%; font-size:40rem; color:rgba(179,0,0,0.08); transform:translate(-50%,-50%); z-index:-1; }
 h1 { color:#b30000; margin-top:20px; }
 h2 { color:#b30000; margin-top:25px; }
-#vault { margin-top:20px; max-height:600px; overflow-y:auto; border:1px solid #b30000; padding:10px; border-radius:8px; background: #ffe6e6; text-align:left; }
-.vault-entry { margin-bottom: 15px; padding: 10px; border-bottom: 1px solid #b30000; border-radius: 5px; background: #fff0f0; }
-.author { font-size: 0.9rem; color: #555; }
-.local-only { color:#d63333; font-weight:bold; margin-left:8px; }
-.action-btn { font-size: 14px; margin:5px; padding:6px 10px; border-radius:5px; border:none; cursor:pointer; }
-.share-btn { background: #128C7E; color:white; }
-.delete-btn { background: #d63333; color:white; }
+#vault { margin-top:20px; max-height:600px; overflow-y:auto; border:1px solid #b30000; padding:10px; border-radius:8px; background:#ffe6e6; text-align:left; }
+.vault-entry { margin-bottom:15px; padding:10px; border-bottom:1px solid #b30000; border-radius:5px; background:#fff0f0; }
+.author { font-size:0.9rem; color:#555; }
+.action-btn { font-size:14px; margin:5px; padding:6px 10px; border-radius:5px; border:none; cursor:pointer; }
+.share-btn { background:#128C7E; color:white; }
+.delete-btn { background:#d63333; color:white; }
 #notify { margin-top:15px; font-weight:bold; color:#b30000; }
 #search { margin-top:15px; padding:8px; width:60%; border:1px solid #b30000; border-radius:5px; }
 </style>
@@ -36,46 +35,14 @@ h2 { color:#b30000; margin-top:25px; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const supabaseUrl = "https://ietfunnecbuxrnsmxcyc.supabase.co";
-const supabaseKey = "sb_publishable_oAiBSi-KMQDfAoKT7zGLgw_tdutSjlF"; // anon key
+const supabaseKey = "sb_publishable_oAiBSi-KMQDfAoKT7zGLgw_tdutSjlF"; 
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 let vaultData = [];
 
-// 🔄 Save entry (local + Supabase)
-async function saveEntry(section, content, author="Anonymous") {
-  const entry = {
-    section,
-    content,
-    author,
-    created_at: new Date().toISOString(),
-    localOnly: true // mark as local until synced
-  };
-
-  // Save to localStorage
-  let localVault = JSON.parse(localStorage.getItem("love_vault") || "[]");
-  localVault.push(entry);
-  localStorage.setItem("love_vault", JSON.stringify(localVault));
-
-  // Try saving to Supabase
-  try {
-    const { error } = await supabaseClient.from("love_vault").insert({
-      section: entry.section,
-      content: entry.content,
-      author: entry.author,
-      created_at: entry.created_at
-    });
-    if (!error) {
-      entry.localOnly = false; // synced successfully
-      localStorage.setItem("love_vault", JSON.stringify(localVault));
-    }
-  } catch (err) {
-    console.warn("Offline, saved locally only:", err.message);
-  }
-}
-
-// 📥 Load vault (merge local + Supabase)
+// 📥 Load vault (merge local 'vault' + Supabase)
 async function loadVault() {
-  let localVault = JSON.parse(localStorage.getItem("love_vault") || "[]");
+  let localVault = JSON.parse(localStorage.getItem("vault") || "[]");
 
   const { data, error } = await supabaseClient
     .from("love_vault")
@@ -98,38 +65,23 @@ function renderVault(data) {
     return;
   }
 
-  const grouped = {};
-  data.forEach(item => {
-    if (!grouped[item.section]) grouped[item.section] = [];
-    grouped[item.section].push(item);
-  });
-
-  vaultDiv.innerHTML = Object.keys(grouped).map(section => {
-    const entries = grouped[section].map(entry => `
-      <div class="vault-entry">
-        <p>${entry.content}</p>
-        <p class="author">— ${entry.author || "Anonymous"} (${new Date(entry.created_at).toLocaleString()})
-          ${entry.localOnly ? '<span class="local-only">💾 Local Only</span>' : ''}
-        </p>
-        <button class="action-btn share-btn" onclick="shareSingle('${entry.section}','${entry.content}','${entry.author}','${entry.created_at}')">Share 📲</button>
-      </div>
-    `).join("");
-    return `
-      <div class="section">
-        <h3>${section.toUpperCase()}</h3>
-        ${entries}
-      </div>
-    `;
-  }).join("");
+  vaultDiv.innerHTML = data.map(entry => `
+    <div class="vault-entry">
+      <p>${entry.caption || entry.text || entry.url}</p>
+      <p class="author">— ${entry.author || "Anonymous"} (${entry.date || new Date(entry.created_at).toLocaleString()})</p>
+      <button class="action-btn share-btn" onclick="shareSingle('${entry.caption || entry.text || entry.url}','${entry.author || "Anonymous"}','${entry.date || entry.created_at}')">Share 📲</button>
+    </div>
+  `).join("");
 }
 
 // 🔍 Search filter
 document.getElementById("search").addEventListener("input", e => {
   const term = e.target.value.toLowerCase();
   const filtered = vaultData.filter(entry =>
-    entry.content.toLowerCase().includes(term) ||
-    (entry.author && entry.author.toLowerCase().includes(term)) ||
-    entry.section.toLowerCase().includes(term)
+    (entry.caption && entry.caption.toLowerCase().includes(term)) ||
+    (entry.text && entry.text.toLowerCase().includes(term)) ||
+    (entry.url && entry.url.toLowerCase().includes(term)) ||
+    (entry.author && entry.author.toLowerCase().includes(term))
   );
   renderVault(filtered);
 });
@@ -139,40 +91,35 @@ function shareVault(){
   if(vaultData.length===0) return alert("Vault is empty 😘");
   let text="📖💖 Love Vault 💖📖\n\n";
   vaultData.forEach(entry=>{
-    text+=`[${entry.section}] ${entry.content}\n— ${entry.author||"Anonymous"}\n${new Date(entry.created_at).toLocaleString()}\n\n`;
+    text+=`${entry.caption || entry.text || entry.url}\n— ${entry.author||"Anonymous"}\n${entry.date || new Date(entry.created_at).toLocaleString()}\n\n`;
   });
   window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
 }
 
 // 📲 Share single entry
-function shareSingle(section, content, author, created_at){
-  let text=`[${section}] ${content}\n— ${author||"Anonymous"}\n${new Date(created_at).toLocaleString()}`;
+function shareSingle(content, author, created_at){
+  let text=`${content}\n— ${author||"Anonymous"}\n${created_at}`;
   window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
 }
 
 // 🔄 Sync local entries to Supabase
 async function syncLocalToSupabase() {
-  let localVault = JSON.parse(localStorage.getItem("love_vault") || "[]");
+  let localVault = JSON.parse(localStorage.getItem("vault") || "[]");
   if(localVault.length === 0) return alert("No local entries to sync 💾");
 
   for(const entry of localVault){
-    if(entry.localOnly){
-      try {
-        const { error } = await supabaseClient.from("love_vault").insert({
-          section: entry.section,
-          content: entry.content,
-          author: entry.author,
-          created_at: entry.created_at
-        });
-        if(!error){
-          entry.localOnly = false;
-        }
-      } catch(err){
-        console.warn("Sync error:", err.message);
-      }
+    try {
+      const { error } = await supabaseClient.from("love_vault").insert({
+        url: entry.url || "",
+        caption: entry.caption || entry.text || "",
+        author: entry.author || "Anonymous",
+        created_at: entry.created_at || new Date().toISOString()
+      });
+      if(error) console.warn("Failed to sync entry:", error.message);
+    } catch(err){
+      console.warn("Sync error:", err.message);
     }
   }
-  localStorage.setItem("love_vault", JSON.stringify(localVault));
   alert("✅ Sync complete!");
   loadVault();
 }
@@ -195,6 +142,7 @@ loadVault();
 </p>
 </body>
 </html>
+
 
 
 
