@@ -4,105 +4,62 @@
   <meta charset="UTF-8">
   <title>GORATA AND LESLY'S LOVE HUB💕</title>
   <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      text-align: center; 
-      margin: 0;
-      padding: 0;
-      background: white;
-      color: #b30000;
-      position: relative;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    body::before {
-      content: "❤";
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      font-size: 40rem;
-      color: rgba(179, 0, 0, 0.08);
-      transform: translate(-50%, -50%);
-      z-index: -1;
-    }
-
-    h1 {
-      color: #b30000;
-      margin-top: 30px;
-      font-size: 2.5rem;
-      animation: pulse 2.5s infinite;
-    }
-
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
-
-    p { font-size: 18px; }
-
-    .container { max-width: 500px; margin: auto; }
-
-    a { 
-      display: block; 
-      margin: 15px; 
-      text-decoration: none; 
-      color: white; 
-      background: #b30000; 
-      padding: 12px; 
-      border-radius: 10px; 
-      width: 220px; 
-      margin-left: auto; 
-      margin-right: auto; 
-      font-weight: bold;
-      transition: 0.3s;
-    }
-
-    a:hover { 
-      background: white; 
-      color: #b30000; 
-      border: 2px solid #b30000;
-      transform: scale(1.05); 
-    }
-
-    a[href="vault.html"] {
-      background: #e60000;
-      box-shadow: 0 0 15px rgba(230, 0, 0, 0.6);
-    }
-
-    #notify {
-      margin-top: 20px;
-      font-weight: bold;
-      color: #b30000;
-    }
-
-    button {
-      background: #b30000;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-top: 25px;
-      font-size: 1rem;
-      transition: 0.3s;
-    }
-
-    button:hover {
-      background: white;
-      color: #b30000;
-      border: 2px solid #b30000;
-      transform: scale(1.05);
-    }
+    /* ... your existing CSS ... */
   </style>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAI-xop8tZ71-UDuG9rCH0dy72-FheWFwE",
+      authDomain: "love-hub-b4dbd.firebaseapp.com",
+      projectId: "love-hub-b4dbd",
+      storageBucket: "love-hub-b4dbd.firebasestorage.app",
+      messagingSenderId: "804508115256",
+      appId: "1:804508115256:web:611e1671d62c7b5a48e1cd",
+      measurementId: "G-D5QQ523R5L"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const messaging = getMessaging(app);
+
+    // Register service worker
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/firebase-messaging-sw.js")
+        .then(reg => console.log("Service Worker registered:", reg))
+        .catch(err => console.error("Service Worker error:", err));
+    }
+
+    // Request permission and get token
+    Notification.requestPermission().then(permission => {
+      if (permission === "granted") {
+        // 🔑 Paste your VAPID key here
+        getToken(messaging, { vapidKey: "BOP4pkLGY7Tk0tALGsuxRL6-57DjrGgeHIFvlvcKWJDz_6D3U9b8-qAacE6TaHU1K9-GxBJEerybyKlpvhH8LM" })
+          .then(token => {
+            console.log("FCM Token:", token);
+            // 👉 Send this token to your backend or subscribe to a topic
+          })
+          .catch(err => console.error("Token error:", err));
+      }
+    });
+
+    // Handle incoming messages
+    onMessage(messaging, payload => {
+      console.log("Message received:", payload);
+      new Notification(payload.notification.title, {
+        body: payload.notification.body
+      });
+    });
+  </script>
 </head>
 <body>
   <div class="container">
     <h1>GORATA AND LESLY'S LOVE HUB💕</h1>
     <p>Let’s play, write, and dream together 🌹</p>
 
-    <!-- Hardcoded links to your pages -->
+    <!-- Links -->
     <a href="about.html">OUR LOVE STORY 💑</a>
     <a href="questions.html">SURVEY 📋</a>
     <a href="memories.html">MEMORIES 🖼️</a>
@@ -124,6 +81,7 @@
   </script>
 </body>
 </html>
+
 
 
 
