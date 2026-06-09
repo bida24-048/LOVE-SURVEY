@@ -49,8 +49,7 @@
   .no:hover { background: white; color: #ff4d4d; border:2px solid #ff4d4d; }
   #status { margin-top: 10px; font-weight: bold; }
 </style>
-  <!-- Firebase SDKs -->
-<script type="module">
+  <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
@@ -67,10 +66,18 @@
   const app = initializeApp(firebaseConfig);
   const messaging = getMessaging(app);
 
+  // Register service worker
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/firebase-messaging-sw.js")
+      .then(reg => console.log("Service Worker registered:", reg))
+      .catch(err => console.error("Service Worker error:", err));
+  }
+
   // Request permission and get token
   Notification.requestPermission().then(permission => {
     if (permission === "granted") {
-      getToken(messaging, { vapidKey: "YOUR_VAPID_KEY" })
+      // 🔑 HIGHLIGHT: Paste your VAPID key here
+      getToken(messaging, { vapidKey: "BOP4pkLGY7Tk0tALGsuxRL6-57DjrGgeHIFvlvcKWJDz_6D3U9b8-qAacE6TaHU1K9-GxBJEerybyKlpvhH8LM" })
         .then(token => {
           console.log("FCM Token:", token);
           // 👉 Send this token to your backend or subscribe to a topic
