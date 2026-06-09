@@ -4,7 +4,59 @@
   <meta charset="UTF-8">
   <title>GORATA AND LESLY'S LOVE HUB💕</title>
   <style>
-    /* ... your existing CSS ... */
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      background: #fff0f5;
+      color: #d63384;
+    }
+    h1 {
+      margin-top: 30px;
+      font-size: 2.5rem;
+      color: #d63384;
+    }
+    .container {
+      max-width: 400px;
+      margin: auto;
+      padding: 20px;
+    }
+    .container a {
+      display: block;              /* vertical list */
+      margin: 12px auto;
+      text-decoration: none;
+      color: white;
+      background: #d63384;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: bold;
+      transition: 0.3s;
+      width: 250px;
+    }
+    .container a:hover {
+      background: white;
+      color: #d63384;
+      border: 2px solid #d63384;
+      transform: scale(1.05);
+    }
+    button {
+      background: #d63384;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 25px;
+      font-size: 1rem;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: white;
+      color: #d63384;
+      border: 2px solid #d63384;
+      transform: scale(1.05);
+    }
   </style>
 
   <!-- Firebase SDKs -->
@@ -35,11 +87,22 @@
     // Request permission and get token
     Notification.requestPermission().then(permission => {
       if (permission === "granted") {
-        // 🔑 Paste your VAPID key here
         getToken(messaging, { vapidKey: "BOP4pkLGY7Tk0tALGsuxRL6-57DjrGgeHIFvlvcKWJDz_6D3U9b8-qAacE6TaHU1K9-GxBJEerybyKlpvhH8LM" })
           .then(token => {
             console.log("FCM Token:", token);
-            // 👉 Send this token to your backend or subscribe to a topic
+
+            // 👉 Subscribe to topics (aligns with your campaigns)
+            fetch("/subscribe", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token, topic: "app_general" })
+            });
+
+            fetch("/subscribe", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token, topic: "not_completed" })
+            });
           })
           .catch(err => console.error("Token error:", err));
       }
@@ -59,7 +122,7 @@
     <h1>GORATA AND LESLY'S LOVE HUB💕</h1>
     <p>Let’s play, write, and dream together 🌹</p>
 
-    <!-- Links -->
+    <!-- Links now vertical -->
     <a href="about.html">OUR LOVE STORY 💑</a>
     <a href="questions.html">SURVEY 📋</a>
     <a href="memories.html">MEMORIES 🖼️</a>
@@ -67,9 +130,8 @@
     <a href="song.html">FAVOURITE SONGS 🎶</a>
     <a href="plans.html">PLANS ✨</a>
     <a href="messages.html">MESSAGE WALL 💬</a>
-    <a href="vault.html">LOVE VAULT</a>
+    <a href="vault.html">LOVE VAULT 🔐</a>
 
-    <p id="notify"></p>
     <button onclick="logout()">Logout 🔒</button>
   </div>
 
@@ -81,6 +143,7 @@
   </script>
 </body>
 </html>
+
 
 
 
