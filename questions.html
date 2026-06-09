@@ -204,7 +204,10 @@ function saveLoveAnswer(selectedAnswer) {
   localStorage.setItem("vault", JSON.stringify(vault));
 
   document.getElementById("status").innerText = "Answer saved to Vault 💌";
-
+// Mark survey as completed in OneSignal
+  OneSignal.push(function() {
+    OneSignal.sendTag("completed_today", "true");
+  });
   // --- Load new question ---
   let remainingQuestions = questions.filter(q => !vault.some(v => v.question === q));
   currentQuestion = remainingQuestions.length ? remainingQuestions[Math.floor(Math.random()*remainingQuestions.length)] : "No more new questions today! 💖";
