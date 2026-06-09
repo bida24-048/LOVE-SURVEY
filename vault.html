@@ -66,7 +66,16 @@ async function loadVault() {
   }).join("");
 }
 
+// Load vault on page open
 loadVault();
+
+// Optional: realtime updates
+supabaseClient
+  .channel("love-vault")
+  .on("postgres_changes", { event: "INSERT", schema: "public", table: "love_vault" }, payload => {
+    loadVault(); // refresh when new entry is added
+  })
+  .subscribe();
 </script>
 
 <p style="text-align:center; color:#b30000; margin-top:30px; font-weight:bold;">
@@ -74,6 +83,7 @@ loadVault();
 </p>
 </body>
 </html>
+
 
   
 
