@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,21 +9,20 @@
       text-align: center; 
       margin: 0;
       padding: 0;
-      background: white; /* White background */
-      color: #b30000;   /* Deep red text */
+      background: white;
+      color: #b30000;
       position: relative;
       min-height: 100vh;
       overflow-x: hidden;
     }
 
-    /* Big red heart background */
     body::before {
       content: "❤";
       position: fixed;
       top: 50%;
       left: 50%;
-      font-size: 40rem; /* Heart size */
-      color: rgba(179, 0, 0, 0.08); /* Light transparent red */
+      font-size: 40rem;
+      color: rgba(179, 0, 0, 0.08);
       transform: translate(-50%, -50%);
       z-index: -1;
     }
@@ -68,7 +66,6 @@
       transform: scale(1.05); 
     }
 
-    /* Highlight the Vault button */
     a[href="vault.html"] {
       background: #e60000;
       box-shadow: 0 0 15px rgba(230, 0, 0, 0.6);
@@ -102,41 +99,61 @@
 </head>
 <body>
   <div class="container">
-    <h1>GORATA AND LESLY'S LOVE SPACE💖</h1>
+    <h1>GORATA AND LESLY'S LOVE HUB💕</h1>
     <p>Let’s play, write, and dream together 🌹</p>
 
-    <!-- Links -->
-    <a href="about.html">OUR LOVE STORY 💑</a>
-    <a href="questions.html">SURVEY💌</a>
-    <a href="memories.html">MEMORIES📸</a>
-    <a href="promise.html">PROMISES💍</a>
-    <a href="song.html">FAVOURITE SONGS🎶</a>
-    <a href="plans.html">PLANS✨</a>
-    <a href="messages.html">MESSAGE WALL💬</a>
-    <a href="vault.html">LOVE VAULT</a>
+    <!-- 🔗 PLACEHOLDER: Supabase links will be injected here -->
+    <div id="links"></div>
 
     <p id="notify"></p>
     <button onclick="logout()">Logout 🔒</button>
   </div>
 
+  <!-- Supabase + Script -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // Notification check
-    function checkUpdate() {
-      if (localStorage.getItem("newUpdate") === "true") {
-        document.getElementById("notify").innerText = 
-          "✨ New update added! Check the Vault 💕";
-        localStorage.setItem("newUpdate", "false");
-      }
+    // Redirect if not logged in
+    if (!localStorage.getItem("loveLogin")) {
+      window.location.href = "index.html";
     }
-    checkUpdate();
+
+    // Supabase setup
+    const supabaseUrl = "https://ietfunnecbuxrnsmxcyc.supabase.co/rest/v1/";
+    const supabaseKey = "sb_publishable_oAiBSi-KMQDfAoKT7zGLgw_tdutSjlF";
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+    // 🔗 Load links from Supabase
+    async function loadLinks() {
+      const { data } = await supabaseClient
+        .from("sections")
+        .select("*")
+        .order("created_at");
+
+      const linksDiv = document.getElementById("links");
+      linksDiv.innerHTML = data.map(item =>
+        `<a href="${item.url}">${item.name}</a>`
+      ).join("");
+    }
+
+    // Vault notifications
+    supabaseClient
+      .channel("love-vault")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "love_vault" }, payload => {
+        document.getElementById("notify").innerText = "✨ New update added! Check the Vault 💕";
+      })
+      .subscribe();
 
     function logout() {
       localStorage.removeItem("loveLogin");
       window.location.href = "index.html";
     }
+
+    // Run on page load
+    loadLinks();
   </script>
 </body>
 </html>
+
 
 
 
