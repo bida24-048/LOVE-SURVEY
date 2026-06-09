@@ -11,6 +11,7 @@ h2 { color:#b30000; margin-top:25px; }
 #vault { margin-top:20px; max-height:600px; overflow-y:auto; border:1px solid #b30000; padding:10px; border-radius:8px; background:#ffe6e6; text-align:left; }
 .vault-entry { margin-bottom:15px; padding:10px; border-bottom:1px solid #b30000; border-radius:5px; background:#fff0f0; }
 .author { font-size:0.9rem; color:#555; }
+.section-label { font-weight:bold; color:#b30000; margin-bottom:5px; }
 .action-btn { font-size:14px; margin:5px; padding:6px 10px; border-radius:5px; border:none; cursor:pointer; }
 .share-btn { background:#128C7E; color:white; }
 .delete-btn { background:#d63333; color:white; }
@@ -65,21 +66,24 @@ function renderVault(data) {
     return;
   }
 
-  vaultDiv.innerHTML = data.map(entry => {
-    // Decide label
-    let label = "General";
-    if(entry.type) label = entry.type; // localStorage entries (Message, Plan, etc.)
-    else if(entry.caption) label = "Caption";
-    else if(entry.url) label = "URL";
+  // Group by section
+  const grouped = {};
+  data.forEach(entry => {
+    const section = entry.section || "General";
+    if (!grouped[section]) grouped[section] = [];
+    grouped[section].push(entry);
+  });
 
-    return `
+  vaultDiv.innerHTML = Object.keys(grouped).map(section => {
+    const entries = grouped[section].map(entry => `
       <div class="vault-entry">
-        <h3>[${label.toUpperCase()}]</h3>
-        <p>${entry.caption || entry.text || entry.url}</p>
+        <div class="section-label">[${section.toUpperCase()}]</div>
+        <p>${entry.content}</p>
         <p class="author">— ${entry.author || "Anonymous"} (${entry.date || new Date(entry.created_at).toLocaleString()})</p>
-        <button class="action-btn share-btn" onclick="shareSingle('${label}','${entry.caption || entry.text || entry.url}','${entry.author || "Anonymous"}','${entry.date || entry.created_at}')">Share 📲</button>
+        <button class="action-btn share-btn" onclick="shareSingle('${section}','${entry.content}','${entry.author || "Anonymous"}','${entry.date || entry.created_at}')">Share 📲</button>
       </div>
-    `;
+    `).join("");
+    return entries;
   }).join("");
 }
 
@@ -87,11 +91,9 @@ function renderVault(data) {
 document.getElementById("search").addEventListener("input", e => {
   const term = e.target.value.toLowerCase();
   const filtered = vaultData.filter(entry =>
-    (entry.caption && entry.caption.toLowerCase().includes(term)) ||
-    (entry.text && entry.text.toLowerCase().includes(term)) ||
-    (entry.url && entry.url.toLowerCase().includes(term)) ||
+    (entry.content && entry.content.toLowerCase().includes(term)) ||
     (entry.author && entry.author.toLowerCase().includes(term)) ||
-    (entry.type && entry.type.toLowerCase().includes(term))
+    (entry.section && entry.section.toLowerCase().includes(term))
   );
   renderVault(filtered);
 });
@@ -101,15 +103,14 @@ function shareVault(){
   if(vaultData.length===0) return alert("Vault is empty 😘");
   let text="📖💖 Love Vault 💖📖\n\n";
   vaultData.forEach(entry=>{
-    let label = entry.type || (entry.caption ? "Caption" : (entry.url ? "URL" : "General"));
-    text+=`[${label}] ${entry.caption || entry.text || entry.url}\n— ${entry.author||"Anonymous"}\n${entry.date || new Date(entry.created_at).toLocaleString()}\n\n`;
+    text+=`[${entry.section || "General"}] ${entry.content}\n— ${entry.author||"Anonymous"}\n${entry.date || new Date(entry.created_at).toLocaleString()}\n\n`;
   });
   window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
 }
 
 // 📲 Share single entry
-function shareSingle(label, content, author, created_at){
-  let text=`[${label}] ${content}\n— ${author||"Anonymous"}\n${created_at}`;
+function shareSingle(section, content, author, created_at){
+  let text=`[${section}] ${content}\n— ${author||"Anonymous"}\n${created_at}`;
   window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
 }
 
@@ -121,8 +122,8 @@ async function syncLocalToSupabase() {
   for(const entry of localVault){
     try {
       const { error } = await supabaseClient.from("love_vault").insert({
-        url: entry.url || "",
-        caption: entry.caption || entry.text || "",
+        section: entry.section || "General",
+        content: entry.content || entry.text || "",
         author: entry.author || "Anonymous",
         created_at: entry.created_at || new Date().toISOString()
       });
@@ -153,6 +154,7 @@ loadVault();
 </p>
 </body>
 </html>
+
 
 
 
