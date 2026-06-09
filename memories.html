@@ -11,10 +11,7 @@
       margin: 0;
       padding: 20px;
     }
-    h1 {
-      color: #d63384;
-      margin-bottom: 20px;
-    }
+    h1 { color: #d63384; margin-bottom: 20px; }
     .gallery {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -28,20 +25,14 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       transition: transform 0.3s ease;
     }
-    .memory:hover {
-      transform: scale(1.05);
-    }
+    .memory:hover { transform: scale(1.05); }
     img {
       width: 100%;
       border-radius: 15px;
       height: 200px;
       object-fit: cover;
     }
-    p {
-      margin-top: 10px;
-      font-size: 16px;
-      color: #444;
-    }
+    p { margin-top: 10px; font-size: 16px; color: #444; }
     a {
       text-decoration: none;
       color: white;
@@ -51,52 +42,59 @@
       display: inline-block;
       margin-top: 30px;
     }
-    a:hover {
-      background: #b82d6a;
-    }
+    a:hover { background: #b82d6a; }
   </style>
 </head>
 <body>
   <h1>💌 Our Beautiful Memories 💌</h1>
   <p>Here are some of our sweetest moments together 💑✨</p>
-  <div class="gallery">
-    <div class="memory">
-      <img src="butt.jpg" alt="Memory 1">
-      <p>AWW💕</p>
-    </div>
-    <div class="memory">
-      <img src="hand.jpg" alt="Memory 2">
-      <p>OH BABY</p>
-    </div>
-    <div class="memory">
-      <img src="huh.jpg" alt="Memory 3">
-      <p>💕</p>
-    </div>
-    <div class="memory">
-      <img src="legs.jpg" alt="Memory 4">
-      <p>😊📸</p>
-    </div>
-    <div class="memory">
-      <img src="outfit.jpg" alt="Memory 5">
-      <p>HIS CLOTHES LOOKS GOOD ON ME OHH😝💖</p>
-    </div>
-  <div class="memory">
-      <img src="call.jpg" alt="Memory 3">
-      <p>😍</p>
-    </div>
-<div class="memory">
-      <img src="bae.jpg" alt="Memory 3">
-      <p>HER FAVOURITE PIC💖</p>
-    </div>
-<div class="memory">
-      <img src="girl.jpg" alt="Memory 3">
-      <p>HIS FAVOURITE PIC💖</p>
-    </div>
 
+  <!-- Upload new memory -->
+  <input type="file" id="uploadPic" />
+  <input type="text" id="caption" placeholder="Add a caption 💖" />
+  <button onclick="uploadMemory()">Upload 📸</button>
+
+  <div class="gallery" id="gallery">
+    <!-- Existing hardcoded memories -->
+    <div class="memory"><img src="butt.jpg"><p>AWW💕</p></div>
+    <div class="memory"><img src="hand.jpg"><p>OH BABY</p></div>
+    <div class="memory"><img src="huh.jpg"><p>💕</p></div>
+    <div class="memory"><img src="legs.jpg"><p>😊📸</p></div>
+    <div class="memory"><img src="outfit.jpg"><p>HIS CLOTHES LOOK GOOD ON ME OHH😝💖</p></div>
+  </div>
 
   <a href="index.html">⬅ Back Home</a>
+
+  <script type="module">
+    import { getStorage, ref, uploadBytes, getDownloadURL } 
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+
+    const firebaseConfig = { /* same config as before */ };
+    const app = initializeApp(firebaseConfig);
+    const storage = getStorage(app);
+
+    async function uploadMemory() {
+      const file = document.getElementById("uploadPic").files[0];
+      const caption = document.getElementById("caption").value;
+      if (!file) return alert("Please select a picture 💕");
+
+      const storageRef = ref(storage, "memories/" + file.name);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+
+      // Add to gallery
+      const div = document.createElement("div");
+      div.className = "memory";
+      div.innerHTML = `<img src="${url}"><p>${caption}</p>`;
+      document.getElementById("gallery").appendChild(div);
+
+      alert("Memory uploaded successfully 💖");
+    }
+  </script>
 </body>
 </html>
+
 
 
 
