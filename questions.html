@@ -210,7 +210,7 @@ const questions = [
 ];
 
 // --- Limit answers per day ---
-const MAX_PER_DAY = 2;
+const MAX_PER_DAY = 5;
 
 // --- Load a random question ---
 let currentQuestion = questions[Math.floor(Math.random()*questions.length)];
@@ -225,25 +225,6 @@ function saveLoveAnswer(selectedAnswer) {
   const todayCount = vault.filter(item => item.date.startsWith(today) && item.type === "love").length;
   if(todayCount >= MAX_PER_DAY) return alert("You have reached the limit of 5 questions today! 💌");
 
-  // --- Save to vault ---
-  vault.push({ 
-    type: "love", 
-    question: currentQuestion, 
-    answer: selectedAnswer, 
-    date: new Date().toLocaleString() 
-  });
-  localStorage.setItem("vault", JSON.stringify(vault));
-
-  document.getElementById("status").innerText = "Answer saved to Vault 💌";
-// Mark survey as completed in OneSignal
-  OneSignal.push(function() {
-    OneSignal.sendTag("completed_today", "true");
-  });
-  // --- Load new question ---
-  let remainingQuestions = questions.filter(q => !vault.some(v => v.question === q));
-  currentQuestion = remainingQuestions.length ? remainingQuestions[Math.floor(Math.random()*remainingQuestions.length)] : "No more new questions today! 💖";
-  document.getElementById("question").innerText = currentQuestion;
-}
 </script>
 
 </body>
