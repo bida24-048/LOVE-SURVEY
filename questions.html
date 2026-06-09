@@ -49,6 +49,17 @@
   .no:hover { background: white; color: #ff4d4d; border:2px solid #ff4d4d; }
   #status { margin-top: 10px; font-weight: bold; }
 </style>
+  <!-- OneSignal SDK -->
+<script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
+<script>
+  window.OneSignal = window.OneSignal || [];
+  OneSignal.push(function() {
+    OneSignal.init({
+      appId: "afd4ce57-9e91-4f79-846a-bedb977b77b6",
+      notifyButton: { enable: true } // adds a bell icon for subscription
+    });
+  });
+</script>
 </head>
 <body>
 
