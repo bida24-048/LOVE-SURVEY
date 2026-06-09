@@ -102,62 +102,29 @@
     <h1>GORATA AND LESLY'S LOVE HUB💕</h1>
     <p>Let’s play, write, and dream together 🌹</p>
 
-    <!-- 🔗 Supabase will inject links here -->
-    <div id="links"></div>
+    <!-- Hardcoded links to your pages -->
+    <a href="about.html">OUR LOVE STORY 💑</a>
+    <a href="questions.html">SURVEY 📋</a>
+    <a href="memories.html">MEMORIES 🖼️</a>
+    <a href="promise.html">PROMISES 💍</a>
+    <a href="song.html">FAVOURITE SONGS 🎶</a>
+    <a href="plans.html">PLANS ✨</a>
+    <a href="messages.html">MESSAGE WALL 💬</a>
+    <a href="vault.html">LOVE VAULT</a>
 
     <p id="notify"></p>
     <button onclick="logout()">Logout 🔒</button>
   </div>
 
-  <!-- Supabase + Script -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // Redirect if not logged in
-    if (!localStorage.getItem("loveLogin")) {
-      window.location.href = "index.html";
-    }
-
-    // Supabase setup
-    const supabaseUrl = "https://ietfunnecbuxrnsmxcyc.supabase.co"; // ✅ remove /rest/v1/
-    const supabaseKey = "sb_publishable_oAiBSi-KMQDfAoKT7zGLgw_tdutSjlF"; // your anon key
-    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-
-    // 🔗 Load links from Supabase
-    async function loadLinks() {
-      const { data, error } = await supabaseClient
-        .from("sections")
-        .select("*")
-        .order("created_at");
-
-      if (error) {
-        console.error(error);
-        return;
-      }
-
-      const linksDiv = document.getElementById("links");
-      linksDiv.innerHTML = data.map(item =>
-        `<a href="${item.url}">${item.name}</a>`
-      ).join("");
-    }
-
-    // Vault notifications
-    supabaseClient
-      .channel("love-vault")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "love_vault" }, payload => {
-        document.getElementById("notify").innerText = "✨ New update added! Check the Vault 💕";
-      })
-      .subscribe();
-
     function logout() {
       localStorage.removeItem("loveLogin");
       window.location.href = "index.html";
     }
-
-    // Run on page load
-    loadLinks();
   </script>
 </body>
 </html>
+
 
 
 
