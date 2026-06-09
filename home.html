@@ -102,7 +102,7 @@
     <h1>GORATA AND LESLY'S LOVE HUB💕</h1>
     <p>Let’s play, write, and dream together 🌹</p>
 
-    <!-- 🔗 PLACEHOLDER: Supabase links will be injected here -->
+    <!-- 🔗 Supabase will inject links here -->
     <div id="links"></div>
 
     <p id="notify"></p>
@@ -118,16 +118,21 @@
     }
 
     // Supabase setup
-    const supabaseUrl = "https://ietfunnecbuxrnsmxcyc.supabase.co/rest/v1/";
-    const supabaseKey = "sb_publishable_oAiBSi-KMQDfAoKT7zGLgw_tdutSjlF";
+    const supabaseUrl = "https://ietfunnecbuxrnsmxcyc.supabase.co"; // ✅ remove /rest/v1/
+    const supabaseKey = "sb_publishable_oAiBSi-KMQDfAoKT7zGLgw_tdutSjlF"; // your anon key
     const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
     // 🔗 Load links from Supabase
     async function loadLinks() {
-      const { data } = await supabaseClient
+      const { data, error } = await supabaseClient
         .from("sections")
         .select("*")
         .order("created_at");
+
+      if (error) {
+        console.error(error);
+        return;
+      }
 
       const linksDiv = document.getElementById("links");
       linksDiv.innerHTML = data.map(item =>
