@@ -208,8 +208,7 @@ const questions = [
   "Do you want to share sunsets with me forever? 🌅",
   "Would you promise to keep our love strong? 💪❤️"
 ];
-
-// --- Limit answers per day ---
+  // --- Limit answers per day ---
 const MAX_PER_DAY = 5;
 
 // --- Load a random question ---
@@ -223,10 +222,42 @@ function saveLoveAnswer(selectedAnswer) {
   // --- Count today's answers ---
   const today = new Date().toLocaleDateString();
   const todayCount = vault.filter(item => item.date.startsWith(today) && item.type === "love").length;
-  if(todayCount >= MAX_PER_DAY) return alert("You have reached the limit of 5 questions today! 💌");
 
+  if(todayCount >= MAX_PER_DAY) {
+    document.getElementById("question").innerText = "Survey Complete 💖";
+    document.getElementById("status").innerHTML = `
+      <button class="yes" onclick="goHome()">⬅️ Go Back</button>
+    `;
+    return;
+  }
+
+  // --- Save to vault ---
+  vault.push({ 
+    type: "love", 
+    question: currentQuestion, 
+    answer: selectedAnswer, 
+    date: new Date().toLocaleString() 
+  });
+  localStorage.setItem("vault", JSON.stringify(vault));
+
+  document.getElementById("status").innerText = "Answer saved to Vault 💌";
+
+  // --- Load new question ---
+  let remainingQuestions = questions.filter(q => !vault.some(v => v.question === q && v.date.startsWith(today)));
+  currentQuestion = remainingQuestions.length ? remainingQuestions[Math.floor(Math.random()*remainingQuestions.length)] : "Survey Complete 💖";
+  document.getElementById("question").innerText = currentQuestion;
+
+  if(todayCount + 1 >= MAX_PER_DAY) {
+    document.getElementById("status").innerHTML = `
+      <button class="yes" onclick="goHome()">⬅️ Go Back</button>
+    `;
+  }
+}
+  // --- Go back function ---
+function goHome() {
+  window.location.href = "/"; // replace with your actual home page URL
+}
 </script>
-
 </body>
 </html>
 
