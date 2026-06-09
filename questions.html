@@ -49,14 +49,41 @@
   .no:hover { background: white; color: #ff4d4d; border:2px solid #ff4d4d; }
   #status { margin-top: 10px; font-weight: bold; }
 </style>
-  <!-- OneSignal SDK -->
-<script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
-<script>
-  window.OneSignal = window.OneSignal || [];
-  OneSignal.push(function() {
-    OneSignal.init({
-      appId: "afd4ce57-9e91-4f79-846a-bedb977b77b6",
-      notifyButton: { enable: true } // adds a bell icon for subscription
+  <!-- Firebase SDKs -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAI-xop8tZ71-UDuG9rCH0dy72-FheWFwE",
+    authDomain: "love-hub-b4dbd.firebaseapp.com",
+    projectId: "love-hub-b4dbd",
+    storageBucket: "love-hub-b4dbd.firebasestorage.app",
+    messagingSenderId: "804508115256",
+    appId: "1:804508115256:web:611e1671d62c7b5a48e1cd",
+    measurementId: "G-D5QQ523R5L"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const messaging = getMessaging(app);
+
+  // Request permission and get token
+  Notification.requestPermission().then(permission => {
+    if (permission === "granted") {
+      getToken(messaging, { vapidKey: "YOUR_VAPID_KEY" })
+        .then(token => {
+          console.log("FCM Token:", token);
+          // 👉 Send this token to your backend or subscribe to a topic
+        })
+        .catch(err => console.error("Token error:", err));
+    }
+  });
+
+  // Handle incoming messages
+  onMessage(messaging, payload => {
+    console.log("Message received:", payload);
+    new Notification(payload.notification.title, {
+      body: payload.notification.body
     });
   });
 </script>
