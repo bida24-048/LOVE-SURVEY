@@ -11,6 +11,7 @@ h2 { color:#b30000; margin-top:25px; }
 #vault { margin-top:20px; max-height:600px; overflow-y:auto; border:1px solid #b30000; padding:10px; border-radius:8px; background: #ffe6e6; text-align:left; }
 .vault-entry { margin-bottom: 15px; padding: 10px; border-bottom: 1px solid #b30000; border-radius: 5px; background: #fff0f0; }
 .author { font-size: 0.9rem; color: #555; }
+.local-only { color:#d63333; font-weight:bold; margin-left:8px; }
 .action-btn { font-size: 14px; margin:5px; padding:6px 10px; border-radius:5px; border:none; cursor:pointer; }
 .share-btn { background: #128C7E; color:white; }
 .delete-btn { background: #d63333; color:white; }
@@ -46,7 +47,8 @@ async function saveEntry(section, content, author="Anonymous") {
     section,
     content,
     author,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    localOnly: true // mark as local until synced
   };
 
   // Save to localStorage
@@ -56,8 +58,16 @@ async function saveEntry(section, content, author="Anonymous") {
 
   // Try saving to Supabase
   try {
-    const { error } = await supabaseClient.from("love_vault").insert(entry);
-    if (error) console.warn("Supabase insert failed:", error.message);
+    const { error } = await supabaseClient.from("love_vault").insert({
+      section: entry.section,
+      content: entry.content,
+      author: entry.author,
+      created_at: entry.created_at
+    });
+    if (!error) {
+      entry.localOnly = false; // synced successfully
+      localStorage.setItem("love_vault", JSON.stringify(localVault));
+    }
   } catch (err) {
     console.warn("Offline, saved locally only:", err.message);
   }
@@ -98,7 +108,9 @@ function renderVault(data) {
     const entries = grouped[section].map(entry => `
       <div class="vault-entry">
         <p>${entry.content}</p>
-        <p class="author">— ${entry.author || "Anonymous"} (${new Date(entry.created_at).toLocaleString()})</p>
+        <p class="author">— ${entry.author || "Anonymous"} (${new Date(entry.created_at).toLocaleString()})
+          ${entry.localOnly ? '<span class="local-only">💾 Local Only</span>' : ''}
+        </p>
         <button class="action-btn share-btn" onclick="shareSingle('${entry.section}','${entry.content}','${entry.author}','${entry.created_at}')">Share 📲</button>
       </div>
     `).join("");
@@ -144,13 +156,23 @@ async function syncLocalToSupabase() {
   if(localVault.length === 0) return alert("No local entries to sync 💾");
 
   for(const entry of localVault){
-    try {
-      const { error } = await supabaseClient.from("love_vault").insert(entry);
-      if(error) console.warn("Failed to sync entry:", error.message);
-    } catch(err){
-      console.warn("Sync error:", err.message);
+    if(entry.localOnly){
+      try {
+        const { error } = await supabaseClient.from("love_vault").insert({
+          section: entry.section,
+          content: entry.content,
+          author: entry.author,
+          created_at: entry.created_at
+        });
+        if(!error){
+          entry.localOnly = false;
+        }
+      } catch(err){
+        console.warn("Sync error:", err.message);
+      }
     }
   }
+  localStorage.setItem("love_vault", JSON.stringify(localVault));
   alert("✅ Sync complete!");
   loadVault();
 }
@@ -173,6 +195,7 @@ loadVault();
 </p>
 </body>
 </html>
+
 
 
 
