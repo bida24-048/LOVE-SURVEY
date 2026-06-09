@@ -11,19 +11,33 @@ h2 { color:#b30000; margin-top:25px; }
 #vault { margin-top:20px; max-height:600px; overflow-y:auto; border:1px solid #b30000; padding:10px; border-radius:8px; background: #ffe6e6; text-align:left; }
 .vault-entry { margin-bottom: 15px; padding: 10px; border-bottom: 1px solid #b30000; border-radius: 5px; background: #fff0f0; }
 .author { font-size: 0.9rem; color: #555; }
+.action-btn { font-size: 14px; margin:5px; padding:6px 10px; border-radius:5px; border:none; cursor:pointer; }
+.share-btn { background: #128C7E; color:white; }
+.delete-btn { background: #d63333; color:white; }
+#notify { margin-top:15px; font-weight:bold; color:#b30000; }
+#search { margin-top:15px; padding:8px; width:60%; border:1px solid #b30000; border-radius:5px; }
 </style>
 </head>
 <body>
 
 <h1>📖 Love Vault</h1>
+
+<div>
+  <input id="search" type="text" placeholder="🔍 Search the Vault...">
+  <button onclick="shareVault()" class="action-btn share-btn">Share Whole Vault on WhatsApp 📲</button>
+</div>
+
 <h2>Vault 💖</h2>
 <div id="vault">Loading vault...</div>
+<p id="notify"></p>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const supabaseUrl = "https://ietfunnecbuxrnsmxcyc.supabase.co";
 const supabaseKey = "sb_publishable_oAiBSi-KMQDfAoKT7zGLgw_tdutSjlF"; // anon key
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+let vaultData = [];
 
 async function loadVault() {
   const { data, error } = await supabaseClient
@@ -37,8 +51,14 @@ async function loadVault() {
     return;
   }
 
+  vaultData = data;
+  renderVault(data);
+}
+
+function renderVault(data) {
+  const vaultDiv = document.getElementById("vault");
   if (!data || data.length === 0) {
-    document.getElementById("vault").innerText = "Vault is empty 😘";
+    vaultDiv.innerText = "Vault is empty 😘";
     return;
   }
 
@@ -49,12 +69,12 @@ async function loadVault() {
     grouped[item.section].push(item);
   });
 
-  const vaultDiv = document.getElementById("vault");
   vaultDiv.innerHTML = Object.keys(grouped).map(section => {
     const entries = grouped[section].map(entry => `
       <div class="vault-entry">
         <p>${entry.content}</p>
         <p class="author">— ${entry.author || "Anonymous"} (${new Date(entry.created_at).toLocaleString()})</p>
+        <button class="action-btn share-btn" onclick="shareSingle(${entry.id})">Share 📲</button>
       </div>
     `).join("");
     return `
@@ -66,16 +86,46 @@ async function loadVault() {
   }).join("");
 }
 
-// Load vault on page open
-loadVault();
+// 🔍 Search filter
+document.getElementById("search").addEventListener("input", e => {
+  const term = e.target.value.toLowerCase();
+  const filtered = vaultData.filter(entry =>
+    entry.content.toLowerCase().includes(term) ||
+    (entry.author && entry.author.toLowerCase().includes(term)) ||
+    entry.section.toLowerCase().includes(term)
+  );
+  renderVault(filtered);
+});
 
-// Optional: realtime updates
+// 📲 Share whole vault
+function shareVault(){
+  if(vaultData.length===0) return alert("Vault is empty 😘");
+  let text="📖💖 Love Vault 💖📖\n\n";
+  vaultData.forEach(entry=>{
+    text+=`[${entry.section}] ${entry.content}\n— ${entry.author||"Anonymous"}\n${new Date(entry.created_at).toLocaleString()}\n\n`;
+  });
+  window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
+}
+
+// 📲 Share single entry
+function shareSingle(id){
+  const entry = vaultData.find(e=>e.id===id);
+  if(!entry) return;
+  let text=`[${entry.section}] ${entry.content}\n— ${entry.author||"Anonymous"}\n${new Date(entry.created_at).toLocaleString()}`;
+  window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
+}
+
+// 🔔 Realtime notifications
 supabaseClient
   .channel("love-vault")
   .on("postgres_changes", { event: "INSERT", schema: "public", table: "love_vault" }, payload => {
-    loadVault(); // refresh when new entry is added
+    document.getElementById("notify").innerText = "✨ New update added! Check the Vault 💕";
+    loadVault(); // refresh vault
   })
   .subscribe();
+
+// Load vault on page open
+loadVault();
 </script>
 
 <p style="text-align:center; color:#b30000; margin-top:30px; font-weight:bold;">
@@ -83,6 +133,7 @@ supabaseClient
 </p>
 </body>
 </html>
+
 
 
   
