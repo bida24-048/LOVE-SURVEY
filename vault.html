@@ -25,6 +25,7 @@ h2 { color:#b30000; margin-top:25px; }
 <div>
   <input id="search" type="text" placeholder="🔍 Search the Vault...">
   <button onclick="shareVault()" class="action-btn share-btn">Share Whole Vault on WhatsApp 📲</button>
+  <button onclick="syncLocalToSupabase()" class="action-btn share-btn">🔄 Sync Local → Supabase</button>
 </div>
 
 <h2>Vault 💖</h2>
@@ -39,20 +40,45 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 let vaultData = [];
 
+// 🔄 Save entry (local + Supabase)
+async function saveEntry(section, content, author="Anonymous") {
+  const entry = {
+    section,
+    content,
+    author,
+    created_at: new Date().toISOString()
+  };
+
+  // Save to localStorage
+  let localVault = JSON.parse(localStorage.getItem("love_vault") || "[]");
+  localVault.push(entry);
+  localStorage.setItem("love_vault", JSON.stringify(localVault));
+
+  // Try saving to Supabase
+  try {
+    const { error } = await supabaseClient.from("love_vault").insert(entry);
+    if (error) console.warn("Supabase insert failed:", error.message);
+  } catch (err) {
+    console.warn("Offline, saved locally only:", err.message);
+  }
+}
+
+// 📥 Load vault (merge local + Supabase)
 async function loadVault() {
+  let localVault = JSON.parse(localStorage.getItem("love_vault") || "[]");
+
   const { data, error } = await supabaseClient
     .from("love_vault")
     .select("*")
     .order("created_at");
 
-  if (error) {
-    console.error("Error loading vault:", error);
-    document.getElementById("vault").innerText = "⚠️ Could not load vault";
-    return;
+  let combined = localVault;
+  if (!error && data) {
+    combined = [...localVault, ...data];
   }
 
-  vaultData = data;
-  renderVault(data);
+  vaultData = combined;
+  renderVault(combined);
 }
 
 function renderVault(data) {
@@ -62,7 +88,6 @@ function renderVault(data) {
     return;
   }
 
-  // Group entries by section
   const grouped = {};
   data.forEach(item => {
     if (!grouped[item.section]) grouped[item.section] = [];
@@ -74,7 +99,7 @@ function renderVault(data) {
       <div class="vault-entry">
         <p>${entry.content}</p>
         <p class="author">— ${entry.author || "Anonymous"} (${new Date(entry.created_at).toLocaleString()})</p>
-        <button class="action-btn share-btn" onclick="shareSingle(${entry.id})">Share 📲</button>
+        <button class="action-btn share-btn" onclick="shareSingle('${entry.section}','${entry.content}','${entry.author}','${entry.created_at}')">Share 📲</button>
       </div>
     `).join("");
     return `
@@ -108,11 +133,26 @@ function shareVault(){
 }
 
 // 📲 Share single entry
-function shareSingle(id){
-  const entry = vaultData.find(e=>e.id===id);
-  if(!entry) return;
-  let text=`[${entry.section}] ${entry.content}\n— ${entry.author||"Anonymous"}\n${new Date(entry.created_at).toLocaleString()}`;
+function shareSingle(section, content, author, created_at){
+  let text=`[${section}] ${content}\n— ${author||"Anonymous"}\n${new Date(created_at).toLocaleString()}`;
   window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
+}
+
+// 🔄 Sync local entries to Supabase
+async function syncLocalToSupabase() {
+  let localVault = JSON.parse(localStorage.getItem("love_vault") || "[]");
+  if(localVault.length === 0) return alert("No local entries to sync 💾");
+
+  for(const entry of localVault){
+    try {
+      const { error } = await supabaseClient.from("love_vault").insert(entry);
+      if(error) console.warn("Failed to sync entry:", error.message);
+    } catch(err){
+      console.warn("Sync error:", err.message);
+    }
+  }
+  alert("✅ Sync complete!");
+  loadVault();
 }
 
 // 🔔 Realtime notifications
@@ -120,7 +160,7 @@ supabaseClient
   .channel("love-vault")
   .on("postgres_changes", { event: "INSERT", schema: "public", table: "love_vault" }, payload => {
     document.getElementById("notify").innerText = "✨ New update added! Check the Vault 💕";
-    loadVault(); // refresh vault
+    loadVault();
   })
   .subscribe();
 
@@ -133,6 +173,7 @@ loadVault();
 </p>
 </body>
 </html>
+
 
 
 
