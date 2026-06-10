@@ -24,15 +24,22 @@ button:hover { background:white; color:#b30000; border:2px solid #b30000; }
 function saveItem() {
     const text = document.getElementById("msgText").value.trim();
     if(!text) return alert("Please type a message!");
+
     const vault = JSON.parse(localStorage.getItem("vault")) || [];
-    vault.push({ type:"message", text:text, date:new Date().toLocaleString() });
+    vault.push({ 
+        type: "message", 
+        text: text, 
+        date: new Date().toLocaleString(),
+        source_page: "Messages",   // ✅ stored inside the entry
+        section: "Messages"        // ✅ stored inside the entry
+    });
+
     localStorage.setItem("vault", JSON.stringify(vault));
     document.getElementById("msgText").value = "";
     document.getElementById("status").innerText = "Message saved to Vault 💬";
 }
-   source_page: "Messages",
-section: "Messages", 
 </script>
+
 </body>
 </html>
 
