@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>💖G & L Love World Register & Login</title>
+<title>💖G&L Love World - Register & Login</title>
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -52,7 +52,7 @@ button:hover {
 </head>
 <body>
 
-<h1>💖 G&L Love World</h1>
+<h1>💖G&L Love World</h1>
 
 <!-- Registration Form -->
 <div id="registerSection">
@@ -81,12 +81,21 @@ button:hover {
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-  // Supabase details from your Love Vault
+  // Supabase details
   const supabaseUrl = "https://ietfunnecbuxrnsmxcyc.supabase.co";
   const supabaseKey = "sb_publishable_oAiBSi-KMQDfAoKT7zGLgw_tdutSjlF";
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   const secretKey = "GL2025";
+
+  // Helper: hash password with SHA-256
+  async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  }
 
   async function registerUser() {
     const secret = document.getElementById("registerSecret").value;
@@ -100,18 +109,19 @@ button:hover {
     if (!username || !email || !password) return showError("❌ Fill in all fields");
 
     // Check if username exists
-    const { data: existing, error: checkError } = await supabase
+    const { data: existing } = await supabase
       .from("love_users")
       .select("username")
       .eq("username", username)
       .single();
 
     if (existing) return showError("❌ Username already exists");
-    if (checkError && checkError.code !== "PGRST116") console.error(checkError);
 
-    // Insert new user
+    // Hash password before saving
+    const hashed = await hashPassword(password);
+
     const { error } = await supabase.from("love_users").insert([
-      { username, email, password }
+      { username, email, password: hashed }
     ]);
 
     if (error) {
@@ -129,16 +139,17 @@ button:hover {
 
     if (secret !== secretKey) return showError("❌ Invalid secret code");
 
-    const { data: user, error } = await supabase
+    const hashed = await hashPassword(password);
+
+    const { data: user } = await supabase
       .from("love_users")
       .select("*")
       .eq("username", username)
-      .eq("password", password)
+      .eq("password", hashed)
       .single();
 
-    if (error || !user) return showError("❌ Invalid username or password");
+    if (!user) return showError("❌ Invalid username or password");
 
-    // Save login state locally
     localStorage.setItem("loveLogin", "true");
     localStorage.setItem("loveUser", user.username);
     localStorage.setItem("loveEmail", user.email);
@@ -150,13 +161,13 @@ button:hover {
     document.getElementById("error").innerText = message;
   }
 
-  // Expose functions globally
   window.registerUser = registerUser;
   window.loginUser = loginUser;
 </script>
 
 </body>
 </html>
+
 
 
   
