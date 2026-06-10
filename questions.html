@@ -217,32 +217,39 @@ let currentQuestion = questions[Math.floor(Math.random()*questions.length)];
 document.getElementById("question").innerText = currentQuestion;
 
 // --- Save answer ---
-function saveLoveAnswer(selectedAnswer) {
+  function saveLoveAnswer(selectedAnswer) {
   const vault = JSON.parse(localStorage.getItem("vault")) || [];
 
-  // --- Count today's answers ---
   const today = new Date().toLocaleDateString();
   const todayCount = vault.filter(item => item.date.startsWith(today) && item.type === "love").length;
+
   if(todayCount >= MAX_PER_DAY) {
-    // Survey complete message
     document.getElementById("question").innerText = "Survey Complete 💖";
-    document.getElementById("status").innerHTML = `
-      <button class="yes" onclick="goHome()">⬅️ Go Back</button>
-    `;
+    document.getElementById("status").innerHTML = `<button class="yes" onclick="goHome()">⬅️ Go Back</button>`;
     return;
   }
 
-  // --- Save to vault ---
   vault.push({ 
     type: "love", 
     question: currentQuestion, 
     answer: selectedAnswer, 
-    date: new Date().toLocaleString() 
+    date: new Date().toLocaleString(),
+    source_page: "Love Questions",   // ✅ label added
+    section: "Love"                  // ✅ label added
   });
   localStorage.setItem("vault", JSON.stringify(vault));
 
   document.getElementById("status").innerText = "Answer saved to Vault 💌";
 
+  if(todayCount + 1 >= MAX_PER_DAY) {
+    document.getElementById("question").innerText = "Survey Complete 💖";
+    document.getElementById("status").innerHTML = `<button class="yes" onclick="goHome()">⬅️ Go Back</button>`;
+  } else {
+    let remainingQuestions = questions.filter(q => !vault.some(v => v.question === q && v.date.startsWith(today)));
+    currentQuestion = remainingQuestions.length ? remainingQuestions[Math.floor(Math.random()*remainingQuestions.length)] : "Survey Complete 💖";
+    document.getElementById("question").innerText = currentQuestion;
+  }
+}
   // --- Load next question or complete ---
   if(todayCount + 1 >= MAX_PER_DAY) {
     document.getElementById("question").innerText = "Survey Complete 💖";
