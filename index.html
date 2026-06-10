@@ -1,110 +1,162 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Love Login 💖</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin: 0;
-      padding: 0;
-      background: white;
-      color: #b30000;
-      min-height: 100vh;
-      position: relative;
-    }
-
-    /* Big faint heart background */
-    body::before {
-      content: "❤";
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      font-size: 35rem;
-      color: rgba(179, 0, 0, 0.08);
-      transform: translate(-50%, -50%);
-      z-index: -1;
-    }
-
-    h1 {
-      color: #b30000;
-      margin-top: 50px;
-      font-size: 2.2rem;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
-
-    p {
-      font-size: 18px;
-      color: #800000;
-    }
-
-    input {
-      padding: 10px;
-      margin: 10px;
-      border-radius: 8px;
-      border: 2px solid #b30000;
-      font-size: 16px;
-      width: 250px;
-      text-align: center;
-    }
-
-    button {
-      padding: 10px 25px;
-      background: #b30000;
-      border: none;
-      border-radius: 8px;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-
-    button:hover {
-      background: white;
-      color: #b30000;
-      border: 2px solid #b30000;
-      transform: scale(1.05);
-    }
-
-    #error {
-      color: red;
-      margin-top: 10px;
-      font-weight: bold;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>💖G & L Love World Register & Login</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background: white;
+  color: #b30000;
+  min-height: 100vh;
+  position: relative;
+  padding: 20px;
+}
+body::before {
+  content: "❤";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  font-size: 40rem;
+  color: rgba(179,0,0,0.08);
+  transform: translate(-50%,-50%);
+  z-index: -1;
+}
+h1 { color:#b30000; margin-top:20px; }
+input {
+  padding:10px;
+  width:70%;
+  border-radius:8px;
+  border:2px solid #b30000;
+  margin-top:10px;
+  font-size:16px;
+}
+button {
+  padding:10px 20px;
+  background:#b30000;
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  margin-top:10px;
+  transition:.3s;
+}
+button:hover {
+  background:white;
+  color:#b30000;
+  border:2px solid #b30000;
+}
+#error { margin-top:15px; font-weight:bold; color:#b30000; }
+</style>
 </head>
 <body>
-  <h1>💌 Welcome to Our Love World 💌</h1>
-  <p>Enter our secret passkey to continue 💕</p>
 
-  <input type="password" id="passkey" placeholder="Enter passkey 🔐">
-  <br>
-  <button onclick="checkLogin()">Login</button>
-  <p id="error"></p>
+<h1>💖 G&L Love World</h1>
 
-  <script>
-    const secretKey = "LeslyLovesLizzy"; // 💖 your passkey
+<!-- Registration Form -->
+<div id="registerSection">
+  <p>Enter Secret Code to Create Account 💖</p>
+  <input type="password" id="registerSecret" placeholder="Secret Code 🔐"><br>
+  <input type="text" id="regUsername" placeholder="Username 👤"><br>
+  <input type="email" id="regEmail" placeholder="Email 📧"><br>
+  <input type="password" id="regPassword" placeholder="Password 🔑"><br>
+  <input type="password" id="regConfirmPassword" placeholder="Confirm Password 🔑"><br>
+  <button onclick="registerUser()">Create Account 💕</button>
+</div>
 
-    function checkLogin() {
-      const entered = document.getElementById("passkey").value;
-      if (entered === secretKey) {
-        // Save login state
-        localStorage.setItem("loveLogin", "true");
-        // Redirect to homepage
-        window.location.href = "home.html";
-      } else {
-        document.getElementById("error").innerText = "❌ Wrong passkey! Try again 💔";
-      }
+<hr style="width:60%;margin:30px auto;">
+
+<!-- Login Form -->
+<div id="loginSection">
+  <p>Login to Love World 💌</p>
+  <input type="text" id="loginUsername" placeholder="Username 👤"><br>
+  <input type="password" id="loginPassword" placeholder="Password 🔑"><br>
+  <input type="password" id="loginSecret" placeholder="Secret Code 🔐"><br>
+  <button onclick="loginUser()">Login 💖</button>
+</div>
+
+<p id="error"></p>
+
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+  // Supabase details from your Love Vault
+  const supabaseUrl = "https://ietfunnecbuxrnsmxcyc.supabase.co";
+  const supabaseKey = "sb_publishable_oAiBSi-KMQDfAoKT7zGLgw_tdutSjlF";
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  const secretKey = "GL2025";
+
+  async function registerUser() {
+    const secret = document.getElementById("registerSecret").value;
+    const username = document.getElementById("regUsername").value.trim();
+    const email = document.getElementById("regEmail").value.trim();
+    const password = document.getElementById("regPassword").value;
+    const confirm = document.getElementById("regConfirmPassword").value;
+
+    if (secret !== secretKey) return showError("❌ Invalid secret code");
+    if (password !== confirm) return showError("❌ Passwords do not match");
+    if (!username || !email || !password) return showError("❌ Fill in all fields");
+
+    // Check if username exists
+    const { data: existing, error: checkError } = await supabase
+      .from("love_users")
+      .select("username")
+      .eq("username", username)
+      .single();
+
+    if (existing) return showError("❌ Username already exists");
+    if (checkError && checkError.code !== "PGRST116") console.error(checkError);
+
+    // Insert new user
+    const { error } = await supabase.from("love_users").insert([
+      { username, email, password }
+    ]);
+
+    if (error) {
+      console.error(error);
+      return showError("❌ Error creating account");
     }
-  </script>
+
+    alert("💖 Account created successfully!");
+  }
+
+  async function loginUser() {
+    const username = document.getElementById("loginUsername").value.trim();
+    const password = document.getElementById("loginPassword").value;
+    const secret = document.getElementById("loginSecret").value;
+
+    if (secret !== secretKey) return showError("❌ Invalid secret code");
+
+    const { data: user, error } = await supabase
+      .from("love_users")
+      .select("*")
+      .eq("username", username)
+      .eq("password", password)
+      .single();
+
+    if (error || !user) return showError("❌ Invalid username or password");
+
+    // Save login state locally
+    localStorage.setItem("loveLogin", "true");
+    localStorage.setItem("loveUser", user.username);
+    localStorage.setItem("loveEmail", user.email);
+
+    window.location.href = "home.html";
+  }
+
+  function showError(message) {
+    document.getElementById("error").innerText = message;
+  }
+
+  // Expose functions globally
+  window.registerUser = registerUser;
+  window.loginUser = loginUser;
+</script>
+
 </body>
 </html>
+
 
   
