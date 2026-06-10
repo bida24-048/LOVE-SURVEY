@@ -1,73 +1,177 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>🎵 Add Song</title>
+
 <style>
-  body { font-family: Arial, sans-serif; text-align: center; background: #f0f8ff; margin:0; padding:20px; }
-  h1 { color: #1d4ed8; }
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background: #f0f8ff;
+    margin: 0;
+    padding: 20px;
+  }
+
+  h1 {
+    color: #1d4ed8;
+  }
+
   input, textarea {
-    width: 80%; padding: 10px; margin: 10px 0;
-    border: 1px solid #1d4ed8; border-radius: 8px;
+    width: 80%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #1d4ed8;
+    border-radius: 8px;
   }
+
   button {
-    padding: 10px 20px; margin: 10px;
-    border: none; border-radius: 8px;
-    font-size: 16px; cursor: pointer;
+    padding: 10px 20px;
+    margin: 10px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
   }
-  .save-btn { background: #1d4ed8; color:white; }
-  .back-btn { background: #10b981; color:white; }
+
+  .save-btn {
+    background: #1d4ed8;
+    color: white;
+  }
+
+  .back-btn {
+    background: #10b981;
+    color: white;
+  }
 </style>
+
 </head>
 <body>
 
 <h1>🎶 Add a Song</h1>
 
-<input type="text" id="songTitle" placeholder="Song Title"><br>
-<textarea id="songDesc" placeholder="Why this song is special 💖"></textarea><br>
-<input type="url" id="songLink" placeholder="Paste song link (YouTube, Spotify, etc.)"><br>
+<input
+type="text"
+id="songTitle"
+placeholder="Song Title">
+
+<br>
+
+<textarea
+  id="songDesc"
+  placeholder="Why this song is special 💖">
+</textarea>
+
+<br>
+
+<input
+type="url"
+id="songLink"
+placeholder="Paste song link (YouTube, Spotify, etc.)">
+
+<br>
 
 <!-- Select Song from Phone -->
-<input type="file" id="songFile" accept="audio/*"><br>
 
-<button class="save-btn" onclick="saveSong()">Save to Vault 💖</button>
-<button class="back-btn" onclick="window.location.href='vault.html'">Go to Vault 📖</button>
+<input
+type="file"
+id="songFile"
+accept="audio/*">
+
+<br>
+
+<button
+class="save-btn"
+onclick="saveSong()">
+Save to Vault 💖 </button>
+
+<button
+class="back-btn"
+onclick="window.location.href='vault.html'">
+Go to Vault 📖 </button>
 
 <script>
+
 function saveSong() {
-  const title = document.getElementById("songTitle").value.trim();
-  const desc = document.getElementById("songDesc").value.trim();
-  const link = document.getElementById("songLink").value.trim();
-  const fileInput = document.getElementById("songFile");
+
+  const title =
+    document.getElementById("songTitle").value.trim();
+
+  const desc =
+    document.getElementById("songDesc").value.trim();
+
+  const link =
+    document.getElementById("songLink").value.trim();
+
+  const fileInput =
+    document.getElementById("songFile");
+
   let fileUrl = "";
 
   // Convert selected audio file to temporary URL
-  if(fileInput.files.length > 0){
+  if (fileInput.files.length > 0) {
     fileUrl = URL.createObjectURL(fileInput.files[0]);
   }
 
-  if(!title) return alert("Please enter a song title 🎵");
+  if (!title) {
+    return alert("Please enter a song title 🎵");
+  }
 
-  const vault = JSON.parse(localStorage.getItem("vault")) || [];
+  const vault =
+    JSON.parse(localStorage.getItem("vault")) || [];
+
   vault.push({
+
+    // ==================================================
+    // ⭐ LOVE VAULT SOURCE TRACKING
+    // Copy these two lines to every other page
+    // ==================================================
+    source_page: "Songs",
+    section: "Songs",
+    // ==================================================
+
     date: new Date().toLocaleDateString(),
+
     type: "song",
+
     title: title,
     desc: desc,
     link: link,
-    file: fileUrl
+    file: fileUrl,
+
+    // ==================================================
+    // ⭐ THIS IS THE TEXT THAT WILL APPEAR
+    // INSIDE THE LOVE VAULT
+    // ==================================================
+    content: `🎵 ${title}
+
+💖 ${desc}
+
+🔗 ${link}`,
+    // ==================================================
+
+    // Optional
+    author: "Us"
+
   });
 
-  localStorage.setItem("vault", JSON.stringify(vault));
+  localStorage.setItem(
+    "vault",
+    JSON.stringify(vault)
+  );
+
   alert("Song saved to Vault 💖");
 
-  // clear form
+  // Clear form
   document.getElementById("songTitle").value = "";
   document.getElementById("songDesc").value = "";
   document.getElementById("songLink").value = "";
   document.getElementById("songFile").value = "";
 }
+
 </script>
 
 </body>
 </html>
+
