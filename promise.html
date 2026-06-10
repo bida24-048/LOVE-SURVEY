@@ -40,16 +40,31 @@ button:hover { background:white; color:#b30000; border:2px solid #b30000; }
 function saveItem() {
     const text = document.getElementById("promiseText").value.trim();
     if(!text) return alert("Please type your promise!");
+    
     const vault = JSON.parse(localStorage.getItem("vault")) || [];
-    vault.push({ type:"promise", text:text, date:new Date().toLocaleString() });
+    vault.push({ 
+        type: "promise", 
+        text: text, 
+        date: new Date().toLocaleString(),
+        source_page: "Promises",   // ✅ label added
+        section: "Promises"        // ✅ label added
+    });
+    
     localStorage.setItem("vault", JSON.stringify(vault));
     document.getElementById("promiseText").value = "";
-    document.getElementById("status").innerText = "Promise saved to Vault 💌";
+    document.getElementById("status").innerHTML = `
+      Promise saved to Vault 💌 <br>
+      <button onclick="goHome()">⬅️ Back to Home</button>
+    `;
 }
-  source_page: "Promises",
-section: "Promises",
+
+// --- Go back function ---
+function goHome() {
+  window.location.href = "home.html"; 
+}
 </script>
 </body>
 </html>
+
 
  
