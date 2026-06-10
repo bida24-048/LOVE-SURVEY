@@ -245,7 +245,8 @@ function saveLoveAnswer(selectedAnswer) {
       date: new Date().toLocaleString(),
       source_page: "Love Questions",
       section: "Love",
-      responses: todayAnswers   // ✅ all 5 stored together
+      responses: todayAnswers,
+     user_name: currentUser// ✅ all 5 stored together
     });
     localStorage.setItem("vault", JSON.stringify(vault));
 
