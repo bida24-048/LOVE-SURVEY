@@ -1,157 +1,441 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>📖 Love Vault</title>
+
 <style>
-body { font-family: Arial, sans-serif; text-align: center; background: white; color: #b30000; min-height:100vh; position:relative; margin:0; padding:20px; }
-body::before { content:"❤"; position:fixed; top:50%; left:50%; font-size:40rem; color:rgba(179,0,0,0.08); transform:translate(-50%,-50%); z-index:-1; }
-h1 { color:#b30000; margin-top:20px; }
-h2 { color:#b30000; margin-top:25px; }
-#vault { margin-top:20px; max-height:600px; overflow-y:auto; border:1px solid #b30000; padding:10px; border-radius:8px; background:#ffe6e6; text-align:left; }
-.vault-entry { margin-bottom:15px; padding:10px; border-bottom:1px solid #b30000; border-radius:5px; background:#fff0f0; }
-.author { font-size:0.9rem; color:#555; }
-.section-label { font-weight:bold; color:#b30000; margin-bottom:5px; }
-.action-btn { font-size:14px; margin:5px; padding:6px 10px; border-radius:5px; border:none; cursor:pointer; }
-.share-btn { background:#128C7E; color:white; }
-.delete-btn { background:#d63333; color:white; }
-#notify { margin-top:15px; font-weight:bold; color:#b30000; }
-#search { margin-top:15px; padding:8px; width:60%; border:1px solid #b30000; border-radius:5px; }
+body{
+    font-family:Arial,sans-serif;
+    text-align:center;
+    background:white;
+    color:#b30000;
+    min-height:100vh;
+    position:relative;
+    margin:0;
+    padding:20px;
+}
+
+body::before{
+    content:"❤";
+    position:fixed;
+    top:50%;
+    left:50%;
+    font-size:40rem;
+    color:rgba(179,0,0,0.08);
+    transform:translate(-50%,-50%);
+    z-index:-1;
+}
+
+h1,h2{
+    color:#b30000;
+}
+
+#search{
+    margin-top:15px;
+    padding:10px;
+    width:70%;
+    border:1px solid #b30000;
+    border-radius:6px;
+}
+
+#vault{
+    margin-top:20px;
+    max-height:650px;
+    overflow-y:auto;
+    border:1px solid #b30000;
+    padding:15px;
+    border-radius:10px;
+    background:#ffe6e6;
+    text-align:left;
+}
+
+.vault-entry{
+    margin-bottom:18px;
+    padding:12px;
+    background:#fff0f0;
+    border-radius:8px;
+    border:1px solid #ffcccc;
+}
+
+.source-label{
+    font-weight:bold;
+    color:#b30000;
+    margin-bottom:8px;
+}
+
+.date-label{
+    color:#555;
+    margin-bottom:8px;
+    font-size:0.95rem;
+}
+
+.message-box{
+    background:white;
+    padding:12px;
+    border-left:4px solid #b30000;
+    border-radius:5px;
+    margin:10px 0;
+    color:#333;
+}
+
+.author{
+    font-size:0.9rem;
+    color:#666;
+    margin-top:8px;
+}
+
+.action-btn{
+    font-size:14px;
+    margin:5px;
+    padding:8px 12px;
+    border-radius:5px;
+    border:none;
+    cursor:pointer;
+}
+
+.share-btn{
+    background:#128C7E;
+    color:white;
+}
+
+.sync-btn{
+    background:#0066cc;
+    color:white;
+}
+
+#notify{
+    margin-top:15px;
+    font-weight:bold;
+    color:#b30000;
+}
 </style>
+
 </head>
+
 <body>
 
 <h1>📖 Love Vault</h1>
 
 <div>
-  <input id="search" type="text" placeholder="🔍 Search the Vault...">
-  <button onclick="shareVault()" class="action-btn share-btn">Share Whole Vault on WhatsApp 📲</button>
-  <button onclick="syncLocalToSupabase()" class="action-btn share-btn">🔄 Sync Local → Supabase</button>
+    <input id="search" type="text" placeholder="🔍 Search by source, author, or text...">
+
+```
+<button onclick="shareVault()" class="action-btn share-btn">
+    Share Whole Vault 📲
+</button>
+
+<button onclick="syncLocalToSupabase()" class="action-btn sync-btn">
+    🔄 Sync Local → Supabase
+</button>
+```
+
 </div>
 
 <h2>Vault 💖</h2>
-<div id="vault">Loading vault...</div>
+
+<div id="vault">
+    Loading vault...
+</div>
+
 <p id="notify"></p>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
-const supabaseUrl = "https://ietfunnecbuxrnsmxcyc.supabase.co";
-const supabaseKey = "sb_publishable_oAiBSi-KMQDfAoKT7zGLgw_tdutSjlF"; 
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+const supabaseUrl =
+"https://ietfunnecbuxrnsmxcyc.supabase.co";
+
+const supabaseKey =
+"sb_publishable_oAiBSi-KMQDfAoKT7zGLgw_tdutSjlF";
+
+const supabaseClient =
+supabase.createClient(supabaseUrl, supabaseKey);
 
 let vaultData = [];
 
-// 📥 Load vault (merge local 'vault' + Supabase)
-async function loadVault() {
-  let localVault = JSON.parse(localStorage.getItem("vault") || "[]");
+async function loadVault(){
 
-  const { data, error } = await supabaseClient
-    .from("love_vault")
-    .select("*")
-    .order("created_at");
+    let localVault =
+    JSON.parse(localStorage.getItem("vault") || "[]");
 
-  let combined = localVault;
-  if (!error && data) {
-    combined = [...localVault, ...data];
-  }
+    const { data, error } =
+    await supabaseClient
+        .from("love_vault")
+        .select("*")
+        .order("created_at",{ascending:false});
 
-  vaultData = combined;
-  renderVault(combined);
+    let combined = [...localVault];
+
+    if(!error && data){
+        combined = [...localVault,...data];
+    }
+
+    vaultData = combined;
+    renderVault(combined);
 }
 
-function renderVault(data) {
-  const vaultDiv = document.getElementById("vault");
-  if (!data || data.length === 0) {
-    vaultDiv.innerText = "Vault is empty 😘";
-    return;
-  }
+function renderVault(data){
 
-  // Group by section
-  const grouped = {};
-  data.forEach(entry => {
-    const section = entry.section || "General";
-    if (!grouped[section]) grouped[section] = [];
-    grouped[section].push(entry);
-  });
+    const vaultDiv =
+    document.getElementById("vault");
 
-  vaultDiv.innerHTML = Object.keys(grouped).map(section => {
-    const entries = grouped[section].map(entry => `
-      <div class="vault-entry">
-        <div class="section-label">[${section.toUpperCase()}]</div>
-        <p>${entry.content}</p>
-        <p class="author">— ${entry.author || "Anonymous"} (${entry.date || new Date(entry.created_at).toLocaleString()})</p>
-        <button class="action-btn share-btn" onclick="shareSingle('${section}','${entry.content}','${entry.author || "Anonymous"}','${entry.date || entry.created_at}')">Share 📲</button>
-      </div>
-    `).join("");
-    return entries;
-  }).join("");
+    if(!data || data.length===0){
+        vaultDiv.innerHTML =
+        "<h3>Vault is empty 😘</h3>";
+        return;
+    }
+
+    vaultDiv.innerHTML = data.map(entry => {
+
+        const source =
+            entry.source_page ||
+            entry.section ||
+            "General";
+
+        const date =
+            entry.date ||
+            (entry.created_at
+                ? new Date(entry.created_at)
+                    .toLocaleString()
+                : "Unknown Date");
+
+        const content =
+            entry.content ||
+            entry.text ||
+            "No content";
+
+        const author =
+            entry.author ||
+            "Anonymous";
+
+        return `
+        <div class="vault-entry">
+
+            <div class="source-label">
+                📂 Source: ${source}
+            </div>
+
+            <div class="date-label">
+                📅 Date: ${date}
+            </div>
+
+            <div class="message-box">
+                <strong>💌 Text:</strong><br><br>
+                ${content}
+            </div>
+
+            <div class="author">
+                ✍️ Written by: ${author}
+            </div>
+
+            <button
+                class="action-btn share-btn"
+                onclick="shareSingle(
+                    ${JSON.stringify(source)},
+                    ${JSON.stringify(content)},
+                    ${JSON.stringify(author)},
+                    ${JSON.stringify(date)}
+                )">
+                Share 📲
+            </button>
+
+        </div>
+        `;
+    }).join("");
 }
 
-// 🔍 Search filter
-document.getElementById("search").addEventListener("input", e => {
-  const term = e.target.value.toLowerCase();
-  const filtered = vaultData.filter(entry =>
-    (entry.content && entry.content.toLowerCase().includes(term)) ||
-    (entry.author && entry.author.toLowerCase().includes(term)) ||
-    (entry.section && entry.section.toLowerCase().includes(term))
-  );
-  renderVault(filtered);
+document
+.getElementById("search")
+.addEventListener("input", function(e){
+
+    const term =
+    e.target.value.toLowerCase();
+
+    const filtered =
+    vaultData.filter(entry => {
+
+        const source =
+        (entry.source_page ||
+        entry.section ||
+        "").toLowerCase();
+
+        const content =
+        (entry.content ||
+        entry.text ||
+        "").toLowerCase();
+
+        const author =
+        (entry.author ||
+        "").toLowerCase();
+
+        return (
+            source.includes(term) ||
+            content.includes(term) ||
+            author.includes(term)
+        );
+    });
+
+    renderVault(filtered);
 });
 
-// 📲 Share whole vault
 function shareVault(){
-  if(vaultData.length===0) return alert("Vault is empty 😘");
-  let text="📖💖 Love Vault 💖📖\n\n";
-  vaultData.forEach(entry=>{
-    text+=`[${entry.section || "General"}] ${entry.content}\n— ${entry.author||"Anonymous"}\n${entry.date || new Date(entry.created_at).toLocaleString()}\n\n`;
-  });
-  window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
-}
 
-// 📲 Share single entry
-function shareSingle(section, content, author, created_at){
-  let text=`[${section}] ${content}\n— ${author||"Anonymous"}\n${created_at}`;
-  window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
-}
-
-// 🔄 Sync local entries to Supabase
-async function syncLocalToSupabase() {
-  let localVault = JSON.parse(localStorage.getItem("vault") || "[]");
-  if(localVault.length === 0) return alert("No local entries to sync 💾");
-
-  for(const entry of localVault){
-    try {
-      const { error } = await supabaseClient.from("love_vault").insert({
-        section: entry.section || "General",
-        content: entry.content || entry.text || "",
-        author: entry.author || "Anonymous",
-        created_at: entry.created_at || new Date().toISOString()
-      });
-      if(error) console.warn("Failed to sync entry:", error.message);
-    } catch(err){
-      console.warn("Sync error:", err.message);
+    if(vaultData.length===0){
+        alert("Vault is empty 😘");
+        return;
     }
-  }
-  alert("✅ Sync complete!");
-  loadVault();
+
+    let text =
+    "📖💖 LOVE VAULT 💖📖\n\n";
+
+    vaultData.forEach(entry => {
+
+        const source =
+        entry.source_page ||
+        entry.section ||
+        "General";
+
+        const date =
+        entry.date ||
+        (entry.created_at
+            ? new Date(entry.created_at)
+                .toLocaleString()
+            : "");
+
+        text +=
+`📂 Source: ${source}
+📅 Date: ${date}
+
+💌 ${entry.content || entry.text || ""}
+
+✍️ ${entry.author || "Anonymous"}
+
+--------------------------------
+
+`;
+    });
+
+    window.open(
+        "https://wa.me/?text=" +
+        encodeURIComponent(text),
+        "_blank"
+    );
 }
 
-// 🔔 Realtime notifications
-supabaseClient
-  .channel("love-vault")
-  .on("postgres_changes", { event: "INSERT", schema: "public", table: "love_vault" }, payload => {
-    document.getElementById("notify").innerText = "✨ New update added! Check the Vault 💕";
-    loadVault();
-  })
-  .subscribe();
+function shareSingle(
+    source,
+    content,
+    author,
+    date
+){
 
-// Load vault on page open
+    const text =
+`📂 Source: ${source}
+
+📅 Date: ${date}
+
+💌 ${content}
+
+✍️ ${author}`;
+
+    window.open(
+        "https://wa.me/?text=" +
+        encodeURIComponent(text),
+        "_blank"
+    );
+}
+
+async function syncLocalToSupabase(){
+
+    const localVault =
+    JSON.parse(
+        localStorage.getItem("vault")
+        || "[]"
+    );
+
+    if(localVault.length===0){
+        alert("No local entries found 💾");
+        return;
+    }
+
+    for(const entry of localVault){
+
+        try{
+
+            await supabaseClient
+            .from("love_vault")
+            .insert({
+
+                source_page:
+                    entry.source_page ||
+                    entry.section ||
+                    "General",
+
+                section:
+                    entry.section ||
+                    "General",
+
+                content:
+                    entry.content ||
+                    entry.text ||
+                    "",
+
+                author:
+                    entry.author ||
+                    "Anonymous",
+
+                created_at:
+                    entry.created_at ||
+                    new Date().toISOString()
+            });
+
+        }catch(err){
+            console.error(err);
+        }
+    }
+
+    alert("✅ Sync complete!");
+    loadVault();
+}
+
+supabaseClient
+.channel("love-vault")
+.on(
+    "postgres_changes",
+    {
+        event:"INSERT",
+        schema:"public",
+        table:"love_vault"
+    },
+    payload => {
+
+        document
+        .getElementById("notify")
+        .innerText =
+        "✨ New memory added to the Vault 💕";
+
+        loadVault();
+    }
+)
+.subscribe();
+
 loadVault();
+
 </script>
 
-<p style="text-align:center; color:#b30000; margin-top:30px; font-weight:bold;">
+<p style="
+text-align:center;
+color:#b30000;
+margin-top:30px;
+font-weight:bold;
+">
 ❤️ I LOVE YOU SO MUCH 💖
 </p>
+
 </body>
 </html>
 
