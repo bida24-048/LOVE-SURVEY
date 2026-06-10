@@ -31,7 +31,8 @@ function saveItem() {
         text: text, 
         date: new Date().toLocaleString(),
         source_page: "Messages",   // ✅ stored inside the entry
-        section: "Messages"        // ✅ stored inside the entry
+        section: "Messages" ,
+        user_name: currentUser
     });
 
     localStorage.setItem("vault", JSON.stringify(vault));
