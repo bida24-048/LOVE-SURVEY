@@ -47,7 +47,8 @@ function saveItem() {
         text: text, 
         date: new Date().toLocaleString(),
         source_page: "Plans",   // ✅ label added
-        section: "Plans"        // ✅ label added
+        section: "Plans",
+       user_name: currentUser
     });
     
     localStorage.setItem("vault", JSON.stringify(vault));
