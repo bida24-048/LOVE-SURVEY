@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -67,13 +68,15 @@ button:hover {
 
 <hr style="width:60%;margin:30px auto;">
 
-<!-- Login Form -->
-<div id="loginSection">
+<!-- Login Form (hidden initially) -->
+<div id="loginSection" style="display:none;">
   <p>Login to Love World 💌</p>
   <input type="text" id="loginUsername" placeholder="Username 👤"><br>
   <input type="password" id="loginPassword" placeholder="Password 🔑"><br>
   <input type="password" id="loginSecret" placeholder="Secret Code 🔐"><br>
   <button onclick="loginUser()">Login 💖</button>
+  <br><br>
+  <button onclick="backToRegister()">⬅️ Back to Register</button>
 </div>
 
 <p id="error"></p>
@@ -117,7 +120,6 @@ button:hover {
 
     if (existing) return showError("❌ Username already exists");
 
-    // Hash password before saving
     const hashed = await hashPassword(password);
 
     const { error } = await supabase.from("love_users").insert([
@@ -126,10 +128,12 @@ button:hover {
 
     if (error) {
       console.error(error);
-      return showError("❌ Error creating account");
+      return showError("❌ Error creating account: " + error.message);
     }
 
     alert("💖 Account created successfully!");
+    document.getElementById("registerSection").style.display = "none";
+    document.getElementById("loginSection").style.display = "block";
   }
 
   async function loginUser() {
@@ -157,17 +161,19 @@ button:hover {
     window.location.href = "home.html";
   }
 
+  function backToRegister() {
+    document.getElementById("loginSection").style.display = "none";
+    document.getElementById("registerSection").style.display = "block";
+  }
+
   function showError(message) {
     document.getElementById("error").innerText = message;
   }
 
   window.registerUser = registerUser;
   window.loginUser = loginUser;
+  window.backToRegister = backToRegister;
 </script>
 
 </body>
 </html>
-
-
-
-  
