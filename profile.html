@@ -84,13 +84,13 @@ async function loadProfile(){
     .eq("username", username)
     .maybeSingle();
 
-  if(error){ console.error(error); return; }
-  if(!data) return;
+  if(error){ console.error(error); }
 
-  document.getElementById("profileUsername").innerText = data.username;
-  document.getElementById("profileEmail").innerText = data.email || "";
-  document.getElementById("bio").value = data.bio || "";
-  if(data.profile_pic){
+  // Use Supabase data if found, otherwise fallback to localStorage
+  document.getElementById("profileUsername").innerText = data?.username || username || "Unknown";
+  document.getElementById("profileEmail").innerText = data?.email || email || "";
+  document.getElementById("bio").value = data?.bio || "";
+  if(data?.profile_pic){
     document.getElementById("profilePreview").src = data.profile_pic;
   }
 
@@ -135,6 +135,8 @@ window.saveProfile = saveProfile;
 
 </body>
 </html>
+
+
 
 
 
