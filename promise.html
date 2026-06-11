@@ -11,6 +11,7 @@ body {
   color: #b30000;
   min-height: 100vh;
   position: relative;
+  padding: 20px;
 }
 body::before {
   content: "❤";
@@ -27,9 +28,11 @@ h1 { color: #b30000; margin-top: 30px; animation: pulse 2s infinite; }
 textarea { 
   padding:10px; 
   width:70%; 
-  height:100px; 
+  max-width: 500px;
+  height:120px; 
   border-radius:8px; 
-  border:2px solid #b30000; 
+  border:2px solid #b30000;
+  font-family: inherit;
 }
 button { 
   padding:10px 20px; 
@@ -47,70 +50,51 @@ button:hover {
   border:2px solid #b30000; 
 }
 #status { margin-top:10px; font-weight:bold; }
+.back-btn { background: #666; margin-left: 10px; }
 </style>
 </head>
 <body>
 <h1>💌 Daily Promises</h1>
 <textarea id="promiseText" placeholder="Write your promise... 💖"></textarea><br>
-<button onclick="saveItem()">Save Promise 💖</button>
+<button onclick="savePromise()">Save Promise 💖</button>
+<button onclick="window.location.href='vault.html'" class="back-btn">📖 Go to Vault</button>
 <p id="status"></p>
 
-<script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-const supabaseUrl = "https://wmebpsheblrkuvygguae.supabase.co";
-const supabaseKey = "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_";
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-const currentUserId = localStorage.getItem("loveUserId");
-const currentUser = localStorage.getItem("loveUser");
-
-async function saveItem() {
+<script>
+function savePromise() {
   const text = document.getElementById("promiseText").value.trim();
-  if(!text) return alert("Please type your promise!");
-
-  // ✅ Save to Supabase Love Vault
-  const { error } = await supabase.from("love_vault").insert([{
-    user_id: currentUserId,
-    source_page: "Promises",
-    section: "Promises",
-    content: text,
-    created_at: new Date().toISOString()
-  }]);
-
-  if(error){
-    console.error(error);
-    document.getElementById("status").innerHTML = "❌ Failed to save to Love Vault";
+  if(!text) {
+    alert("Please write your promise!");
     return;
   }
-
-  // ✅ Also keep in localStorage for offline access
-  const vault = JSON.parse(localStorage.getItem("vault")) || [];
+  
+  // Get current user info
+  const currentUser = localStorage.getItem("loveUser") || "Anonymous";
+  
+  // Get existing vault or create new
+  let vault = JSON.parse(localStorage.getItem("vault") || "[]");
+  
+  // Add new promise
   vault.push({ 
     source_page: "Promises",
     section: "Promises",
     content: text,
     created_at: new Date().toISOString(),
-    user_id: currentUserId,
-    author: currentUser || "Anonymous"
+    author: currentUser,
+    type: "promise"
   });
+  
+  // Save back to localStorage
   localStorage.setItem("vault", JSON.stringify(vault));
-
+  
+  // Clear form
   document.getElementById("promiseText").value = "";
-  document.getElementById("status").innerHTML = `
-    Promise saved to Love Vault 💌 <br>
-    <button onclick="goHome()">⬅️ Back to Home</button>
-  `;
-}
-
-function goHome() {
-  window.location.href = "home.html"; 
+  document.getElementById("status").innerHTML = "✅ Promise saved to Love Vault! 🤝<br>Go to Vault to see it.";
+  
+  setTimeout(() => {
+    document.getElementById("status").innerHTML = "";
+  }, 3000);
 }
 </script>
 </body>
 </html>
-
-
-
-
- 
