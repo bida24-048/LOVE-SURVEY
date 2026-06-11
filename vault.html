@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>💖 G&L Love Vault</title>
+  <title>💖 G&L Love Vault — Auto Cloud Sync</title>
   <style>
     * {
       box-sizing: border-box;
@@ -235,6 +235,16 @@
       color: #c49191;
       margin-top: 8px;
     }
+    .cloud-badge {
+      background: #e9f5ff;
+      color: #0c4e6e;
+      display: inline-block;
+      border-radius: 30px;
+      padding: 2px 12px;
+      font-size: 0.7rem;
+      margin-left: 8px;
+      font-weight: normal;
+    }
   </style>
 </head>
 <body>
@@ -243,6 +253,7 @@
 
 <div id="profileInfo" class="profile-badge">
   💝 <span id="displayUsername">Loading profile...</span>
+  <span class="cloud-badge" id="cloudSyncStatus">☁️ auto-sync active</span>
 </div>
 
 <div class="stats" id="statsDisplay"></div>
@@ -250,7 +261,7 @@
 <div class="toolbar">
   <input id="search" type="text" placeholder="🔍 Search all memories...">
   <button onclick="shareVaultUI()" class="action-btn share-btn">📲 Share Vault</button>
-  <button onclick="syncLocalToSupabaseWrapper()" class="action-btn sync-btn">🔄 Sync to Cloud</button>
+  <button onclick="manualSyncNow()" class="action-btn sync-btn">🔄 Force Sync Now</button>
 </div>
 
 <div class="filter-buttons">
@@ -262,14 +273,14 @@
   <button class="filter-btn" data-filter="song">🎵 Songs</button>
 </div>
 
-<h2>💌G&L DATA</h2>
+<h2>💌 G&L MEMORIES (auto‑synced ❤️ cloud)</h2>
 <div id="vault">
   <div style="text-align:center; padding: 2rem;">✨ Loading memories from all your pages... ✨</div>
 </div>
-<div class="refresh-note">🔄 Auto-refreshes every 3 seconds | Data from messages.html, plans.html, promise.html, song.html & questions.html</div>
+<div class="refresh-note">🔄 Auto‑refresh every 3 sec | ✨ New memories saved on plans.html, promise.html, messages.html, questions.html, song.html appear here & sync to cloud automatically</div>
 
 <div id="notify" style="display: none;"></div>
-<div class="footer-meta">❤️ Everything you save appears here automatically</div>
+<div class="footer-meta">❤️ Everything you save is backed up to your private cloud — never lose a memory</div>
 
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
@@ -282,8 +293,10 @@
   let currentFilter = "all";
   let currentSearchTerm = "";
   let currentUserProfile = { id: null, username: "MyLove" };
+  let isAutoSyncing = false;
+  let pendingSyncTimer = null;
 
-  // =============== LOAD PROFILE ===============
+  // =============== PROFILE MANAGEMENT ===============
   function loadProfile() {
     const username = localStorage.getItem("loveUser");
     const email = localStorage.getItem("loveEmail");
@@ -297,7 +310,6 @@
       };
       document.getElementById("displayUsername").innerHTML = `Writing as: <strong>${username}</strong>`;
     } else {
-      // Set a default profile
       localStorage.setItem("loveUser", "MyLove");
       localStorage.setItem("loveUserId", "default_user_123");
       currentUserProfile = {
@@ -309,7 +321,7 @@
     }
   }
 
-  // =============== FORMAT CONTENT FOR DISPLAY ===============
+  // =============== FORMAT HELPERS ===============
   function formatQuestionAnswers(content) {
     try {
       const parsed = JSON.parse(content);
@@ -329,116 +341,95 @@
     return `<div>${escapeHtml(content)}</div>`;
   }
 
-  // =============== COLLECT FROM ALL PAGES ===============
+  // =============== COLLECT LOCAL MEMORIES (FROM ALL PAGES) ===============
   function collectFromAllPages() {
     const allEntries = [];
 
-    // 1. PLANS page - "couplePlans"
+    // 1. PLANS: "couplePlans"
     let plans = JSON.parse(localStorage.getItem("couplePlans") || "[]");
-    console.log(`📝 Found ${plans.length} plans`);
     plans.forEach((plan, index) => {
+      let contentText = plan.title ? `${plan.title}: ${plan.text}` : (plan.text || plan.content || "");
       allEntries.push({
         id: `plan_${Date.now()}_${index}_${Math.random()}`,
         source: "Plans",
-        content: plan.title ? `${plan.title}: ${plan.text}` : (plan.text || plan.content || ""),
+        content: contentText,
+        rawContent: plan.text || plan.content || "",
         type: "plan",
         created_at: plan.created_at || plan.date || new Date().toISOString(),
         author: plan.author || currentUserProfile.username,
-        rawContent: plan.text || plan.content || ""
       });
     });
 
-    // 2. Get all entries from main "vault" localStorage
+    // 2. VAULT array (messages, promises, questions, songs saved from other pages)
     let vault = JSON.parse(localStorage.getItem("vault") || "[]");
-    console.log(`📦 Found ${vault.length} vault entries`);
-    
-    vault.forEach((item, index) => {
+    vault.forEach((item, idx) => {
       const sourcePage = item.source_page || "";
       let type = "";
       let displaySource = "";
       
-      if (sourcePage === "Promises" || sourcePage === "promise") {
-        type = "promise";
-        displaySource = "Promises";
-      } 
-      else if (sourcePage === "Love Questions" || sourcePage === "questions" || sourcePage === "Questions") {
-        type = "question";
-        displaySource = "Love Questions";
-      }
-      else if (sourcePage === "Messages" || sourcePage === "messages") {
-        type = "message";
-        displaySource = "Messages";
-      }
-      else if (sourcePage === "Songs" || sourcePage === "songs") {
-        type = "song";
-        displaySource = "Songs";
-      }
-      else if (sourcePage === "Plans" || sourcePage === "plans") {
-        type = "plan";
-        displaySource = "Plans";
-      }
+      if (sourcePage === "Promises" || sourcePage === "promise") { type = "promise"; displaySource = "Promises"; }
+      else if (sourcePage === "Love Questions" || sourcePage === "questions" || sourcePage === "Questions") { type = "question"; displaySource = "Love Questions"; }
+      else if (sourcePage === "Messages" || sourcePage === "messages") { type = "message"; displaySource = "Messages"; }
+      else if (sourcePage === "Songs" || sourcePage === "songs") { type = "song"; displaySource = "Songs"; }
+      else if (sourcePage === "Plans" || sourcePage === "plans") { type = "plan"; displaySource = "Plans"; }
       
       if (type) {
         allEntries.push({
-          id: `${type}_${Date.now()}_${index}_${Math.random()}`,
+          id: `${type}_${Date.now()}_${idx}_${Math.random()}`,
           source: displaySource,
           content: item.content || "",
+          rawContent: item.content || "",
           type: type,
           created_at: item.created_at || new Date().toISOString(),
           author: item.author || currentUserProfile.username,
-          rawContent: item.content || "",
           link: item.link
         });
       }
     });
-
-    console.log(`📊 Total collected: ${allEntries.length} entries`);
     return allEntries;
   }
 
-  // =============== LOAD FROM CLOUD ===============
+  // =============== LOAD FROM CLOUD (Supabase) ===============
   async function loadFromCloud() {
-  try {
-    const username =
-      localStorage.getItem("loveUser") || "MyLove";
-
-    let { data, error } = await supabase
-      .from("love_vault")
-      .select("*")
-      .eq("username", username)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error(error);
+    try {
+      const username = localStorage.getItem("loveUser") || "MyLove";
+      let { data, error } = await supabase
+        .from("love_vault")
+        .select("*")
+        .eq("username", username)
+        .order("created_at", { ascending: false });
+      if (error) {
+        console.error("Cloud load error:", error);
+        return [];
+      }
+      return (data || []).map(item => ({
+        id: item.id,
+        source: item.source_page || "Memory",
+        content: item.content || "",
+        rawContent: item.content || "",
+        type: item.type || item.section || "memory",
+        created_at: item.created_at,
+        author: item.username,
+        isCloud: true,
+        link: item.link
+      }));
+    } catch (err) {
+      console.error(err);
       return [];
     }
-
-    return (data || []).map(item => ({
-      id: item.id,
-      source: item.source_page || "Memory",
-      content: item.content || "",
-      type: item.type || item.section || "memory",
-      created_at: item.created_at,
-      author: item.username,
-      isCloud: true
-    }));
-
-  } catch (err) {
-    console.error(err);
-    return [];
   }
-}
-     
-   // =============== MERGE AND DISPLAY ===============
+
+  // =============== DEDUPLICATED MERGE ===============
   async function loadAndDisplay() {
     const localMemories = collectFromAllPages();
     const cloudMemories = await loadFromCloud();
     
     let merged = [...cloudMemories];
     
+    // Add local memories only if not already present in cloud (by content+time proximity)
     for (const local of localMemories) {
       const isDuplicate = merged.some(cloud => 
-        cloud.content === local.content && 
+        cloud.rawContent === local.rawContent && 
         Math.abs(new Date(cloud.created_at) - new Date(local.created_at)) < 60000
       );
       if (!isDuplicate) {
@@ -450,6 +441,137 @@
     allMemories = merged;
     updateStats();
     applyFiltersAndSearch();
+  }
+
+  // =============== AUTO SYNC (background: push local non-cloud memories) ===============
+  async function autoSyncToCloud(showToast = false) {
+    if (isAutoSyncing) return;
+    isAutoSyncing = true;
+    const notifyDiv = document.getElementById("notify");
+    if (showToast) {
+      notifyDiv.style.display = "block";
+      notifyDiv.innerText = "☁️ Auto-syncing memories to cloud...";
+    }
+    try {
+      const username = localStorage.getItem("loveUser") || "MyLove";
+      const localMemories = collectFromAllPages();
+      // Fetch current cloud entries to avoid redundant upserts (simple dedup)
+      const { data: existingCloud } = await supabase
+        .from("love_vault")
+        .select("content, created_at, type")
+        .eq("username", username);
+      
+      const existingSet = new Set();
+      if (existingCloud) {
+        existingCloud.forEach(rec => {
+          const key = `${rec.content}|${new Date(rec.created_at).toISOString().slice(0,19)}|${rec.type}`;
+          existingSet.add(key);
+        });
+      }
+      
+      let syncedCount = 0;
+      for (const mem of localMemories) {
+        const contentStr = mem.rawContent || mem.content || "";
+        const timeKey = new Date(mem.created_at).toISOString().slice(0,19);
+        const dupKey = `${contentStr}|${timeKey}|${mem.type}`;
+        if (existingSet.has(dupKey)) continue;
+        
+        const { error } = await supabase
+          .from("love_vault")
+          .insert({
+            username: username,
+            source_page: mem.source,
+            section: mem.type,
+            content: contentStr,
+            type: mem.type,
+            created_at: mem.created_at,
+            link: mem.link || null
+          });
+        if (!error) {
+          syncedCount++;
+          existingSet.add(dupKey);
+        }
+      }
+      
+      if (syncedCount > 0 && showToast) {
+        notifyDiv.innerText = `✅ Auto-synced ${syncedCount} new memories!`;
+        setTimeout(() => { notifyDiv.style.display = "none"; }, 2500);
+      } else if (showToast && syncedCount === 0) {
+        notifyDiv.innerText = `✨ Cloud is already up to date ✨`;
+        setTimeout(() => { notifyDiv.style.display = "none"; }, 1500);
+      } else if (!showToast && syncedCount > 0) {
+        // silent sync – just refresh display
+        await loadAndDisplay();
+      }
+      if (syncedCount > 0) await loadAndDisplay();
+    } catch (err) {
+      console.warn("Auto-sync error", err);
+      if (showToast) {
+        notifyDiv.innerText = `⚠️ Sync issue: ${err.message}`;
+        setTimeout(() => { notifyDiv.style.display = "none"; }, 2000);
+      }
+    } finally {
+      isAutoSyncing = false;
+    }
+  }
+
+  // =============== MANUAL FORCE SYNC (UI) ===============
+  window.manualSyncNow = async function() {
+    const notifyDiv = document.getElementById("notify");
+    notifyDiv.style.display = "block";
+    notifyDiv.innerText = "🔄 Force syncing all local memories to cloud...";
+    try {
+      const username = localStorage.getItem("loveUser") || "MyLove";
+      const localMemories = collectFromAllPages();
+      let upsertCount = 0;
+      for (const mem of localMemories) {
+        const { error } = await supabase
+          .from("love_vault")
+          .upsert({
+            username: username,
+            source_page: mem.source,
+            section: mem.type,
+            content: mem.rawContent || mem.content,
+            type: mem.type,
+            created_at: mem.created_at,
+            link: mem.link || null
+          }, {
+            onConflict: "username,content,created_at"
+          });
+        if (!error) upsertCount++;
+      }
+      notifyDiv.innerText = `✅ Force sync complete: ${upsertCount} memories verified in cloud.`;
+      await loadAndDisplay();
+      setTimeout(() => { notifyDiv.style.display = "none"; }, 2500);
+    } catch (err) {
+      notifyDiv.innerText = `❌ Sync failed: ${err.message}`;
+      setTimeout(() => { notifyDiv.style.display = "none"; }, 3000);
+    }
+  };
+
+  // =============== SHARE VAULT ===============
+  window.shareVaultUI = function() {
+    if (!allMemories.length) {
+      alert("No memories to share yet! Go save something first.");
+      return;
+    }
+    let text = `📖 LOVE VAULT - ${currentUserProfile.username}\n${new Date().toLocaleString()}\n\n`;
+    allMemories.forEach((m, i) => {
+      text += `[${i+1}] ${m.type?.toUpperCase()}: ${m.source}\n`;
+      text += `Content: ${(m.rawContent || m.content || "").substring(0, 200)}\n`;
+      text += `📅 ${formatDate(m.created_at)}\n✍️ ${m.author}\n\n`;
+    });
+    navigator.clipboard.writeText(text);
+    alert("📋 Vault copied to clipboard!");
+  };
+
+  function formatDate(dateString) {
+    if (!dateString) return "✨ Recently";
+    try {
+      const d = new Date(dateString);
+      if (!isNaN(d.getTime())) return d.toLocaleString();
+    } catch(e) {}
+    return "✨ Recently";
   }
 
   function updateStats() {
@@ -466,11 +588,9 @@
 
   function applyFiltersAndSearch() {
     let filtered = [...allMemories];
-    
     if (currentFilter !== "all") {
       filtered = filtered.filter(m => m.type === currentFilter);
     }
-    
     if (currentSearchTerm.trim()) {
       const term = currentSearchTerm.toLowerCase();
       filtered = filtered.filter(m => 
@@ -479,96 +599,20 @@
         (m.author || "").toLowerCase().includes(term)
       );
     }
-    
     renderVault(filtered);
   }
 
   function getTypeEmoji(type) {
-    switch(type) {
-      case "plan": return "📝";
-      case "promise": return "🤝";
-      case "question": return "❓";
-      case "message": return "💬";
-      case "song": return "🎵";
-      default: return "💖";
-    }
+    const map = { plan:"📝", promise:"🤝", question:"❓", message:"💬", song:"🎵" };
+    return map[type] || "💖";
   }
-
   function getTypeColor(type) {
-    switch(type) {
-      case "plan": return "#2c6e2c";
-      case "promise": return "#8b4513";
-      case "question": return "#9b59b6";
-      case "message": return "#1e4a76";
-      case "song": return "#1d4ed8";
-      default: return "#b30000";
-    }
+    const map = { plan:"#2c6e2c", promise:"#8b4513", question:"#9b59b6", message:"#1e4a76", song:"#1d4ed8" };
+    return map[type] || "#b30000";
   }
-
   function getTypeName(type) {
-    switch(type) {
-      case "plan": return "Plan";
-      case "promise": return "Promise";
-      case "question": return "Love Question";
-      case "message": return "Message";
-      case "song": return "Song";
-      default: return "Memory";
-    }
-  }
-
-  function formatDate(dateString) {
-    if (!dateString) return "✨ Recently";
-    try {
-      const d = new Date(dateString);
-      if (!isNaN(d.getTime())) {
-        return d.toLocaleString();
-      }
-    } catch(e) {}
-    return "✨ Recently";
-  }
-
-  function renderVault(memories) {
-    const vaultDiv = document.getElementById("vault");
-    
-    if (!memories || memories.length === 0) {
-      vaultDiv.innerHTML = `<div class="empty-memories">
-        🌸 No data yet! 🌸<br><br>
-        Go to your pages and save something:<br><br>
-        📝 plans.html &nbsp;|&nbsp; 🤝 promise.html &nbsp;|&nbsp; ❓ questions.html<br>
-        💬 messages.html &nbsp;|&nbsp; 🎵 song.html<br><br>
-        Then come back here - memories will appear automatically!
-      </div>`;
-      return;
-    }
-    
-    vaultDiv.innerHTML = memories.map((memory) => {
-      const typeName = getTypeName(memory.type);
-      const typeEmoji = getTypeEmoji(memory.type);
-      const typeColor = getTypeColor(memory.type);
-      const dateStr = formatDate(memory.created_at);
-      
-      let displayContent = "";
-      if (memory.type === "question") {
-        displayContent = formatQuestionAnswers(memory.content);
-      } else if (memory.type === "song") {
-        displayContent = `<div>${escapeHtml(memory.rawContent || memory.content || "")}</div>`;
-        if (memory.link && memory.link.trim()) {
-          displayContent += `<div><a href="${escapeHtml(memory.link)}" target="_blank" class="song-link">🎵 Listen online 🔗</a></div>`;
-        }
-      } else {
-        displayContent = `<div>${escapeHtml(memory.rawContent || memory.content || "")}</div>`;
-      }
-      
-      return `
-        <div class="vault-entry">
-          <div class="type-badge" style="background: ${typeColor}">${typeEmoji} ${typeName}</div>
-          <div class="source-label">📂 ${escapeHtml(memory.source || "Untitled")}</div>
-          <div class="date-label">📅 ${escapeHtml(dateStr)}</div>
-          <div class="message-box"><strong>💌 Memory:</strong><br><br>${displayContent}</div>
-          <div class="author">✍️ By: ${escapeHtml(memory.author || "Anonymous")}</div>
-        </div>
-      `;
-    }).join("");
+    const map = { plan:"Plan", promise:"Promise", question:"Love Question", message:"Message", song:"Song" };
+    return map[type] || "Memory";
   }
 
   function escapeHtml(str) {
@@ -581,102 +625,67 @@
     });
   }
 
-  // =============== SYNC TO CLOUD ===============
-  async function ensureUserInDatabase() {
-    try {
-      let { data: existingUser } = await supabase
-        .from("love_users")
-        .select("id")
-        .eq("username", currentUserProfile.username)
-        .maybeSingle();
-      
-      if (existingUser) {
-        currentUserProfile.id = existingUser.id;
-        return existingUser.id;
-      } else {
-        const { data: newUser } = await supabase
-          .from("love_users")
-          .insert({ username: currentUserProfile.username, email: currentUserProfile.email || "" })
-          .select()
-          .single();
-        if (newUser) {
-          currentUserProfile.id = newUser.id;
-          return newUser.id;
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    }
-    return null;
-  }
-window.syncLocalToSupabaseWrapper = async function () {
-
-  const notifyDiv = document.getElementById("notify");
-
-  notifyDiv.style.display = "block";
-  notifyDiv.innerText = "🔄 Syncing to cloud...";
-
-  try {
-
-    const username =
-      localStorage.getItem("loveUser") || "MyLove";
-
-    const localMemories = collectFromAllPages();
-
-    let synced = 0;
-
-    for (const mem of localMemories) {
-
-      const { error } = await supabase
-        .from("love_vault")
-        .upsert(
-          {
-            username,
-            source_page: mem.source,
-            section: mem.type,
-            content: mem.rawContent || mem.content,
-            type: mem.type,
-            created_at: mem.created_at
-          },
-          {
-            onConflict: "username,content,created_at"
-          }
-        );
-
-      if (!error) synced++;
-    }
-
-    notifyDiv.innerText =
-      `✅ Synced ${synced} memories`;
-
-    await loadAndDisplay();
-
-  } catch (err) {
-
-    notifyDiv.innerText =
-      `❌ ${err.message}`;
-
-  }
-
-  setTimeout(() => {
-    notifyDiv.style.display = "none";
-  }, 3000);
-};
-   // =============== SHARE VAULT ===============
-  window.shareVaultUI = function() {
-    if (!allMemories.length) {
-      alert("No memories to share yet! Go save something first.");
+  function renderVault(memories) {
+    const vaultDiv = document.getElementById("vault");
+    if (!memories || memories.length === 0) {
+      vaultDiv.innerHTML = `<div class="empty-memories">
+        🌸 No memories yet! 🌸<br><br>
+        Go to your pages and save something:<br><br>
+        📝 plans.html &nbsp;|&nbsp; 🤝 promise.html &nbsp;|&nbsp; ❓ questions.html<br>
+        💬 messages.html &nbsp;|&nbsp; 🎵 song.html<br><br>
+        Auto-sync will immediately back them up ☁️
+      </div>`;
       return;
     }
-    let text = `📖 LOVE VAULT - ${currentUserProfile.username}\n${new Date().toLocaleString()}\n\n`;
-    allMemories.forEach((m, i) => {
-      text += `[${i+1}] ${m.type?.toUpperCase()}: ${m.source}\n`;
-      text += `Content: ${(m.rawContent || m.content || "").substring(0, 200)}\n`;
-      text += `📅 ${formatDate(m.created_at)}\n✍️ ${m.author}\n\n`;
-    });
-    navigator.clipboard.writeText(text);
-    alert("📋 Vault copied to clipboard!");
-  };
+    
+    vaultDiv.innerHTML = memories.map((memory) => {
+      const typeName = getTypeName(memory.type);
+      const typeEmoji = getTypeEmoji(memory.type);
+      const typeColor = getTypeColor(memory.type);
+      const dateStr = formatDate(memory.created_at);
+      let displayContent = "";
+      if (memory.type === "question") {
+        displayContent = formatQuestionAnswers(memory.content);
+      } else if (memory.type === "song") {
+        displayContent = `<div>${escapeHtml(memory.rawContent || memory.content || "")}</div>`;
+        if (memory.link && memory.link.trim()) {
+          displayContent += `<div><a href="${escapeHtml(memory.link)}" target="_blank" class="song-link">🎵 Listen online 🔗</a></div>`;
+        }
+      } else {
+        displayContent = `<div>${escapeHtml(memory.rawContent || memory.content || "")}</div>`;
+      }
+      const cloudIcon = memory.isCloud ? " ☁️" : " 💾";
+      return `
+        <div class="vault-entry">
+          <div class="type-badge" style="background: ${typeColor}">${typeEmoji} ${typeName}</div>
+          <div class="source-label">📂 ${escapeHtml(memory.source || "Untitled")}${cloudIcon}</div>
+          <div class="date-label">📅 ${escapeHtml(dateStr)}</div>
+          <div class="message-box"><strong>💌 Memory:</strong><br><br>${displayContent}</div>
+          <div class="author">✍️ By: ${escapeHtml(memory.author || "Anonymous")}</div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // =============== REALTIME CLOUD SYNC (listen to changes and refresh) ===============
+  function initRealtimeAndAutoSync() {
+    // realtime subscription: refresh UI when cloud changes from other devices/tabs
+    supabase.channel("vault-changes-global")
+      .on("postgres_changes", { event: "*", schema: "public", table: "love_vault" }, () => {
+        loadAndDisplay();
+      })
+      .subscribe();
+    
+    // periodic auto background sync: check every 12 seconds for new local items and push to cloud
+    setInterval(async () => {
+      await autoSyncToCloud(false);
+    }, 12000);
+    
+    // also run initial auto-sync after 2 seconds
+    setTimeout(async () => {
+      await autoSyncToCloud(true);
+    }, 2000);
+  }
 
   // =============== EVENT LISTENERS ===============
   document.getElementById("search").addEventListener("input", (e) => {
@@ -693,19 +702,25 @@ window.syncLocalToSupabaseWrapper = async function () {
     });
   });
   
-  // Realtime subscription for cloud changes
-  supabase.channel("vault-changes")
-    .on("postgres_changes", { event: "*", schema: "public", table: "love_vault" }, () => loadAndDisplay())
-    .subscribe();
+  // Listen to localStorage changes (other pages might add new memories)
+  window.addEventListener("storage", (event) => {
+    if (event.key === "couplePlans" || event.key === "vault") {
+      loadAndDisplay();
+      // trigger background sync after slight delay
+      setTimeout(() => autoSyncToCloud(false), 500);
+    }
+  });
   
-  // Auto-refresh every 3 seconds to catch localStorage changes from other pages
+  // periodic refresh every 3 seconds for immediate local updates
   setInterval(() => {
     loadAndDisplay();
   }, 3000);
   
-  // INIT
+  // INITIALIZATION
   loadProfile();
-  loadAndDisplay();
+  loadAndDisplay().then(() => {
+    initRealtimeAndAutoSync();
+  });
 </script>
 </body>
 </html>
