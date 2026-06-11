@@ -7,54 +7,63 @@
 
 <style>
 body{
-    font-family: Arial, sans-serif;
-    background:#fffaf7;
-    color:#b30000;
-    text-align:center;
-    margin:0;
-    padding:20px;
+  font-family: Arial, sans-serif;
+  background:#fffaf7;
+  color:#b30000;
+  text-align:center;
+  margin:0;
+  padding:20px;
 }
 
 h1{
-    margin-bottom:20px;
+  margin-bottom:20px;
 }
 
 .table-container{
-    overflow-x:auto;
+  overflow-x:auto;
 }
 
 table{
-    margin:auto;
-    border-collapse:collapse;
-    width:90%;
-    max-width:900px;
-    background:white;
-    border-radius:12px;
-    overflow:hidden;
+  margin:auto;
+  border-collapse:collapse;
+  width:95%;
+  max-width:900px;
+  background:white;
+  border-radius:12px;
+  overflow:hidden;
 }
 
 th{
-    background:#ffe6e6;
-    color:#b30000;
+  background:#ffe6e6;
 }
 
 th,td{
-    border:1px solid #ffd0d0;
-    padding:12px;
+  border:1px solid #ffd0d0;
+  padding:12px;
 }
 
 tr:nth-child(even){
-    background:#fff8f8;
+  background:#fff8f8;
 }
 
 .empty{
-    margin-top:30px;
-    color:#888;
+  margin-top:30px;
+  color:#888;
 }
 
 .status{
-    margin-bottom:15px;
-    font-weight:bold;
+  margin-bottom:15px;
+  font-weight:bold;
+}
+
+.refresh-btn{
+  margin-bottom:15px;
+  padding:10px 18px;
+  border:none;
+  border-radius:25px;
+  background:#b30000;
+  color:white;
+  cursor:pointer;
 }
 </style>
 </head>
@@ -62,6 +71,8 @@ tr:nth-child(even){
 <body>
 
 <h1>📱 Login Devices</h1>
+
+<button class="refresh-btn" onclick="loadDevices()">🔄 Refresh</button>
 
 <div id="status" class="status">
 Loading devices...
@@ -88,74 +99,72 @@ No login history found ❤️
 import { createClient }
 from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-const supabaseUrl = "https://YOUR_PROJECT.supabase.co";
-const supabaseKey = "YOUR_ANON_KEY";
-
+// ✅ YOUR REAL SUPABASE (same as login page)
 const supabase = createClient(
-  supabaseUrl,
-  supabaseKey
+  "https://wmebpsheblrkuvygguae.supabase.co",
+  "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_"
 );
 
-const currentUserId =
-  localStorage.getItem("loveUserId");
+// ✅ CURRENT USER
+const currentUserId = localStorage.getItem("loveUserId");
 
-const tableBody =
-  document.querySelector("#deviceTable tbody");
+const tableBody = document.querySelector("#deviceTable tbody");
+const status = document.getElementById("status");
+const emptyMessage = document.getElementById("emptyMessage");
 
-const status =
-  document.getElementById("status");
-
-const emptyMessage =
-  document.getElementById("emptyMessage");
-
+// ✅ LOAD ALL DEVICES
 async function loadDevices() {
 
   if (!currentUserId) {
-    status.innerText =
-      "❌ No user ID found";
+    status.innerText = "❌ No user logged in";
     return;
   }
+
+  // ✅ clear previous rows
+  tableBody.innerHTML = "";
+  emptyMessage.style.display = "none";
 
   const { data, error } = await supabase
     .from("login_logs")
-    .select("*")
+    .select("device, browser, logged_in_at")
     .eq("user_id", currentUserId)
-    .order("logged_in_at", {
-      ascending: false
-    });
+    .order("logged_in_at", { ascending: false });
 
   if (error) {
     console.error(error);
-    status.innerText =
-      "❌ Failed to load devices";
+    status.innerText = "❌ Failed to load device history";
     return;
   }
 
-  status.innerText =
-    `📊 ${data.length} login records`;
-
-  if (!data.length) {
+  if (!data || data.length === 0) {
+    status.innerText = "No login history found ❤️";
     emptyMessage.style.display = "block";
     return;
   }
 
-  data.forEach(log => {
+  status.innerText = `📊 ${data.length} total logins`;
 
-    const row =
-      document.createElement("tr");
+  data.forEach((log, index) => {
+
+    const row = document.createElement("tr");
+
+    // ✅ highlight last login (current session)
+    if (index === 0) {
+      row.style.fontWeight = "bold";
+      row.style.background = "#ffe0e0";
+    }
 
     row.innerHTML = `
       <td>${log.device || "Unknown Device"}</td>
       <td>${log.browser || "Unknown Browser"}</td>
-      <td>${new Date(
-        log.logged_in_at
-      ).toLocaleString()}</td>
+      <td>${new Date(log.logged_in_at).toLocaleString()}</td>
     `;
 
     tableBody.appendChild(row);
   });
 }
 
+// ✅ AUTO LOAD
 loadDevices();
 </script>
 
