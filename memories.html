@@ -26,6 +26,7 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       transition: transform 0.3s ease;
       position: relative;
+      cursor: pointer;
     }
     .memory:hover { transform: scale(1.05); }
     .memory img {
@@ -33,6 +34,7 @@
       border-radius: 15px;
       height: 200px;
       object-fit: cover;
+      cursor: pointer;
     }
     .memory p {
       margin-top: 10px;
@@ -55,6 +57,7 @@
       align-items: center;
       justify-content: center;
       transition: 0.2s;
+      z-index: 10;
     }
     .memory:hover .delete-btn {
       display: flex;
@@ -107,6 +110,86 @@
       display: none;
       z-index: 1000;
     }
+    
+    /* Lightbox styles for full-size image view */
+    .lightbox {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 2000;
+      cursor: pointer;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    .lightbox.active {
+      display: flex;
+    }
+    .lightbox img {
+      max-width: 90%;
+      max-height: 85%;
+      object-fit: contain;
+      border-radius: 10px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    }
+    .lightbox-caption {
+      color: white;
+      margin-top: 20px;
+      font-size: 18px;
+      text-align: center;
+      padding: 10px;
+      background: rgba(0,0,0,0.7);
+      border-radius: 10px;
+      max-width: 80%;
+    }
+    .close-lightbox {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      color: white;
+      font-size: 40px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .close-lightbox:hover {
+      color: #d63384;
+    }
+    .lightbox-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 50px;
+      color: white;
+      cursor: pointer;
+      user-select: none;
+      transition: 0.3s;
+      background: rgba(0,0,0,0.5);
+      padding: 20px 15px;
+      border-radius: 10px;
+    }
+    .lightbox-nav:hover {
+      background: rgba(214, 51, 132, 0.7);
+    }
+    .prev {
+      left: 20px;
+    }
+    .next {
+      right: 20px;
+    }
+    @media (max-width: 600px) {
+      .lightbox-nav {
+        font-size: 30px;
+        padding: 10px 12px;
+      }
+      .lightbox-caption {
+        font-size: 14px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -122,24 +205,86 @@
 
   <div class="gallery" id="gallery">
     <!-- Your original hardcoded memories stay exactly as they were -->
-    <div class="memory" data-id="original1"><img src="butt.jpg" alt="memory"><p>AWW💕</p></div>
-    <div class="memory" data-id="original2"><img src="hand.jpg" alt="memory"><p>OH BABY</p></div>
-    <div class="memory" data-id="original3"><img src="huh.jpg" alt="memory"><p>💕</p></div>
-    <div class="memory" data-id="original4"><img src="legs.jpg" alt="memory"><p>😊📸</p></div>
-    <div class="memory" data-id="original5"><img src="outfit.jpg" alt="memory"><p>HIS CLOTHES LOOK GOOD ON ME OHH😝💖</p></div>
-    <div class="memory" data-id="original6"><img src="call.jpg" alt="memory"><p>😍</p></div>
-    <div class="memory" data-id="original7"><img src="bae.jpg" alt="memory"><p>HER FAVOURITE PIC💖</p></div>
-    <div class="memory" data-id="original8"><img src="girl.jpg" alt="memory"><p>HIS FAVOURITE PIC💖</p></div>
+    <div class="memory" data-id="original1" data-img-src="butt.jpg" data-caption="AWW💕">
+      <img src="butt.jpg" alt="memory">
+      <p>AWW💕</p>
+    </div>
+    <div class="memory" data-id="original2" data-img-src="hand.jpg" data-caption="OH BABY">
+      <img src="hand.jpg" alt="memory">
+      <p>OH BABY</p>
+    </div>
+    <div class="memory" data-id="original3" data-img-src="huh.jpg" data-caption="💕">
+      <img src="huh.jpg" alt="memory">
+      <p>💕</p>
+    </div>
+    <div class="memory" data-id="original4" data-img-src="legs.jpg" data-caption="😊📸">
+      <img src="legs.jpg" alt="memory">
+      <p>😊📸</p>
+    </div>
+    <div class="memory" data-id="original5" data-img-src="outfit.jpg" data-caption="HIS CLOTHES LOOK GOOD ON ME OHH😝💖">
+      <img src="outfit.jpg" alt="memory">
+      <p>HIS CLOTHES LOOK GOOD ON ME OHH😝💖</p>
+    </div>
+    <div class="memory" data-id="original6" data-img-src="call.jpg" data-caption="😍">
+      <img src="call.jpg" alt="memory">
+      <p>😍</p>
+    </div>
+    <div class="memory" data-id="original7" data-img-src="bae.jpg" data-caption="HER FAVOURITE PIC💖">
+      <img src="bae.jpg" alt="memory">
+      <p>HER FAVOURITE PIC💖</p>
+    </div>
+    <div class="memory" data-id="original8" data-img-src="girl.jpg" data-caption="HIS FAVOURITE PIC💖">
+      <img src="girl.jpg" alt="memory">
+      <p>HIS FAVOURITE PIC💖</p>
+    </div>
   </div>
 
   <a href="index.html">⬅ Back Home</a>
   <div id="toast" class="toast"></div>
 
+  <!-- Lightbox for full-size images -->
+  <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+    <span class="close-lightbox" onclick="closeLightbox()">&times;</span>
+    <div class="lightbox-nav prev" onclick="event.stopPropagation(); navigateLightbox(-1)">&#10094;</div>
+    <div class="lightbox-nav next" onclick="event.stopPropagation(); navigateLightbox(1)">&#10095;</div>
+    <img id="lightbox-img" src="" alt="Full size">
+    <div id="lightbox-caption" class="lightbox-caption"></div>
+  </div>
+
   <script>
     // Your original pictures are preserved above!
-    // This script adds upload functionality while keeping your original images intact
+    // This script adds upload functionality and click-to-view full images
     
     let uploadedMemories = [];
+    let allMemories = []; // Store all memories (originals + uploads) for navigation
+
+    // Build all memories array from DOM
+    function buildAllMemoriesArray() {
+      allMemories = [];
+      
+      // Add original memories
+      const originalMemories = document.querySelectorAll('#gallery .memory:not(.uploaded-memory)');
+      originalMemories.forEach(mem => {
+        const img = mem.querySelector('img');
+        const caption = mem.querySelector('p').innerText;
+        allMemories.push({
+          id: mem.getAttribute('data-id') || 'original_' + Math.random(),
+          url: img.src,
+          caption: caption,
+          isOriginal: true
+        });
+      });
+      
+      // Add uploaded memories
+      uploadedMemories.forEach(mem => {
+        allMemories.push({
+          id: mem.id,
+          url: mem.url,
+          caption: mem.caption,
+          isOriginal: false
+        });
+      });
+    }
 
     // Load saved uploads from localStorage
     function loadUploadedMemories() {
@@ -148,11 +293,13 @@
         uploadedMemories = JSON.parse(saved);
         displayUploadedMemories();
       }
+      buildAllMemoriesArray();
     }
 
     // Save uploaded memories to localStorage
     function saveUploadedMemories() {
       localStorage.setItem('uploadedMemories', JSON.stringify(uploadedMemories));
+      buildAllMemoriesArray();
     }
 
     // Display only uploaded memories (appended after originals)
@@ -167,17 +314,32 @@
         const memoryDiv = document.createElement('div');
         memoryDiv.className = 'memory uploaded-memory';
         memoryDiv.setAttribute('data-upload-id', mem.id);
+        memoryDiv.setAttribute('data-img-src', mem.url);
+        memoryDiv.setAttribute('data-caption', mem.caption);
         memoryDiv.innerHTML = `
           <img src="${mem.url}" alt="uploaded memory">
-          <p>${mem.caption} — Shosho 💕</p>
-          <button class="delete-btn" onclick="deleteUploadedMemory('${mem.id}')">×</button>
+          <p>${escapeHtml(mem.caption)} — Shosho 💕</p>
+          <button class="delete-btn" onclick="event.stopPropagation(); deleteUploadedMemory('${mem.id}')">×</button>
         `;
         gallery.appendChild(memoryDiv);
       });
+      
+      // Re-attach click handlers to new images
+      attachImageClickHandlers();
+      buildAllMemoriesArray();
+    }
+
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
     }
 
     // Delete uploaded memory
     window.deleteUploadedMemory = function(id) {
+      event.stopPropagation();
       uploadedMemories = uploadedMemories.filter(mem => mem.id !== id);
       saveUploadedMemories();
       displayUploadedMemories();
@@ -258,27 +420,112 @@
       }
     }
 
-    // Load saved uploads on page load
-    loadUploadedMemories();
+    // LIGHTBOX FUNCTIONALITY
+    let currentImageIndex = 0;
     
-    // Add delete buttons to original memories (optional - for completeness)
-    // But we'll keep original ones protected by default
+    function openLightbox(index) {
+      if (!allMemories.length) return;
+      currentImageIndex = index;
+      const memory = allMemories[currentImageIndex];
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImg = document.getElementById('lightbox-img');
+      const lightboxCaption = document.getElementById('lightbox-caption');
+      
+      lightboxImg.src = memory.url;
+      lightboxCaption.innerHTML = memory.caption + (memory.isOriginal ? '' : ' — Shosho 💕');
+      lightbox.classList.add('active');
+    }
+    
+    function closeLightbox() {
+      const lightbox = document.getElementById('lightbox');
+      lightbox.classList.remove('active');
+      document.getElementById('lightbox-img').src = '';
+    }
+    
+    function navigateLightbox(direction) {
+      let newIndex = currentImageIndex + direction;
+      if (newIndex < 0) newIndex = allMemories.length - 1;
+      if (newIndex >= allMemories.length) newIndex = 0;
+      
+      currentImageIndex = newIndex;
+      const memory = allMemories[currentImageIndex];
+      const lightboxImg = document.getElementById('lightbox-img');
+      const lightboxCaption = document.getElementById('lightbox-caption');
+      
+      lightboxImg.src = memory.url;
+      lightboxCaption.innerHTML = memory.caption + (memory.isOriginal ? '' : ' — Shosho 💕');
+    }
+    
+    // Attach click handlers to all images in the gallery
+    function attachImageClickHandlers() {
+      const memories = document.querySelectorAll('#gallery .memory');
+      memories.forEach((memory, idx) => {
+        // Remove any existing listener to avoid duplicates
+        const img = memory.querySelector('img');
+        if (img) {
+          img.removeEventListener('click', handleImageClick);
+          img.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Find the index of this memory in allMemories
+            const imgSrc = img.src;
+            const caption = memory.querySelector('p').innerText;
+            const index = allMemories.findIndex(m => m.url === imgSrc || (m.caption === caption && m.url === imgSrc));
+            if (index !== -1) {
+              openLightbox(index);
+            } else {
+              // Fallback: rebuild array and try again
+              buildAllMemoriesArray();
+              const newIndex = allMemories.findIndex(m => m.url === imgSrc);
+              if (newIndex !== -1) openLightbox(newIndex);
+              else openLightbox(0);
+            }
+          });
+        }
+      });
+    }
+    
+    function handleImageClick(e) {
+      // This is handled by the inline event listener above
+    }
+    
+    // Close lightbox with Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && document.getElementById('lightbox').classList.contains('active')) {
+        closeLightbox();
+      }
+    });
+    
+    // Add delete protection for original memories
     function addDeleteProtection() {
       const originalMemories = document.querySelectorAll('.memory:not(.uploaded-memory)');
       originalMemories.forEach(mem => {
-        // Add a disabled delete button that shows they're protected
+        // Add a protected delete button that shows they're protected
         const protectBtn = document.createElement('button');
         protectBtn.className = 'delete-btn';
         protectBtn.innerHTML = '🔒';
         protectBtn.style.background = '#ccc';
         protectBtn.style.cursor = 'default';
-        protectBtn.onclick = () => showToast("✨ Original memories are forever! ✨");
+        protectBtn.onclick = (e) => {
+          e.stopPropagation();
+          showToast("✨ Original memories are forever! ✨");
+        };
         mem.appendChild(protectBtn);
       });
     }
     
-    // Small delay to ensure DOM is ready
-    setTimeout(addDeleteProtection, 100);
+    // Initialize
+    function init() {
+      loadUploadedMemories();
+      attachImageClickHandlers();
+      addDeleteProtection();
+    }
+    
+    // Run init when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
   </script>
 </body>
-</html>
+  </html>
