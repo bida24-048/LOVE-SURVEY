@@ -22,7 +22,7 @@ img{
     object-fit:cover;
     border:4px solid #b30000;
 }
-input,textarea{
+textarea,input{
     width:90%;
     padding:12px;
     margin:8px;
@@ -51,10 +51,17 @@ button:hover{
 
 <img id="profilePreview" src="https://via.placeholder.com/180"><br><br>
 
-<input type="file" id="photo">
-<input type="text" id="fullName" placeholder="Full Name">
-<input type="text" id="nickname" placeholder="Nickname">
-<textarea id="bio" placeholder="About Me"></textarea>
+<!-- Supabase fields -->
+<p><strong>👤 Username:</strong> <span id="profileUsername"></span></p>
+<p><strong>📧 Email:</strong> <span id="profileEmail"></span></p>
+<textarea id="bio" placeholder="About Me"></textarea><br>
+<input type="file" id="photo"><br><br>
+
+<!-- Local-only fields -->
+<h2>📝 My Private Notes (Local Only)</h2>
+<input type="text" id="localNote1" placeholder="Favorite Quote">
+<input type="text" id="localNote2" placeholder="Secret Dream">
+<textarea id="localNote3" placeholder="Private Thoughts"></textarea>
 
 <br><br>
 <button onclick="saveProfile()">💖 Save Profile</button>
@@ -71,18 +78,26 @@ const username = localStorage.getItem("loveUser");
 const email = localStorage.getItem("loveEmail");
 
 async function loadProfile(){
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("love_users")
-    .select("profile_pic,bio")
+    .select("username,email,profile_pic,bio")
     .eq("username", username)
     .maybeSingle();
 
+  if(error){ console.error(error); return; }
   if(!data) return;
 
+  document.getElementById("profileUsername").innerText = data.username;
+  document.getElementById("profileEmail").innerText = data.email || "";
   document.getElementById("bio").value = data.bio || "";
   if(data.profile_pic){
     document.getElementById("profilePreview").src = data.profile_pic;
   }
+
+  // Load local-only notes
+  document.getElementById("localNote1").value = localStorage.getItem("localNote1") || "";
+  document.getElementById("localNote2").value = localStorage.getItem("localNote2") || "";
+  document.getElementById("localNote3").value = localStorage.getItem("localNote3") || "";
 }
 
 async function saveProfile(){
@@ -105,7 +120,12 @@ async function saveProfile(){
 
   await supabase.from("love_users").update(profileData).eq("username", username);
 
-  alert("💖 Profile Saved");
+  // Save local-only notes
+  localStorage.setItem("localNote1", document.getElementById("localNote1").value);
+  localStorage.setItem("localNote2", document.getElementById("localNote2").value);
+  localStorage.setItem("localNote3", document.getElementById("localNote3").value);
+
+  alert("💖 Profile Saved (Supabase + Local Notes)");
   loadProfile();
 }
 
@@ -115,4 +135,6 @@ window.saveProfile = saveProfile;
 
 </body>
 </html>
+
+
 
