@@ -43,11 +43,17 @@
 <button class="save-btn" onclick="saveSong()">Save to Vault 💖</button>
 <button class="back-btn" onclick="window.location.href='vault.html'">Go to Vault 📖</button>
 
-<script>
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabaseUrl = "https://wmebpsheblrkuvygguae.supabase.co";
+const supabaseKey = "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 const currentUserId = localStorage.getItem("loveUserId");
 const currentUser = localStorage.getItem("loveUser");
 
-function saveSong() {
+async function saveSong() {
   const title = document.getElementById("songTitle").value.trim();
   const desc = document.getElementById("songDesc").value.trim();
   const link = document.getElementById("songLink").value.trim();
@@ -62,11 +68,27 @@ function saveSong() {
     return alert("Please enter a song title 🎵");
   }
 
+  // ✅ Save to Supabase Love Vault
+  const { error } = await supabase.from("love_vault").insert([{
+    user_id: currentUserId,
+    source_page: "Songs",
+    section: "Songs",
+    content: `🎵 ${title}\n\n💖 ${desc}\n\n🔗 ${link}`,
+    created_at: new Date().toISOString()
+  }]);
+
+  if(error){
+    console.error(error);
+    alert("❌ Failed to save to Love Vault");
+    return;
+  }
+
+  // ✅ Also save locally for offline access
   const vault = JSON.parse(localStorage.getItem("vault")) || [];
   vault.push({
-    source_page: "Songs",       // ✅ consistent
-    section: "Songs",           // ✅ consistent
-    content: `🎵 ${title}\n\n💖 ${desc}\n\n🔗 ${link}`, // ✅ unified field
+    source_page: "Songs",
+    section: "Songs",
+    content: `🎵 ${title}\n\n💖 ${desc}\n\n🔗 ${link}`,
     created_at: new Date().toISOString(),
     user_id: currentUserId,
     author: currentUser || "Anonymous",
@@ -76,9 +98,9 @@ function saveSong() {
     link: link,
     file: fileUrl
   });
-
   localStorage.setItem("vault", JSON.stringify(vault));
-  alert("Song saved to Vault 💖");
+
+  alert("Song saved to Love Vault 💖");
 
   // Clear form
   document.getElementById("songTitle").value = "";
@@ -89,5 +111,6 @@ function saveSong() {
 </script>
 </body>
 </html>
+
 
 
