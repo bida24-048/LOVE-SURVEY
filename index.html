@@ -103,72 +103,81 @@ button:hover {
   const secretKey = "GL2025";
 
   // Helper: hash password with SHA-256
-  async function hashPassword(password) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-  }
+ async function registerUser() {
+  const secret = document.getElementById("registerSecret").value;
+  const username = document.getElementById("regUsername").value.trim();
+  const email = document.getElementById("regEmail").value.trim();
+  const password = document.getElementById("regPassword").value;
+  const confirm = document.getElementById("regConfirmPassword").value;
 
-  async function registerUser() {
-    const secret = document.getElementById("registerSecret").value;
-    const username = document.getElementById("regUsername").value.trim();
-    const email = document.getElementById("regEmail").value.trim();
-    const password = document.getElementById("regPassword").value;
-    const confirm = document.getElementById("regConfirmPassword").value;
+  if (secret !== secretKey)
+    return showError("❌ Invalid secret code");
 
-    if (secret !== secretKey) return showError("❌ Invalid secret code");
-    if (password !== confirm) return showError("❌ Passwords do not match");
-    if (!username || !email || !password) return showError("❌ Fill in all fields");
+  if (!username || !email || !password)
+    return showError("❌ Fill in all fields");
 
-    const { data: existing } = await supabase
-      .from("love_users")
-      .select("username")
-      .eq("username", username)
-      .single();
+  if (password !== confirm)
+    return showError("❌ Passwords do not match");
 
-    if (existing) return showError("❌ Username already exists");
+  const { data: existing } = await supabase
+    .from("love_users")
+    .select("id")
+    .eq("username", username)
+    .maybeSingle();
 
-    const hashed = await hashPassword(password);
+  if (existing)
+    return showError("❌ Username already exists");
 
-    const { error } = await supabase.from("love_users").insert([
-      { username, email, password: hashed }
+  const { error } = await supabase
+    .from("love_users")
+    .insert([
+      {
+        username,
+        email,
+        password
+      }
     ]);
 
-    if (error) {
-      console.error(error);
-      return showError("❌ Error creating account: " + error.message);
-    }
-
-    alert("💖 Account created successfully!");
-    showSection("loginSection");
+  if (error) {
+    console.error(error);
+    return showError("❌ " + error.message);
   }
+
+  alert("💖 Account created successfully!");
+  showSection("loginSection");
+}
+  
+  
 
   async function loginUser() {
-    const username = document.getElementById("loginUsername").value.trim();
-    const password = document.getElementById("loginPassword").value;
-    const secret = document.getElementById("loginSecret").value;
+  const username = document.getElementById("loginUsername").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const secret = document.getElementById("loginSecret").value;
 
-    if (secret !== secretKey) return showError("❌ Invalid secret code");
+  if (secret !== secretKey)
+    return showError("❌ Invalid secret code");
 
-    const hashed = await hashPassword(password);
+  const { data: user, error } = await supabase
+    .from("love_users")
+    .select("*")
+    .eq("username", username)
+    .eq("password", password)
+    .maybeSingle();
 
-    const { data: user } = await supabase
-      .from("love_users")
-      .select("*")
-      .eq("username", username)
-      .eq("password", hashed)
-      .single();
-
-    if (!user) return showError("❌ Invalid username or password");
-
-    localStorage.setItem("loveLogin", "true");
-    localStorage.setItem("loveUser", user.username);
-    localStorage.setItem("loveEmail", user.email);
-
-    window.location.href = "home.html";
+  if (error) {
+    console.error(error);
+    return showError("❌ " + error.message);
   }
+
+  if (!user)
+    return showError("❌ Invalid username or password");
+
+  localStorage.setItem("loveLogin", "true");
+  localStorage.setItem("loveUser", user.username);
+  localStorage.setItem("loveEmail", user.email);
+
+  window.location.href = "home.html";
+} 
 
   function secretLogin() {
     const secret = document.getElementById("onlySecret").value;
