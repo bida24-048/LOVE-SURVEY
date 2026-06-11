@@ -398,41 +398,38 @@
 
   // =============== LOAD FROM CLOUD ===============
   async function loadFromCloud() {
-    try {
-      let { data: remoteEntries, error } = await supabase
-        .from("love_vault")
-        .select(`id, source_page, section, content, created_at, type, love_users ( username )`)
-        .order("created_at", { ascending: false });
+  try {
+    const username =
+      localStorage.getItem("loveUser") || "MyLove";
 
-      if (!error && remoteEntries && remoteEntries.length) {
-        console.log(`☁️ Loaded ${remoteEntries.length} entries from cloud`);
-        return remoteEntries.map(item => {
-          let type = item.type || item.section || "memory";
-          if (item.source_page === "Promises") type = "promise";
-          if (item.source_page === "Love Questions") type = "question";
-          if (item.source_page === "Messages") type = "message";
-          if (item.source_page === "Songs") type = "song";
-          if (item.source_page === "Plans") type = "plan";
-          
-          return {
-            id: item.id,
-            source: item.source_page || item.section || "Memory",
-            content: item.content || "",
-            type: type,
-            created_at: item.created_at,
-            author: item.love_users?.username || "Someone",
-            isCloud: true,
-            cloudId: item.id
-          };
-        });
-      }
-    } catch (err) {
-      console.log("Cloud load error:", err);
+    let { data, error } = await supabase
+      .from("love_vault")
+      .select("*")
+      .eq("username", username)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      return [];
     }
+
+    return (data || []).map(item => ({
+      id: item.id,
+      source: item.source_page || "Memory",
+      content: item.content || "",
+      type: item.type || item.section || "memory",
+      created_at: item.created_at,
+      author: item.username,
+      isCloud: true
+    }));
+
+  } catch (err) {
+    console.error(err);
     return [];
   }
-
-  // =============== MERGE AND DISPLAY ===============
+}
+     
+   // =============== MERGE AND DISPLAY ===============
   async function loadAndDisplay() {
     const localMemories = collectFromAllPages();
     const cloudMemories = await loadFromCloud();
@@ -612,40 +609,60 @@
     }
     return null;
   }
+window.syncLocalToSupabaseWrapper = async function () {
 
-  window.syncLocalToSupabaseWrapper = async function() {
-    const notifyDiv = document.getElementById("notify");
-    notifyDiv.style.display = "block";
-    notifyDiv.innerText = "🔄 Syncing all pages to cloud...";
-    
-    try {
-      const dbUserId = await ensureUserInDatabase();
-      if (!dbUserId) throw new Error("No user");
-      
-      const localMemories = collectFromAllPages();
-      let synced = 0;
-      
-      for (const mem of localMemories) {
-        const { error } = await supabase.from("love_vault").insert({
-          user_id: dbUserId,
-          source_page: mem.source,
-          section: mem.type,
-          content: mem.rawContent || mem.content,
-          type: mem.type,
-          created_at: mem.created_at
-        });
-        if (!error) synced++;
-      }
-      
-      notifyDiv.innerText = `✅ Synced ${synced} memories to cloud!`;
-      setTimeout(() => { notifyDiv.style.display = "none"; }, 3000);
-    } catch (err) {
-      notifyDiv.innerText = "💔 Sync failed: " + err.message;
-      setTimeout(() => { notifyDiv.style.display = "none"; }, 3000);
+  const notifyDiv = document.getElementById("notify");
+
+  notifyDiv.style.display = "block";
+  notifyDiv.innerText = "🔄 Syncing to cloud...";
+
+  try {
+
+    const username =
+      localStorage.getItem("loveUser") || "MyLove";
+
+    const localMemories = collectFromAllPages();
+
+    let synced = 0;
+
+    for (const mem of localMemories) {
+
+      const { error } = await supabase
+        .from("love_vault")
+        .upsert(
+          {
+            username,
+            source_page: mem.source,
+            section: mem.type,
+            content: mem.rawContent || mem.content,
+            type: mem.type,
+            created_at: mem.created_at
+          },
+          {
+            onConflict: "username,content,created_at"
+          }
+        );
+
+      if (!error) synced++;
     }
-  };
 
-  // =============== SHARE VAULT ===============
+    notifyDiv.innerText =
+      `✅ Synced ${synced} memories`;
+
+    await loadAndDisplay();
+
+  } catch (err) {
+
+    notifyDiv.innerText =
+      `❌ ${err.message}`;
+
+  }
+
+  setTimeout(() => {
+    notifyDiv.style.display = "none";
+  }, 3000);
+};
+   // =============== SHARE VAULT ===============
   window.shareVaultUI = function() {
     if (!allMemories.length) {
       alert("No memories to share yet! Go save something first.");
