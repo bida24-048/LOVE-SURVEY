@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>📖 Love Vault</title>
 <style>
 body{font-family:Arial;text-align:center;background:white;color:#b30000;min-height:100vh;position:relative;margin:0;padding:20px;}
@@ -27,9 +26,9 @@ h1,h2{color:#b30000;}
 <h1>📖 Love Vault</h1>
 
 <div>
-    <input id="search" type="text" placeholder="🔍 Search by source, author, or text...">
-    <button onclick="shareVault()" class="action-btn share-btn">Share Whole Vault 📲</button>
-    <button onclick="syncLocalToSupabase()" class="action-btn sync-btn">🔄 Sync Local → Supabase</button>
+  <input id="search" type="text" placeholder="🔍 Search by source, author, or text...">
+  <button onclick="shareVault()" class="action-btn share-btn">Share Whole Vault 📲</button>
+  <button onclick="syncLocalToSupabase()" class="action-btn sync-btn">🔄 Sync Local → Supabase</button>
 </div>
 
 <h2>Vault 💖</h2>
@@ -43,81 +42,80 @@ const supabaseKey = "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_";
 const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
 let vaultData = [];
+const currentUserId = localStorage.getItem("loveUserId"); // must match love_users.id
 
 async function loadVault(){
-    let localVault = JSON.parse(localStorage.getItem("vault") || "[]");
+  let localVault = JSON.parse(localStorage.getItem("vault") || "[]");
 
-    // ✅ Join love_vault with love_user to get username
-    const { data, error } = await supabase
-        .from("love_vault")
-        .select("id, source_page, section, content, created_at, love_user(username)")
-        .order("id",{ascending:false});
+  // ✅ Join love_vault with love_users to get username
+  const { data, error } = await supabase
+    .from("love_vault")
+    .select("id, source_page, section, content, created_at, love_users(username)")
+    .order("created_at",{ascending:false});
 
-    let combined = [...localVault];
-    if(!error && data){ combined = [...localVault, ...data]; }
+  let combined = [...localVault];
+  if(!error && data){ combined = [...localVault, ...data]; }
 
-    vaultData = combined;
-    renderVault(combined);
+  vaultData = combined;
+  renderVault(combined);
 }
 
 function renderVault(data){
-    const vaultDiv = document.getElementById("vault");
-    if(!data || data.length===0){
-        vaultDiv.innerHTML = "<h3>Vault is empty 😘</h3>";
-        return;
-    }
-    vaultDiv.innerHTML = data.map((entry, index) => {
-        const source = entry.source_page || entry.section || "General";
-        const date = entry.created_at ? new Date(entry.created_at).toLocaleString() : "Unknown Date";
-        const content = entry.content || "No content";
-        const author = entry.love_user?.username || entry.author || "Anonymous";
-        return `
-        <div class="vault-entry">
-            <div class="source-label">📂 Source: ${source}</div>
-            <div class="date-label">📅 Date: ${date}</div>
-            <div class="message-box"><strong>💌 Text:</strong><br><br>${content}</div>
-            <div class="author">✍️ Written by: ${author}</div>
-        </div>`;
-    }).join("");
+  const vaultDiv = document.getElementById("vault");
+  if(!data || data.length===0){
+    vaultDiv.innerHTML = "<h3>Vault is empty 😘</h3>";
+    return;
+  }
+  vaultDiv.innerHTML = data.map((entry, index) => {
+    const source = entry.source_page || entry.section || "General";
+    const date = entry.created_at ? new Date(entry.created_at).toLocaleString() : "Unknown Date";
+    const content = entry.content || "No content";
+    const author = entry.love_users?.username || "Anonymous";
+    return `
+      <div class="vault-entry">
+        <div class="source-label">📂 Source: ${source}</div>
+        <div class="date-label">📅 Date: ${date}</div>
+        <div class="message-box"><strong>💌 Text:</strong><br><br>${content}</div>
+        <div class="author">✍️ Written by: ${author}</div>
+      </div>`;
+  }).join("");
 }
 
 document.getElementById("search").addEventListener("input", function(e){
-    const term = e.target.value.toLowerCase();
-    const filtered = vaultData.filter(entry => {
-        const source = (entry.source_page || entry.section || "").toLowerCase();
-        const content = (entry.content || "").toLowerCase();
-        const author = (entry.love_user?.username || entry.author || "").toLowerCase();
-        return (source.includes(term) || content.includes(term) || author.includes(term));
-    });
-    renderVault(filtered);
+  const term = e.target.value.toLowerCase();
+  const filtered = vaultData.filter(entry => {
+    const source = (entry.source_page || entry.section || "").toLowerCase();
+    const content = (entry.content || "").toLowerCase();
+    const author = (entry.love_users?.username || "").toLowerCase();
+    return (source.includes(term) || content.includes(term) || author.includes(term));
+  });
+  renderVault(filtered);
 });
 
 async function syncLocalToSupabase(){
-    const localVault = JSON.parse(localStorage.getItem("vault") || "[]");
-    if(localVault.length===0){ alert("Vault is empty 😘"); return; }
-    for(const entry of localVault){
-        try{
-            await supabase.from("love_vault").insert({
-                source_page: entry.source_page || "General",
-                section: entry.section || "General",
-                content: entry.content || "",
-                created_at: entry.created_at || new Date().toISOString(),
-                user_id: entry.user_id // ✅ foreign key to love_user
-            });
-        }catch(err){ console.error(err); }
-    }
-    alert("✅ Sync complete!");
-    loadVault();
+  const localVault = JSON.parse(localStorage.getItem("vault") || "[]");
+  if(localVault.length===0){ alert("Vault is empty 😘"); return; }
+  for(const entry of localVault){
+    await supabase.from("love_vault").insert({
+      user_id: currentUserId,   // ✅ foreign key to love_users
+      source_page: entry.source_page || "General",
+      section: entry.section || "General",
+      content: entry.content || "",
+      created_at: entry.created_at || new Date().toISOString()
+    });
+  }
+  alert("✅ Sync complete!");
+  loadVault();
 }
 
 supabase.channel("love-vault")
 .on("postgres_changes",{event:"INSERT",schema:"public",table:"love_vault"},payload=>{
-    document.getElementById("notify").innerText = "✨ New memory added to the Vault 💕";
-    loadVault();
+  document.getElementById("notify").innerText = "✨ New memory added to the Vault 💕";
+  loadVault();
 })
 .on("postgres_changes",{event:"DELETE",schema:"public",table:"love_vault"},payload=>{
-    document.getElementById("notify").innerText = "🗑️ A memory was removed!";
-    loadVault();
+  document.getElementById("notify").innerText = "🗑️ A memory was removed!";
+  loadVault();
 })
 .subscribe();
 
@@ -125,6 +123,7 @@ loadVault();
 </script>
 </body>
 </html>
+
 
 
 
