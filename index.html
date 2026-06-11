@@ -1,495 +1,290 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>💖 G&L Love World — Login or Register</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Segoe UI', 'Poppins', Roboto, system-ui, sans-serif;
-      background: linear-gradient(135deg, #fff5f0 0%, #ffe4e4 100%);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      position: relative;
-    }
-    body::before {
-      content: "❤️";
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      font-size: 35rem;
-      color: rgba(179, 0, 0, 0.06);
-      transform: translate(-50%, -50%);
-      z-index: 0;
-      pointer-events: none;
-    }
-    .main-card {
-      background: rgba(255, 255, 255, 0.98);
-      backdrop-filter: blur(2px);
-      border-radius: 56px;
-      box-shadow: 0 30px 50px rgba(179, 0, 0, 0.2);
-      width: 100%;
-      max-width: 450px;
-      padding: 2rem 1.8rem 2.2rem;
-      z-index: 2;
-      transition: all 0.3s ease;
-    }
-    h1 {
-      font-size: 2rem;
-      text-align: center;
-      color: #b12a2a;
-      margin-bottom: 0.3rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .heart-divider {
-      text-align: center;
-      font-size: 1.2rem;
-      color: #e69898;
-      margin-bottom: 1.8rem;
-      letter-spacing: 4px;
-    }
-    
-    /* Tab Styles */
-    .tab-container {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 28px;
-      background: #fff0f0;
-      padding: 6px;
-      border-radius: 60px;
-    }
-    .tab-btn {
-      flex: 1;
-      background: transparent;
-      border: none;
-      padding: 12px 0;
-      font-size: 1.1rem;
-      font-weight: 700;
-      border-radius: 50px;
-      cursor: pointer;
-      transition: 0.2s;
-      color: #a14545;
-      font-family: inherit;
-    }
-    .tab-btn.active {
-      background: #b30000;
-      color: white;
-      box-shadow: 0 4px 12px rgba(179, 0, 0, 0.3);
-    }
-    
-    /* Form Panels */
-    .form-panel {
-      display: none;
-      animation: fadeIn 0.3s ease;
-    }
-    .form-panel.active-panel {
-      display: block;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px);}
-      to { opacity: 1; transform: translateY(0);}
-    }
-    
-    .input-field {
-      width: 100%;
-      margin-bottom: 18px;
-      display: flex;
-      flex-direction: column;
-    }
-    .input-field label {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #b55;
-      margin-bottom: 6px;
-      margin-left: 8px;
-    }
-    .input-field input {
-      padding: 12px 16px;
-      border-radius: 40px;
-      border: 1.5px solid #ffcdcd;
-      background: white;
-      font-size: 0.95rem;
-      transition: 0.2s;
-      outline: none;
-    }
-    .input-field input:focus {
-      border-color: #b30000;
-      box-shadow: 0 0 0 3px rgba(179,0,0,0.1);
-    }
-    .love-btn {
-      width: 100%;
-      background: #b30000;
-      color: white;
-      border: none;
-      padding: 12px;
-      border-radius: 50px;
-      font-weight: bold;
-      font-size: 1rem;
-      cursor: pointer;
-      margin-top: 8px;
-      transition: 0.2s;
-      font-family: inherit;
-    }
-    .love-btn:hover {
-      background: #8f0000;
-      transform: scale(0.98);
-    }
-    .secret-hint {
-      font-size: 0.65rem;
-      text-align: center;
-      margin-top: 12px;
-      color: #c08383;
-      background: #fff0f0;
-      padding: 6px;
-      border-radius: 30px;
-    }
-    .error-bubble {
-      background: #ffe0e0;
-      color: #c0392b;
-      padding: 10px;
-      border-radius: 50px;
-      font-size: 0.75rem;
-      margin-top: 12px;
-      text-align: center;
-      font-weight: 500;
-    }
-    .footer-love {
-      margin-top: 24px;
-      text-align: center;
-      font-size: 0.7rem;
-      color: #bb7a7a;
-      border-top: 1px solid #ffe0e0;
-      padding-top: 16px;
-    }
-    .device-chip {
-      background: #fff1f1;
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 40px;
-      font-size: 0.7rem;
-      margin-top: 8px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💖 G&L Love World</title>
+
+<style>
+* {margin:0;padding:0;box-sizing:border-box;}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg,#fff5f0,#ffe4e4);
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.main-card{
+  background:#fff;
+  border-radius:40px;
+  width:100%;
+  max-width:420px;
+  padding:25px;
+  box-shadow:0 20px 40px rgba(0,0,0,0.15);
+}
+
+h1{
+  text-align:center;
+  color:#b30000;
+  margin-bottom:10px;
+}
+
+.tab-container{
+  display:flex;
+  margin:15px 0;
+  background:#ffeaea;
+  border-radius:40px;
+  padding:5px;
+}
+
+.tab-btn{
+  flex:1;
+  border:none;
+  padding:10px;
+  border-radius:40px;
+  cursor:pointer;
+}
+
+.active{
+  background:#b30000;
+  color:white;
+}
+
+.input-field{
+  margin:10px 0;
+}
+
+input{
+  width:100%;
+  padding:10px;
+  border-radius:30px;
+  border:1px solid #ddd;
+}
+
+.love-btn{
+  width:100%;
+  padding:12px;
+  background:#b30000;
+  color:white;
+  border:none;
+  border-radius:30px;
+  margin-top:10px;
+  cursor:pointer;
+}
+
+.error{
+  color:red;
+  text-align:center;
+  margin-top:8px;
+}
+
+#deviceInfo{
+  margin-top:10px;
+  text-align:center;
+  font-size:12px;
+}
+</style>
 </head>
+
 <body>
 
 <div class="main-card">
-  <h1>
-    <span>💖</span> G&L Love World <span>✨</span>
-  </h1>
-  <div class="heart-divider">❤️  where memories live forever  ❤️</div>
 
-  <!-- TABS: Login / Register -->
-  <div class="tab-container">
-    <button class="tab-btn active" id="loginTabBtn">🔐 LOGIN</button>
-    <button class="tab-btn" id="registerTabBtn">🌸 REGISTER</button>
+<h1>💖 G&L Love World</h1>
+
+<div class="tab-container">
+  <button class="tab-btn active" id="loginTab">Login</button>
+  <button class="tab-btn" id="registerTab">Register</button>
+</div>
+
+<!-- LOGIN -->
+<div id="loginPanel">
+  <div class="input-field">
+    <input type="text" id="loginUsername" placeholder="Username">
   </div>
-
-  <!-- LOGIN FORM PANEL -->
-  <div id="loginPanel" class="form-panel active-panel">
-    <div class="input-field">
-      <label>👤 Username</label>
-      <input type="text" id="loginUsername" placeholder="your love name" autocomplete="username">
-    </div>
-    <div class="input-field">
-      <label>🔒 Password</label>
-      <input type="password" id="loginPassword" placeholder="password">
-    </div>
-    <div class="input-field">
-      <label>🗝️ Secret Code</label>
-      <input type="password" id="loginSecret" placeholder="required secret key">
-    </div>
-    <button class="love-btn" id="loginBtn">💖 Enter Love World 💖</button>
-    <div id="loginErrorMsg" class="error-bubble" style="display: none;"></div>
+  <div class="input-field">
+    <input type="password" id="loginPassword" placeholder="Password">
+  </div>
+  <div class="input-field">
+    <input type="password" id="loginSecret" placeholder="Secret Code">
   </div>
 
-  <!-- REGISTER FORM PANEL -->
-  <div id="registerPanel" class="form-panel">
-    <div class="input-field">
-      <label>✨ Username (new)</label>
-      <input type="text" id="regUsername" placeholder="choose unique name">
-    </div>
-    <div class="input-field">
-      <label>📧 Email (optional)</label>
-      <input type="email" id="regEmail" placeholder="your@email.com">
-    </div>
-    <div class="input-field">
-      <label>🔐 Create Password</label>
-      <input type="password" id="regPassword" placeholder="min 4 characters">
-    </div>
-    <div class="input-field">
-      <label>🗝️ Secret Code</label>
-      <input type="password" id="regSecret" placeholder="shared secret key">
-    </div>
-    <button class="love-btn" id="registerBtn">✨ Create Love Account ✨</button>
-    <div id="registerErrorMsg" class="error-bubble" style="display: none;"></div>
+  <button class="love-btn" id="loginBtn">Login</button>
+  <div id="loginError" class="error"></div>
+</div>
+
+<!-- REGISTER -->
+<div id="registerPanel" style="display:none;">
+  <div class="input-field">
+    <input type="text" id="regUsername" placeholder="Username">
   </div>
-  
-  <div class="secret-hint">
-    💞 Both login & register require the couple's secret code (shared privately)
+  <div class="input-field">
+    <input type="password" id="regPassword" placeholder="Password">
   </div>
-  <div class="footer-love">
-    💕 Your promises, plans, songs & questions — safe in cloud 💕
-    <div class="device-chip" id="deviceInfo"></div>
+  <div class="input-field">
+    <input type="password" id="regSecret" placeholder="Secret Code">
   </div>
+
+  <button class="love-btn" id="registerBtn">Register</button>
+  <div id="registerError" class="error"></div>
+</div>
+
+<div id="deviceInfo"></div>
+
 </div>
 
 <script type="module">
-  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-  const supabaseUrl = "https://wmebpsheblrkuvygguae.supabase.co";
-  const supabaseKey = "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_";
-  const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(
+  "https://wmebpsheblrkuvygguae.supabase.co",
+  "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_"
+);
 
-  // SECRET CODE IS HARDCODED HERE - NOT VISIBLE ON SCREEN, NOT AUTO-FILLED
-  const GLOBAL_SECRET = "GL2025";  // Only in code, never appears in input fields
+const SECRET = "GL2025";
 
-  // Device detection
-  function getDeviceName() { 
-    const ua = navigator.userAgent; 
-    if (/Android/i.test(ua)) return "📱 Android"; 
-    if (/iPhone|iPad/i.test(ua)) return "🍏 iPhone/iPad"; 
-    if (/Windows/i.test(ua)) return "💻 Windows"; 
-    if (/Mac/i.test(ua)) return "🍎 Mac"; 
-    if (/Linux/i.test(ua)) return "🐧 Linux"; 
-    return "✨ Device"; 
-  } 
-  function getBrowserName() { 
-    const ua = navigator.userAgent; 
-    if (ua.includes("Edg")) return "Edge"; 
-    if (ua.includes("Chrome")) return "Chrome"; 
-    if (ua.includes("Firefox")) return "Firefox"; 
-    if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari"; 
-    return "Browser";
-  }
-  document.getElementById("deviceInfo").innerHTML = `${getDeviceName()} · ${getBrowserName()}`;
-
-  // TAB SWITCHING LOGIC
-  const loginTab = document.getElementById("loginTabBtn");
-  const registerTab = document.getElementById("registerTabBtn");
-  const loginPanel = document.getElementById("loginPanel");
-  const registerPanel = document.getElementById("registerPanel");
-
-  function switchToLogin() {
-    loginTab.classList.add("active");
-    registerTab.classList.remove("active");
-    loginPanel.classList.add("active-panel");
-    registerPanel.classList.remove("active-panel");
-    // Clear errors when switching
-    document.getElementById("loginErrorMsg").style.display = "none";
-    document.getElementById("registerErrorMsg").style.display = "none";
-  }
-
-  function switchToRegister() {
-    registerTab.classList.add("active");
-    loginTab.classList.remove("active");
-    registerPanel.classList.add("active-panel");
-    loginPanel.classList.remove("active-panel");
-    document.getElementById("loginErrorMsg").style.display = "none";
-    document.getElementById("registerErrorMsg").style.display = "none";
-  }
-
-  loginTab.addEventListener("click", switchToLogin);
-  registerTab.addEventListener("click", switchToRegister);
-
-  // Error helpers
-  function showLoginError(msg) {
-    const errDiv = document.getElementById("loginErrorMsg");
-    errDiv.innerText = msg;
-    errDiv.style.display = "block";
-    setTimeout(() => { errDiv.style.display = "none"; }, 4000);
-  }
-  function showRegisterError(msg) {
-    const errDiv = document.getElementById("registerErrorMsg");
-    errDiv.innerText = msg;
-    errDiv.style.display = "block";
-    setTimeout(() => { errDiv.style.display = "none"; }, 4000);
-  }
-
-  // ---------- LOGIN (redirects to home.html) ----------
-  async function performLogin() {
-    const username = document.getElementById("loginUsername").value.trim();
-    const password = document.getElementById("loginPassword").value;
-    const secret = document.getElementById("loginSecret").value;
-
-    if (!username || !password) {
-      showLoginError("❌ Please enter both username and password.");
-      return;
-    }
-    if (!secret) {
-      showLoginError("🔐 Secret code is required.");
-      return;
-    }
-    if (secret !== GLOBAL_SECRET) {
-      showLoginError("❌ Invalid secret code. Access denied.");
-      return;
-    }
-
-    try {
-      const { data: user, error } = await supabase
-        .from("love_users")
-        .select("id, username, email, password")
-        .eq("username", username)
-        .maybeSingle();
-
-      if (error) throw new Error(error.message);
-      if (!user) {
-        showLoginError("💔 Username not found. Please register first.");
-        return;
-      }
-      if (user.password !== password) {
-        showLoginError("🔐 Wrong password. Try again.");
-        return;
-      }
-
-      // log login
-    const { error } = await supabase.from("login_logs").insert([{
-  user_id: user.id,
-  device: getDeviceName(),
-  browser: getBrowserName(),
-  logged_in_at: new Date().toISOString()
-}]);
-
-if (error) {
-  console.warn("Login log error:", error.message);
-}
-     // set session
-localStorage.setItem("loveLogin", "true");
-localStorage.setItem("loveUser", user.username);
-localStorage.setItem("loveEmail", user.email || "");
-localStorage.setItem("loveUserId", user.id);
-localStorage.setItem("loveLoginTime", Date.now().toString());
-
-// TRY logging (but NEVER block redirect if it fails)
-try {
-  await supabase.from("login_logs").insert([{
-    user_id: user.id,
-    device: getDeviceName(),
-    browser: getBrowserName(),
-    logged_in_at: new Date().toISOString()
-  }]);
-} catch (e) {
-  console.warn("Login log failed (ignored):", e);
+// ✅ DEVICE INFO
+function getDevice() {
+  const ua = navigator.userAgent;
+  if (/Android/i.test(ua)) return "📱 Android";
+  if (/iPhone/i.test(ua)) return "🍏 iPhone";
+  if (/Windows/i.test(ua)) return "💻 Windows";
+  return "✨ Device";
 }
 
-// 🚀 ALWAYS REDIRECT (no matter what)
-window.location.href = "home.html";
+function getBrowser() {
+  const ua = navigator.userAgent;
+  if (ua.includes("Chrome")) return "Chrome";
+  if (ua.includes("Firefox")) return "Firefox";
+  return "Browser";
+}
 
-  // ---------- REGISTER (create new account & redirect to home.html) ----------
-  async function performRegister() {
-    const username = document.getElementById("regUsername").value.trim();
-    const email = document.getElementById("regEmail").value.trim();
-    const password = document.getElementById("regPassword").value;
-    const secret = document.getElementById("regSecret").value;
+document.getElementById("deviceInfo").innerText =
+  getDevice() + " | " + getBrowser();
 
-    if (!username) {
-      showRegisterError("✨ Please choose a sweet username.");
-      return;
-    }
-    if (username.length < 3) {
-      showRegisterError("Username must be at least 3 characters.");
-      return;
-    }
-    if (!password || password.length < 4) {
-      showRegisterError("🔒 Password must be at least 4 characters.");
-      return;
-    }
-    if (!secret) {
-      showRegisterError("🗝️ Secret code is required to register.");
-      return;
-    }
-    if (secret !== GLOBAL_SECRET) {
-      showRegisterError("❌ Secret code doesn't match the couple's key.");
-      return;
-    }
+// ✅ SWITCH TABS
+loginTab.onclick = () => {
+  loginPanel.style.display = "block";
+  registerPanel.style.display = "none";
+  loginTab.classList.add("active");
+  registerTab.classList.remove("active");
+};
 
-    try {
-      // check existing username
-      const { data: existing, error: checkError } = await supabase
-        .from("love_users")
-        .select("username")
-        .eq("username", username)
-        .maybeSingle();
+registerTab.onclick = () => {
+  registerPanel.style.display = "block";
+  loginPanel.style.display = "none";
+  registerTab.classList.add("active");
+  loginTab.classList.remove("active");
+};
 
-      if (checkError && checkError.code !== "PGRST116") throw new Error(checkError.message);
-      if (existing) {
-        showRegisterError("🌸 Username already taken. Try another love name.");
-        return;
-      }
+// ✅ REDIRECT FUNCTION
+function goHome(){
+  window.location.href = "home.html";
+}
 
-      // create new user
-      const { data: newUser, error: insertError } = await supabase
-        .from("love_users")
-        .insert({
-          username: username,
-          email: email || null,
-          password: password,
-          created_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+// ✅ LOGIN
+loginBtn.onclick = async () => {
 
-      if (insertError) {
-        console.error(insertError);
-        if (insertError.code === "23505") showRegisterError("Username already exists.");
-        else showRegisterError("Registration error: " + insertError.message);
-        return;
-      }
+  const username = loginUsername.value.trim();
+  const password = loginPassword.value;
+  const secret = loginSecret.value;
 
-      // auto-login after registration
-      localStorage.setItem("loveLogin", "true");
-      localStorage.setItem("loveUser", newUser.username);
-      localStorage.setItem("loveEmail", newUser.email || "");
-      localStorage.setItem("loveUserId", newUser.id);
-
-      // log registration event
-      await supabase.from("login_logs").insert([{
-        user_id: newUser.id,
-        device: getDeviceName(),
-        browser: getBrowserName(),
-        logged_in_at: new Date().toISOString(),
-        event_type: "registration"
-      }]).catch(e => console.warn("log reg error"));
-
-      // Redirect to home.html
-      window.location.href = "home.html";
-    } catch (err) {
-      console.error(err);
-      showRegisterError("💔 Network issue: " + err.message);
-    }
+  if(secret !== SECRET){
+    loginError.innerText = "Wrong secret code";
+    return;
   }
 
-  // attach event listeners
-  document.getElementById("loginBtn").addEventListener("click", performLogin);
-  document.getElementById("registerBtn").addEventListener("click", performRegister);
+  const { data: user } = await supabase
+    .from("love_users")
+    .select("*")
+    .eq("username", username)
+    .maybeSingle();
 
-  // NO AUTO-FILLING OF SECRET CODE FIELDS - they start empty
-  // The user must manually type the secret code (GL2025)
-  // Secret code is ONLY in the JavaScript constant above, never in HTML value attributes
+  if(!user){
+    loginError.innerText = "User not found";
+    return;
+  }
 
-  // Enter key support
-  const loginInputs = ["loginUsername", "loginPassword", "loginSecret"];
-  loginInputs.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener("keypress", (e) => { if(e.key === "Enter") performLogin(); });
-  });
-  const regInputs = ["regUsername", "regEmail", "regPassword", "regSecret"];
-  regInputs.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener("keypress", (e) => { if(e.key === "Enter") performRegister(); });
-  });
+  if(user.password !== password){
+    loginError.innerText = "Wrong password";
+    return;
+  }
+
+  // ✅ save session
+  localStorage.setItem("loveLogin", "true");
+  localStorage.setItem("loveUser", user.username);
+  localStorage.setItem("loveUserId", user.id);
+
+  // ✅ LOG (won’t break login)
+  try{
+    await supabase.from("login_logs").insert([{
+      user_id: user.id,
+      device: getDevice(),
+      browser: getBrowser(),
+      logged_in_at: new Date()
+    }]);
+  }catch{}
+
+  goHome();
+};
+
+// ✅ REGISTER
+registerBtn.onclick = async () => {
+
+  const username = regUsername.value.trim();
+  const password = regPassword.value;
+  const secret = regSecret.value;
+
+  if(secret !== SECRET){
+    registerError.innerText = "Wrong secret code";
+    return;
+  }
+
+  const { data: existing } = await supabase
+    .from("love_users")
+    .select("username")
+    .eq("username", username)
+    .maybeSingle();
+
+  if(existing){
+    registerError.innerText = "Username taken";
+    return;
+  }
+
+  const { data: newUser } = await supabase
+    .from("love_users")
+    .insert({
+      username,
+      password,
+      created_at: new Date()
+    })
+    .select()
+    .single();
+
+  localStorage.setItem("loveLogin", "true");
+  localStorage.setItem("loveUser", newUser.username);
+  localStorage.setItem("loveUserId", newUser.id);
+
+  // ✅ log
+  try{
+    await supabase.from("login_logs").insert([{
+      user_id: newUser.id,
+      device: getDevice(),
+      browser: getBrowser(),
+      logged_in_at: new Date(),
+      event_type: "register"
+    }]);
+  }catch{}
+
+  goHome();
+};
 </script>
+
 </body>
 </html>
+
+
+
