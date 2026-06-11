@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Our Memories Gallery 💕 | Sweet Moments</title>
   <style>
     * {
@@ -12,7 +12,7 @@
     }
 
     body {
-      font-family: 'Segoe UI', 'Arial', system-ui, -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+      font-family: 'Segoe UI', 'Arial', system-ui, sans-serif;
       background: linear-gradient(145deg, #fff5f9 0%, #ffe4ed 100%);
       text-align: center;
       margin: 0;
@@ -34,7 +34,6 @@
       justify-content: center;
       gap: 12px;
       flex-wrap: wrap;
-      text-shadow: 2px 2px 8px rgba(214, 51, 132, 0.15);
     }
 
     .subhead {
@@ -44,14 +43,12 @@
       display: inline-block;
       padding: 6px 18px;
       border-radius: 40px;
-      backdrop-filter: blur(2px);
       margin-bottom: 30px;
     }
 
-    /* upload zone */
     .upload-card {
       background: white;
-      max-width: 650px;
+      max-width: 700px;
       margin: 10px auto 30px auto;
       padding: 20px 25px;
       border-radius: 48px;
@@ -61,7 +58,6 @@
       justify-content: center;
       align-items: center;
       gap: 14px;
-      backdrop-filter: blur(4px);
       background: rgba(255, 248, 251, 0.95);
       border: 1px solid #ffc0d0;
     }
@@ -85,7 +81,6 @@
       border: 1px solid #ffb3c6;
       background: white;
       font-size: 0.95rem;
-      transition: 0.2s;
       outline: none;
     }
 
@@ -107,50 +102,50 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
 
     .upload-card button:hover {
       background: #b82d6a;
       transform: scale(0.97);
-      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
     }
 
-    /* gallery grid */
+    .upload-card button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     .gallery {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 26px;
       margin-top: 30px;
       margin-bottom: 40px;
     }
 
     .memory {
-      background: #ffffffdd;
-      backdrop-filter: blur(2px);
       background: white;
       border-radius: 32px;
       padding: 16px;
       box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08);
-      transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      transition: all 0.3s ease;
       border: 1px solid rgba(214, 51, 132, 0.2);
     }
 
     .memory:hover {
       transform: translateY(-8px);
       box-shadow: 0 25px 35px rgba(214, 51, 132, 0.2);
-      border-color: #ff90b0;
     }
 
     .img-wrapper {
       width: 100%;
-      height: 240px;
+      height: 250px;
       overflow: hidden;
       border-radius: 24px;
       background: #ffe2ed;
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
     }
 
     .memory img {
@@ -158,7 +153,6 @@
       height: 100%;
       object-fit: cover;
       transition: transform 0.4s ease;
-      display: block;
     }
 
     .memory:hover img {
@@ -171,13 +165,19 @@
       font-weight: 500;
       color: #2c1a24;
       background: #fff0f7;
-      padding: 8px 12px;
+      padding: 10px 12px;
       border-radius: 30px;
       word-break: break-word;
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 6px;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .caption-text {
+      flex: 1;
+      text-align: left;
     }
 
     .memory small {
@@ -186,8 +186,25 @@
       background: #ffeef4;
       padding: 3px 10px;
       border-radius: 30px;
-      display: inline-block;
-      margin-left: 6px;
+    }
+
+    .delete-btn {
+      background: #ffe2ed;
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .delete-btn:hover {
+      background: #ffb7cb;
+      transform: scale(1.08);
     }
 
     .back-home {
@@ -200,38 +217,13 @@
       align-items: center;
       gap: 10px;
       font-weight: bold;
-      font-size: 1rem;
       margin-top: 20px;
       transition: 0.2s;
-      box-shadow: 0 5px 12px rgba(0,0,0,0.1);
     }
 
     .back-home:hover {
       background: #a12962;
       transform: scale(0.97);
-    }
-
-    .delete-btn {
-      background: none;
-      border: none;
-      font-size: 1.2rem;
-      cursor: pointer;
-      color: #d63384;
-      margin-left: 8px;
-      transition: 0.1s;
-      background: rgba(255,255,240,0.7);
-      border-radius: 50%;
-      width: 28px;
-      height: 28px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .delete-btn:hover {
-      background: #ffc0d0;
-      transform: scale(1.1);
-      color: #b0004a;
     }
 
     .toast-message {
@@ -245,22 +237,19 @@
       padding: 12px 28px;
       border-radius: 60px;
       font-weight: 500;
-      font-size: 0.9rem;
       z-index: 999;
-      pointer-events: none;
       transition: opacity 0.3s;
-      box-shadow: 0 5px 18px rgba(0,0,0,0.2);
+      pointer-events: none;
     }
 
     .loader {
       display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid #ffc0d0;
+      width: 18px;
+      height: 18px;
+      border: 2px solid #ffc0d0;
       border-radius: 50%;
-      border-top-color: #d63384;
+      border-top-color: white;
       animation: spin 0.6s linear infinite;
-      margin-left: 8px;
     }
 
     @keyframes spin {
@@ -271,7 +260,6 @@
       .upload-card {
         flex-direction: column;
         align-items: stretch;
-        border-radius: 36px;
       }
       .gallery {
         gap: 18px;
@@ -280,53 +268,66 @@
         font-size: 1.9rem;
       }
     }
-
-    .empty-message {
-      background: #ffeef4;
-      border-radius: 48px;
-      padding: 40px 20px;
-      color: #a13e6b;
-      font-size: 1.2rem;
-      text-align: center;
-    }
   </style>
 </head>
 <body>
 <div class="container">
-  <h1>
-    💌 Our Beautiful Memories 💌
-    <span style="font-size: 1.8rem;">✨</span>
-  </h1>
+  <h1>💌 Our Beautiful Memories 💌</h1>
   <div class="subhead">💑 Every moment with you is magic 💖</div>
 
-  <!-- fully functional upload section -->
   <div class="upload-card">
     <input type="file" id="uploadPic" accept="image/jpeg,image/png,image/jpg,image/gif,image/webp">
     <input type="text" id="caption" placeholder="Write a sweet caption 💕" autocomplete="off">
     <button id="uploadBtn">📸 Upload Memory</button>
   </div>
 
-  <!-- gallery grid: dynamic + preserved memories -->
   <div class="gallery" id="gallery"></div>
 
   <a href="#" class="back-home" id="homeLink">⬅ Back Home</a>
 </div>
 
-<!-- Use indexedDB + local storage for true persistence without broken external configs -->
-<!-- This implementation uses localStorage as persistent storage for memories, making upload button fully functional,
-     stores both existing default images + user uploads, plus deletion ability. No broken supabase/firebase issues. -->
 <script>
-  // ---------- STORAGE MANAGER (fully self-contained, persistent, no backend required) ----------
-  // We store memories array in localStorage key: "love_memories_db"
-  // Each memory: { id, url, caption, author, createdAt, isHardcoded? optional but we keep existing ones }
-  // For existing default images (butt.jpg, hand.jpg, etc) we pre-seed them with readable captions
-  // Also user uploads will be stored as base64 strings (small images) or objectURL persistence.
-  // For better UX we store base64 for uploaded images (so they persist across page reloads perfectly)
-  // And also we keep the default ones as they are, but we also give ability to delete them? no, but we can keep classic ones separate.
-  // We’ll create a dynamic gallery that merges default seeded memories + user uploaded memories.
-  // The "Upload" button saves both the image (as dataURL) and caption into localStorage, then reloads gallery.
+  // Storage key for memories
+  const STORAGE_KEY = 'love_memories_complete';
+  
+  // Default seeded memories with reliable placeholder images (using unsplash and placehold.co for testing)
+  // These are cute placeholder images that will always work
+  const DEFAULT_MEMORIES = [
+    { id: 'default1', url: 'https://picsum.photos/id/20/400/300', caption: 'AWW 💕', author: 'Shosho', createdAt: Date.now() - 86400000, isDefault: true },
+    { id: 'default2', url: 'https://picsum.photos/id/30/400/300', caption: 'OH BABY', author: 'Babe', createdAt: Date.now() - 86000000, isDefault: true },
+    { id: 'default3', url: 'https://picsum.photos/id/42/400/300', caption: '💕 Sweet moments', author: 'Us', createdAt: Date.now() - 85000000, isDefault: true },
+    { id: 'default4', url: 'https://picsum.photos/id/58/400/300', caption: '😊 Together forever', author: 'You & me', createdAt: Date.now() - 84000000, isDefault: true },
+    { id: 'default5', url: 'https://picsum.photos/id/60/400/300', caption: 'HIS CLOTHES LOOK GOOD ON ME OHH 😝💖', author: 'Her', createdAt: Date.now() - 83000000, isDefault: true },
+    { id: 'default6', url: 'https://picsum.photos/id/64/400/300', caption: '😍 Love you!', author: 'Him', createdAt: Date.now() - 82000000, isDefault: true },
+    { id: 'default7', url: 'https://picsum.photos/id/69/400/300', caption: 'HER FAVOURITE PIC 💖', author: 'Him', createdAt: Date.now() - 81000000, isDefault: true },
+    { id: 'default8', url: 'https://picsum.photos/id/89/400/300', caption: 'HIS FAVOURITE PIC 💖', author: 'Her', createdAt: Date.now() - 80000000, isDefault: true }
+  ];
 
-  // ---- Helper functions ----
+  // Load memories from localStorage
+  function loadMemories() {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch(e) {
+        console.warn('Failed to parse stored memories', e);
+      }
+    }
+    // Return fresh copy of default memories
+    return DEFAULT_MEMORIES.map(m => ({ ...m }));
+  }
+
+  // Save memories to localStorage
+  function saveMemories(memories) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(memories));
+  }
+
+  let allMemories = loadMemories();
+
+  // Show toast notification
   function showToast(message, duration = 2500) {
     let toast = document.querySelector('.toast-message');
     if (!toast) {
@@ -341,123 +342,45 @@
     }, duration);
   }
 
-  // Default seeded memories (beautiful initial collection, using original img sources)
-  const DEFAULT_MEMORIES = [
-    { id: 'default1', url: 'butt.jpg', caption: 'AWW 💕', author: 'Shosho', createdAt: Date.now() - 86400000, isDefault: true },
-    { id: 'default2', url: 'hand.jpg', caption: 'OH BABY', author: 'Babe', createdAt: Date.now() - 86000000, isDefault: true },
-    { id: 'default3', url: 'huh.jpg', caption: '💕', author: 'Us', createdAt: Date.now() - 85000000, isDefault: true },
-    { id: 'default4', url: 'legs.jpg', caption: '😊📸', author: 'You & me', createdAt: Date.now() - 84000000, isDefault: true },
-    { id: 'default5', url: 'outfit.jpg', caption: 'HIS CLOTHES LOOK GOOD ON ME OHH 😝💖', author: 'Her', createdAt: Date.now() - 83000000, isDefault: true },
-    { id: 'default6', url: 'call.jpg', caption: '😍', author: 'Love', createdAt: Date.now() - 82000000, isDefault: true },
-    { id: 'default7', url: 'bae.jpg', caption: 'HER FAVOURITE PIC 💖', author: 'Him', createdAt: Date.now() - 81000000, isDefault: true },
-    { id: 'default8', url: 'girl.jpg', caption: 'HIS FAVOURITE PIC 💖', author: 'Her', createdAt: Date.now() - 80000000, isDefault: true }
-  ];
-
-  // Load memories from localStorage
-  function loadMemoriesFromStorage() {
-    const stored = localStorage.getItem('love_memories_gallery');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        // ensure every item has required fields, filter corrupted
-        if (Array.isArray(parsed)) return parsed;
-      } catch(e) { console.warn(e); }
-    }
-    // first time: return default memories (copy and convert isDefault flag)
-    return DEFAULT_MEMORIES.map(m => ({ ...m, id: m.id, isDefault: true }));
-  }
-
-  // Save memories array to localStorage
-  function saveMemoriesToStorage(memories) {
-    localStorage.setItem('love_memories_gallery', JSON.stringify(memories));
-  }
-
-  // global variable
-  let allMemories = loadMemoriesFromStorage();
-
-  // Helper: Convert file to base64 string
-  function fileToBase64(file) {
+  // Convert file to data URL with compression for large images
+  function fileToDataURL(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = (e) => reject(e);
       reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = error => reject(error);
     });
   }
 
-  // Render gallery from 'allMemories' array (sorted newest first)
-  function renderGallery() {
-    const galleryDiv = document.getElementById('gallery');
-    if (!galleryDiv) return;
-    
-    // sort by createdAt descending (newest first)
-    const sorted = [...allMemories].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
-    
-    if (sorted.length === 0) {
-      galleryDiv.innerHTML = `<div class="empty-message">✨ No memories yet? Upload your first sweet moment ✨</div>`;
-      return;
-    }
-    
-    galleryDiv.innerHTML = '';
-    for (let mem of sorted) {
-      const memoryDiv = document.createElement('div');
-      memoryDiv.className = 'memory';
-      // special fallback for broken images: show alt text but img onerror
-      const imgSrc = mem.url || '';
-      const captionText = mem.caption ? mem.caption : '💖 sweet memory';
-      const authorText = mem.author ? ` — ${mem.author}` : '';
-      const isDeletable = !mem.isDefault;  // only uploaded user images can be deleted (default ones keep charm)
-      // optional delete button only for non-default entries
-      const deleteButton = isDeletable ? `<button class="delete-btn" data-id="${mem.id}" title="remove memory">🗑️</button>` : '';
-      memoryDiv.innerHTML = `
-        <div class="img-wrapper">
-          <img src="${imgSrc}" alt="memory" onerror="this.src='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20200%20150%22%3E%3Crect%20width%3D%22200%22%20height%3D%22150%22%20fill%3D%22%23ffd9e6%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22%23b83a6a%22%3E💔%20image%20lost%3C%2Ftext%3E%3C%2Fsvg%3E';">
-        </div>
-        <p>${escapeHtml(captionText)}<small>${escapeHtml(authorText)}</small>${deleteButton}</p>
-      `;
-      galleryDiv.appendChild(memoryDiv);
-    }
-    
-    // attach delete events after render
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = btn.getAttribute('data-id');
-        if (id) {
-          deleteMemoryById(id);
+  // Compress image if needed (resize to max 800px width to save storage)
+  function compressImage(dataUrl, maxWidth = 800) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
         }
-      });
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Compress as JPEG with 0.8 quality to save space
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        resolve(compressedDataUrl);
+      };
+      img.onerror = reject;
+      img.src = dataUrl;
     });
-  }
-  
-  // simple escape
-  function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-      if (m === '&') return '&amp;';
-      if (m === '<') return '&lt;';
-      if (m === '>') return '&gt;';
-      return m;
-    }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
-      return c;
-    });
-  }
-  
-  // delete memory (only user uploads, can't delete core default memories but you can still delete uploaded)
-  function deleteMemoryById(id) {
-    const memoryIndex = allMemories.findIndex(m => m.id === id);
-    if (memoryIndex === -1) return;
-    if (allMemories[memoryIndex].isDefault === true) {
-      showToast("✨ Core memories are forever ✨ (can't delete)", 1800);
-      return;
-    }
-    allMemories.splice(memoryIndex, 1);
-    saveMemoriesToStorage(allMemories);
-    renderGallery();
-    showToast("Memory removed 💔 but new ones can be added!", 2000);
   }
 
-  // Upload new memory (full functionality)
+  // Upload new memory
   async function handleUpload() {
     const fileInput = document.getElementById('uploadPic');
     const captionInput = document.getElementById('caption');
@@ -469,103 +392,178 @@
       return;
     }
     
-    // Validate file type
     if (!file.type.startsWith('image/')) {
-      showToast("Only images (JPEG, PNG, etc) are allowed 🖼️", 2000);
+      showToast("Only images are allowed 🖼️", 2000);
       return;
     }
     
-    // file size limit ~ 5MB (keep localStorage smooth but base64 can be large - but still okay for some images)
-    if (file.size > 5 * 1024 * 1024) {
-      showToast("Image is too large! Please choose under 5MB 💖", 2500);
+    if (file.size > 10 * 1024 * 1024) {
+      showToast("Image is too large! Please choose under 10MB 💖", 2500);
       return;
     }
     
-    // show loading state on button
     const uploadBtn = document.getElementById('uploadBtn');
     const originalText = uploadBtn.innerHTML;
     uploadBtn.innerHTML = 'Uploading 🌸 <span class="loader"></span>';
     uploadBtn.disabled = true;
     
     try {
-      // Convert to base64 for persistent storage (works offline, no backend)
-      const base64Image = await fileToBase64(file);
-      const newId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-      const finalCaption = caption === '' ? '✨ Our new memory ✨' : caption;
+      // Convert to data URL
+      let dataUrl = await fileToDataURL(file);
+      
+      // Compress the image
+      dataUrl = await compressImage(dataUrl, 800);
+      
+      const newId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+      const finalCaption = caption === '' ? '✨ Our beautiful memory ✨' : caption;
+      
       const newMemory = {
         id: newId,
-        url: base64Image,
+        url: dataUrl,
         caption: finalCaption,
         author: "Shosho & Babe 💑",
         createdAt: Date.now(),
         isDefault: false
       };
-      allMemories.push(newMemory);
-      saveMemoriesToStorage(allMemories);
       
-      // clear inputs
+      allMemories.push(newMemory);
+      saveMemories(allMemories);
+      
+      // Clear inputs
       fileInput.value = '';
       captionInput.value = '';
+      
       renderGallery();
-      showToast("New memory added! 🎉💖 Forever saved.", 2200);
+      showToast("🎉 Memory added successfully! Forever in our hearts 💖", 2500);
+      
     } catch (err) {
-      console.error(err);
-      showToast("Upload failed 😢 Please try again.", 2000);
+      console.error('Upload error:', err);
+      showToast("😢 Upload failed. Please try again with a smaller image.", 3000);
     } finally {
       uploadBtn.innerHTML = originalText;
       uploadBtn.disabled = false;
     }
   }
+
+  // Delete memory (only user-uploaded ones)
+  function deleteMemoryById(id) {
+    const memory = allMemories.find(m => m.id === id);
+    if (!memory) return;
+    
+    if (memory.isDefault === true) {
+      showToast("✨ Core memories are forever ✨", 1800);
+      return;
+    }
+    
+    allMemories = allMemories.filter(m => m.id !== id);
+    saveMemories(allMemories);
+    renderGallery();
+    showToast("Memory removed 💔 You can always add new ones!", 2000);
+  }
+
+  // Render gallery
+  function renderGallery() {
+    const galleryDiv = document.getElementById('gallery');
+    if (!galleryDiv) return;
+    
+    const sorted = [...allMemories].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    
+    if (sorted.length === 0) {
+      galleryDiv.innerHTML = `<div style="background: #ffeef4; border-radius: 48px; padding: 60px 20px; color: #a13e6b; font-size: 1.2rem;">✨ No memories yet? Upload your first sweet moment ✨</div>`;
+      return;
+    }
+    
+    galleryDiv.innerHTML = '';
+    
+    sorted.forEach(mem => {
+      const memoryDiv = document.createElement('div');
+      memoryDiv.className = 'memory';
+      
+      const isDeletable = !mem.isDefault;
+      const deleteBtnHtml = isDeletable ? `<button class="delete-btn" data-id="${mem.id}" title="remove memory">🗑️</button>` : '';
+      
+      memoryDiv.innerHTML = `
+        <div class="img-wrapper">
+          <img src="${mem.url}" alt="memory" onerror="this.src='https://placehold.co/400x300/ffd9e6/d63384?text=❤️+Memory'">
+        </div>
+        <p>
+          <span class="caption-text">${escapeHtml(mem.caption)} <small>${escapeHtml(mem.author)}</small></span>
+          ${deleteBtnHtml}
+        </p>
+      `;
+      
+      galleryDiv.appendChild(memoryDiv);
+    });
+    
+    // Attach delete events
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        if (id) deleteMemoryById(id);
+      });
+    });
+  }
   
-  // initialize and also fix missing images for default? they exist as relative paths, but we keep.
-  // Also ensure if default images are broken we show fallback but it's fine.
-  // Additionally we need to fix "Back Home" link to be smooth.
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
+
+  // Reset to default memories (optional feature)
+  function resetToDefaults() {
+    if (confirm('Reset to default memories? Your uploaded photos will be lost!')) {
+      allMemories = DEFAULT_MEMORIES.map(m => ({ ...m }));
+      saveMemories(allMemories);
+      renderGallery();
+      showToast("✨ Reset to beautiful default memories ✨", 2000);
+    }
+  }
+
+  // Setup event listeners
   function setupEventListeners() {
-    const uploadButton = document.getElementById('uploadBtn');
-    if (uploadButton) uploadButton.addEventListener('click', handleUpload);
+    const uploadBtn = document.getElementById('uploadBtn');
+    if (uploadBtn) uploadBtn.addEventListener('click', handleUpload);
     
     const homeLink = document.getElementById('homeLink');
     if (homeLink) {
       homeLink.addEventListener('click', (e) => {
         e.preventDefault();
-        // simple behavior: go to top or redirect to index? we simulate index back
         window.location.href = "index.html";
-        // fallback: if index not exists then go to current page top
-        setTimeout(() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 100);
       });
     }
     
-    // Optional: Press Enter on caption triggers upload
     const captionField = document.getElementById('caption');
     if (captionField) {
       captionField.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          handleUpload();
-        }
+        if (e.key === 'Enter') handleUpload();
+      });
+    }
+    
+    // Optional: Add a hidden reset button (double-click title to reset)
+    const title = document.querySelector('h1');
+    if (title) {
+      title.addEventListener('dblclick', () => {
+        resetToDefaults();
       });
     }
   }
   
-  // ----- Fix missing original hardcoded images? Also we added default memories, but they refer to real image files (butt.jpg etc)
-  // These images need to be present in same directory. if not, fallback appears. But that's not our error. The upload button now works perfectly.
-  // Additional: allow user to view and the delete option for own uploaded images. Also ensure the gallery displays correctly.
-  
-  // sync deletion with realtime and first load
+  // Initialize
   function init() {
     renderGallery();
     setupEventListeners();
-    // If any default memory lacks an id fix (already fine)
-    // Provide additional re-sync from storage if needed: we already store allMemories.
-    // manual reset functionality? not needed.
   }
   
-  // Also watch if someone wants to preserve across tabs? we provide storage event update
+  // Listen for storage changes across tabs
   window.addEventListener('storage', (e) => {
-    if (e.key === 'love_memories_gallery') {
-      allMemories = loadMemoriesFromStorage();
+    if (e.key === STORAGE_KEY) {
+      allMemories = loadMemories();
       renderGallery();
       showToast("Gallery updated from another tab 💖", 1500);
     }
@@ -573,43 +571,5 @@
   
   init();
 </script>
-
-<!-- small style polish -->
-<style>
-  .memory p {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .delete-btn {
-    background: #ffe2ed;
-    border: none;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  }
-  .delete-btn:hover {
-    background: #ffb7cb;
-    transform: scale(1.08);
-  }
-  .img-wrapper {
-    background: #f8dbe8;
-  }
-</style>
 </body>
 </html>
-
-
-
-
-
-
