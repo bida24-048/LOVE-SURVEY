@@ -103,30 +103,33 @@ h1,h2{ color:#b30000; }
 
   async function loadVault(){
       let localVault = JSON.parse(localStorage.getItem("vault") || "[]");
-
-      const { data, error } = await supabase
-          .from("love_vault")
-          .select("*")
-          .eq("user_id", currentUserId)
-          .order("id",{ascending:false});
-
       let combined = [...localVault];
-      if(!error && data){ combined = [...localVault,...data]; }
+
+      if(currentUserId){
+          const { data, error } = await supabase
+              .from("love_vault")
+              .select("*")
+              .eq("user_id", currentUserId)
+              .order("id",{ascending:false});
+
+          if(!error && data){ combined = [...localVault, ...data]; }
+      }
+
       vaultData = combined;
-      renderVault(combined);
+      renderVault(combined); // ✅ always call renderVault
   }
 
   function renderVault(data){
       const vaultDiv = document.getElementById("vault");
       if(!data || data.length===0){
-          vaultDiv.innerHTML = "<h3>Vault is empty 😘</h3>";
+          vaultDiv.innerHTML = "<h3>Vault is empty 😘</h3>"; // ✅ replaces Loading vault...
           return;
       }
       vaultDiv.innerHTML = data.map((entry, index) => {
           const source = entry.source_page || entry.section || "General";
           const date = entry.date || (entry.created_at ? new Date(entry.created_at).toLocaleString() : "Unknown Date");
           const content = entry.content || entry.text || entry.question || "No content";
-          const author = currentUsername || "Anonymous";
+          const author = entry.author || currentUsername || "Anonymous";
           return `
           <div class="vault-entry">
               <div class="source-label">📂 Source: ${source}</div>
@@ -150,7 +153,7 @@ h1,h2{ color:#b30000; }
       const filtered = vaultData.filter(entry => {
           const source = (entry.source_page || entry.section || "").toLowerCase();
           const content = (entry.content || entry.text || "").toLowerCase();
-          const author = (currentUsername || "").toLowerCase();
+          const author = (entry.author || currentUsername || "").toLowerCase();
           return (source.includes(term) || content.includes(term) || author.includes(term));
       });
       renderVault(filtered);
@@ -162,7 +165,7 @@ h1,h2{ color:#b30000; }
       vaultData.forEach(entry => {
           const source = entry.source_page || entry.section || "General";
           const date = entry.date || (entry.created_at ? new Date(entry.created_at).toLocaleString() : "");
-          text += `📂 Source: ${source}\n📅 Date: ${date}\n\n💌 ${entry.content || entry.text || ""}\n\n✍️ ${currentUsername || "Anonymous"}\n--------------------------------\n\n`;
+          text += `📂 Source: ${source}\n📅 Date: ${date}\n\n💌 ${entry.content || entry.text || ""}\n\n✍️ ${entry.author || currentUsername || "Anonymous"}\n--------------------------------\n\n`;
       });
       window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
   }
@@ -196,7 +199,8 @@ h1,h2{ color:#b30000; }
                   source_page: entry.source_page || entry.section || "General",
                   section: entry.section || "General",
                   content: entry.content || entry.text || "",
-                  created_at: entry.created_at || new Date().toISOString()
+                  created_at: entry.created_at || new Date().toISOString(),
+                  author: entry.author || currentUsername || "Anonymous"
               });
           }catch(err){ console.error(err); }
       }
@@ -210,15 +214,23 @@ h1,h2{ color:#b30000; }
       loadVault();
   })
   .on("postgres_changes",{event:"DELETE",schema:"public",table:"love_vault"},payload=>{
+      document.getElementById("notify  supabase.channel("love-vault")
+  .on("postgres_changes",{event:"INSERT",schema:"public",table:"love_vault"},payload=>{
+      document.getElementById("notify").innerText = "✨ New memory added to the Vault 💕";
+      loadVault();
+  })
+  .on("postgres_changes",{event:"DELETE",schema:"public",table:"love_vault"},payload=>{
       document.getElementById("notify").innerText = "🗑️ A memory was removed!";
       loadVault();
   })
   .subscribe();
 
+  // ✅ Initial load
   loadVault();
 </script>
 </body>
 </html>
+
 
 
 
