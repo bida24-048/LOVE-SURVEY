@@ -46,6 +46,12 @@ h1{
   padding:10px;
   border-radius:40px;
   cursor:pointer;
+  font-weight:600;
+  transition:all 0.2s;
+}
+
+.tab-btn:hover{
+  background:#ffcccc;
 }
 
 .active{
@@ -59,9 +65,10 @@ h1{
 
 input{
   width:100%;
-  padding:10px;
+  padding:12px;
   border-radius:30px;
   border:1px solid #ddd;
+  font-size:14px;
 }
 
 .love-btn{
@@ -73,18 +80,31 @@ input{
   border-radius:30px;
   margin-top:10px;
   cursor:pointer;
+  font-size:16px;
+  font-weight:600;
+  transition:transform 0.1s;
+}
+
+.love-btn:hover{
+  background:#8b0000;
+  transform:scale(0.98);
 }
 
 .error{
   color:red;
   text-align:center;
   margin-top:8px;
+  font-size:13px;
 }
 
 #deviceInfo{
-  margin-top:10px;
+  margin-top:15px;
   text-align:center;
   font-size:12px;
+  color:#b65c5c;
+  background:#fff5f0;
+  padding:8px;
+  border-radius:30px;
 }
 </style>
 </head>
@@ -103,7 +123,7 @@ input{
 <!-- LOGIN -->
 <div id="loginPanel">
   <div class="input-field">
-    <input type="text" id="loginUsername" placeholder="Username">
+    <input type="text" id="loginUsername" placeholder="Username" autocomplete="off">
   </div>
   <div class="input-field">
     <input type="password" id="loginPassword" placeholder="Password">
@@ -112,14 +132,14 @@ input{
     <input type="password" id="loginSecret" placeholder="Secret Code">
   </div>
 
-  <button class="love-btn" id="loginBtn">Login</button>
+  <button class="love-btn" id="loginBtn">🔐 Login</button>
   <div id="loginError" class="error"></div>
 </div>
 
 <!-- REGISTER -->
 <div id="registerPanel" style="display:none;">
   <div class="input-field">
-    <input type="text" id="regUsername" placeholder="Username">
+    <input type="text" id="regUsername" placeholder="Username" autocomplete="off">
   </div>
   <div class="input-field">
     <input type="password" id="regPassword" placeholder="Password">
@@ -128,7 +148,7 @@ input{
     <input type="password" id="regSecret" placeholder="Secret Code">
   </div>
 
-  <button class="love-btn" id="registerBtn">Register</button>
+  <button class="love-btn" id="registerBtn">✨ Register</button>
   <div id="registerError" class="error"></div>
 </div>
 
@@ -146,26 +166,75 @@ const supabase = createClient(
 
 const SECRET = "GL2025";
 
-// ✅ DEVICE INFO
+// =============== IMPROVED DEVICE INFO ===============
 function getDevice() {
   const ua = navigator.userAgent;
-  if (/Android/i.test(ua)) return "📱 Android";
-  if (/iPhone/i.test(ua)) return "🍏 iPhone";
-  if (/Windows/i.test(ua)) return "💻 Windows";
-  return "✨ Device";
+  
+  // More accurate device detection
+  if (/iPhone/i.test(ua)) return "📱 iPhone";
+  if (/iPad/i.test(ua)) return "📱 iPad";
+  if (/Android/i.test(ua)) {
+    if (ua.includes("Mobile")) return "🤖 Android Phone";
+    return "🤖 Android Tablet";
+  }
+  if (/Windows/i.test(ua)) {
+    if (ua.includes("Phone")) return "📱 Windows Phone";
+    return "💻 Windows PC";
+  }
+  if (/Mac/i.test(ua)) return "🍎 Mac";
+  if (/Linux/i.test(ua)) return "🐧 Linux";
+  return "✨ Unknown Device";
 }
 
 function getBrowser() {
   const ua = navigator.userAgent;
-  if (ua.includes("Chrome")) return "Chrome";
-  if (ua.includes("Firefox")) return "Firefox";
-  return "Browser";
+  
+  if (ua.includes("Edg")) return "🔷 Edge";
+  if (ua.includes("Chrome") && !ua.includes("Edg")) return "🌐 Chrome";
+  if (ua.includes("Firefox")) return "🦊 Firefox";
+  if (ua.includes("Safari") && !ua.includes("Chrome")) return "🧭 Safari";
+  if (ua.includes("Opera") || ua.includes("OPR")) return "🎭 Opera";
+  if (ua.includes("Brave")) return "🦁 Brave";
+  return "🌐 " + (navigator.browser || "Browser");
 }
 
-document.getElementById("deviceInfo").innerText =
-  getDevice() + " | " + getBrowser();
+// Get detailed OS info
+function getOS() {
+  const ua = navigator.userAgent;
+  if (ua.includes("Windows NT 10.0")) return "Windows 10";
+  if (ua.includes("Windows NT 11.0")) return "Windows 11";
+  if (ua.includes("Mac OS X")) return "macOS";
+  if (ua.includes("Android")) return "Android";
+  if (ua.includes("iOS")) return "iOS";
+  if (ua.includes("Linux")) return "Linux";
+  return "Unknown OS";
+}
 
-// ✅ SWITCH TABS
+// Combine device info for display and storage
+function getFullDeviceInfo() {
+  const device = getDevice();
+  const browser = getBrowser();
+  const os = getOS();
+  return {
+    device: device,
+    browser: browser,
+    fullString: `${device} | ${browser}`
+  };
+}
+
+// Update device info display
+function updateDeviceDisplay() {
+  const info = getFullDeviceInfo();
+  document.getElementById("deviceInfo").innerHTML = `🔌 ${info.fullString}`;
+}
+updateDeviceDisplay();
+
+// =============== TAB SWITCHING ===============
+const loginTab = document.getElementById("loginTab");
+const registerTab = document.getElementById("registerTab");
+const loginPanel = document.getElementById("loginPanel");
+const registerPanel = document.getElementById("registerPanel");
+
 loginTab.onclick = () => {
   loginPanel.style.display = "block";
   registerPanel.style.display = "none";
@@ -180,111 +249,198 @@ registerTab.onclick = () => {
   loginTab.classList.remove("active");
 };
 
-// ✅ REDIRECT FUNCTION
-function goHome(){
+// =============== REDIRECT FUNCTION ===============
+function goHome() {
   window.location.href = "home.html";
 }
 
-// ✅ LOGIN
-loginBtn.onclick = async () => {
+// =============== LOGIN FUNCTION (FIXED) ===============
+document.getElementById("loginBtn").onclick = async () => {
+  const username = document.getElementById("loginUsername").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const secret = document.getElementById("loginSecret").value;
+  const loginError = document.getElementById("loginError");
 
-  const username = loginUsername.value.trim();
-  const password = loginPassword.value;
-  const secret = loginSecret.value;
-
-  if(secret !== SECRET){
-    loginError.innerText = "Wrong secret code";
+  if (!username || !password) {
+    loginError.innerText = "❌ Please enter username and password";
     return;
   }
 
-  const { data: user } = await supabase
-    .from("love_users")
-    .select("*")
-    .eq("username", username)
-    .maybeSingle();
-
-  if(!user){
-    loginError.innerText = "User not found";
+  if (secret !== SECRET) {
+    loginError.innerText = "❌ Wrong secret code";
     return;
   }
 
-  if(user.password !== password){
-    loginError.innerText = "Wrong password";
-    return;
+  try {
+    const { data: user, error } = await supabase
+      .from("love_users")
+      .select("*")
+      .eq("username", username)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      loginError.innerText = "❌ Database error. Please try again.";
+      return;
+    }
+
+    if (!user) {
+      loginError.innerText = "❌ User not found";
+      return;
+    }
+
+    if (user.password !== password) {
+      loginError.innerText = "❌ Wrong password";
+      return;
+    }
+
+    // ✅ Get device info
+    const deviceInfo = getFullDeviceInfo();
+    const now = new Date().toISOString();
+
+    // ✅ Save session
+    localStorage.setItem("loveLogin", "true");
+    localStorage.setItem("loveUser", user.username);
+    localStorage.setItem("loveUserId", user.id);
+    localStorage.setItem("loveLastDevice", deviceInfo.device);
+    localStorage.setItem("loveLastBrowser", deviceInfo.browser);
+
+    // ✅ CRITICAL FIX: Record login with correct field names
+    // The devices page expects: username, device, browser, logged_in_at
+    try {
+      const { error: logError } = await supabase
+        .from("login_logs")
+        .insert({
+          username: user.username,        // ← FIXED: Use username, not user_id
+          user_id: user.id,               // Keep for reference
+          device: deviceInfo.device,
+          browser: deviceInfo.browser,
+          logged_in_at: now,
+          event_type: "login"
+        });
+
+      if (logError) {
+        console.warn("Login log error:", logError);
+        // Don't block login if logging fails
+      } else {
+        console.log("✅ Login recorded successfully");
+      }
+    } catch (logErr) {
+      console.warn("Could not save login log:", logErr);
+    }
+
+    goHome();
+
+  } catch (err) {
+    console.error("Login error:", err);
+    loginError.innerText = "❌ Login failed. Check connection.";
   }
-
-  // ✅ save session
-  localStorage.setItem("loveLogin", "true");
-  localStorage.setItem("loveUser", user.username);
-  localStorage.setItem("loveUserId", user.id);
-
-  // ✅ LOG (won’t break login)
-  try{
-    await supabase.from("login_logs").insert([{
-      user_id: user.id,
-      device: getDevice(),
-      browser: getBrowser(),
-      logged_in_at: new Date()
-    }]);
-  }catch{}
-
-  goHome();
 };
 
-// ✅ REGISTER
-registerBtn.onclick = async () => {
+// =============== REGISTER FUNCTION (FIXED) ===============
+document.getElementById("registerBtn").onclick = async () => {
+  const username = document.getElementById("regUsername").value.trim();
+  const password = document.getElementById("regPassword").value;
+  const secret = document.getElementById("regSecret").value;
+  const registerError = document.getElementById("registerError");
 
-  const username = regUsername.value.trim();
-  const password = regPassword.value;
-  const secret = regSecret.value;
-
-  if(secret !== SECRET){
-    registerError.innerText = "Wrong secret code";
+  if (!username || !password) {
+    registerError.innerText = "❌ Please enter username and password";
     return;
   }
 
-  const { data: existing } = await supabase
-    .from("love_users")
-    .select("username")
-    .eq("username", username)
-    .maybeSingle();
-
-  if(existing){
-    registerError.innerText = "Username taken";
+  if (username.length < 3) {
+    registerError.innerText = "❌ Username must be at least 3 characters";
     return;
   }
 
-  const { data: newUser } = await supabase
-    .from("love_users")
-    .insert({
-      username,
-      password,
-      created_at: new Date()
-    })
-    .select()
-    .single();
+  if (secret !== SECRET) {
+    registerError.innerText = "❌ Wrong secret code";
+    return;
+  }
 
-  localStorage.setItem("loveLogin", "true");
-  localStorage.setItem("loveUser", newUser.username);
-  localStorage.setItem("loveUserId", newUser.id);
+  try {
+    // Check if user exists
+    const { data: existing } = await supabase
+      .from("love_users")
+      .select("username")
+      .eq("username", username)
+      .maybeSingle();
 
-  // ✅ log
-  try{
-    await supabase.from("login_logs").insert([{
-      user_id: newUser.id,
-      device: getDevice(),
-      browser: getBrowser(),
-      logged_in_at: new Date(),
-      event_type: "register"
-    }]);
-  }catch{}
+    if (existing) {
+      registerError.innerText = "❌ Username already taken";
+      return;
+    }
 
-  goHome();
+    // Create new user
+    const { data: newUser, error: insertError } = await supabase
+      .from("love_users")
+      .insert({
+        username: username,
+        password: password,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error("Insert error:", insertError);
+      registerError.innerText = "❌ Failed to create account";
+      return;
+    }
+
+    // Get device info
+    const deviceInfo = getFullDeviceInfo();
+    const now = new Date().toISOString();
+
+    // Save session
+    localStorage.setItem("loveLogin", "true");
+    localStorage.setItem("loveUser", newUser.username);
+    localStorage.setItem("loveUserId", newUser.id);
+    localStorage.setItem("loveLastDevice", deviceInfo.device);
+    localStorage.setItem("loveLastBrowser", deviceInfo.browser);
+
+    // ✅ Record registration as login log
+    try {
+      const { error: logError } = await supabase
+        .from("login_logs")
+        .insert({
+          username: newUser.username,      // ← FIXED: Use username
+          user_id: newUser.id,
+          device: deviceInfo.device,
+          browser: deviceInfo.browser,
+          logged_in_at: now,
+          event_type: "register"
+        });
+
+      if (logError) {
+        console.warn("Registration log error:", logError);
+      } else {
+        console.log("✅ Registration recorded successfully");
+      }
+    } catch (logErr) {
+      console.warn("Could not save registration log:", logErr);
+    }
+
+    goHome();
+
+  } catch (err) {
+    console.error("Registration error:", err);
+    registerError.innerText = "❌ Registration failed. Try again.";
+  }
 };
+
+// =============== AUTO-LOGIN CHECK ===============
+// If already logged in, redirect to home
+if (localStorage.getItem("loveLogin") === "true") {
+  const user = localStorage.getItem("loveUser");
+  if (user && user !== "null") {
+    window.location.href = "home.html";
+  }
+}
 </script>
 
 </body>
 </html>
-
 
 
