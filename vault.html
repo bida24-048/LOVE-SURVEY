@@ -107,7 +107,7 @@ h1,h2{ color:#b30000; }
       const { data, error } = await supabase
           .from("love_vault")
           .select("*")
-          .eq("user_id", currentUserId)   // ✅ only this user’s entries
+          .eq("user_id", currentUserId)
           .order("id",{ascending:false});
 
       let combined = [...localVault];
@@ -126,7 +126,7 @@ h1,h2{ color:#b30000; }
           const source = entry.source_page || entry.section || "General";
           const date = entry.date || (entry.created_at ? new Date(entry.created_at).toLocaleString() : "Unknown Date");
           const content = entry.content || entry.text || entry.question || "No content";
-          const author = currentUsername || "Anonymous";   // ✅ show username only
+          const author = currentUsername || "Anonymous";
           return `
           <div class="vault-entry">
               <div class="source-label">📂 Source: ${source}</div>
@@ -188,11 +188,11 @@ h1,h2{ color:#b30000; }
 
   async function syncLocalToSupabase(){
       const localVault = JSON.parse(localStorage.getItem("vault") || "[]");
-      if(localVault.length===0){ alert("No local entries found 💾"); return; }
+      if(localVault.length===0){ alert("Vault is empty 😘"); return; }
       for(const entry of localVault){
           try{
               await supabase.from("love_vault").insert({
-                  user_id: currentUserId,   // ✅ link to this user
+                  user_id: currentUserId,
                   source_page: entry.source_page || entry.section || "General",
                   section: entry.section || "General",
                   content: entry.content || entry.text || "",
@@ -206,7 +206,20 @@ h1,h2{ color:#b30000; }
 
   supabase.channel("love-vault")
   .on("postgres_changes",{event:"INSERT",schema:"public",table:"love_vault"},payload=>{
-      document.getElementById("notify").innerText = "✨ New memory added to the Vault 💕
+      document.getElementById("notify").innerText = "✨ New memory added to the Vault 💕";
+      loadVault();
+  })
+  .on("postgres_changes",{event:"DELETE",schema:"public",table:"love_vault"},payload=>{
+      document.getElementById("notify").innerText = "🗑️ A memory was removed!";
+      loadVault();
+  })
+  .subscribe();
+
+  loadVault();
+</script>
+</body>
+</html>
+
 
 
 
