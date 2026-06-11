@@ -278,7 +278,7 @@
   <div class="upload-card">
     <input type="file" id="uploadPic" accept="image/jpeg,image/png,image/jpg,image/gif,image/webp">
     <input type="text" id="caption" placeholder="Write a sweet caption 💕" autocomplete="off">
-    <button id="uploadBtn">📸 Upload Memory</button>
+    <button id="uploadBtn">📸 Upload to Cloud</button>
   </div>
 
   <div class="gallery" id="gallery"></div>
@@ -286,46 +286,35 @@
   <a href="#" class="back-home" id="homeLink">⬅ Back Home</a>
 </div>
 
-<script>
-  // Storage key for memories
-  const STORAGE_KEY = 'love_memories_complete';
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+  // ========== SUPABASE CONFIGURATION ==========
+  // IMPORTANT: You need to replace these with your actual Supabase credentials!
+  // Go to your Supabase project -> Settings -> API
+  const supabaseUrl = "https://YOUR_PROJECT.supabase.co";  // Replace with your URL
+  const supabaseKey = "YOUR_ANON_KEY";  // Replace with your anon/public key
   
-  // Default seeded memories with reliable placeholder images (using unsplash and placehold.co for testing)
-  // These are cute placeholder images that will always work
+  // Initialize Supabase client
+  const supabase = createClient(supabaseUrl, supabaseKey);
+  
+  // Bucket name for storing images (must be created in Supabase Storage)
+  const STORAGE_BUCKET = "memories";
+  
+  // Table name for memories metadata
+  const TABLE_NAME = "memories";
+
+  // Default seeded memories (using public placeholder images)
   const DEFAULT_MEMORIES = [
-    { id: 'default1', url: 'https://picsum.photos/id/20/400/300', caption: 'AWW 💕', author: 'Shosho', createdAt: Date.now() - 86400000, isDefault: true },
-    { id: 'default2', url: 'https://picsum.photos/id/30/400/300', caption: 'OH BABY', author: 'Babe', createdAt: Date.now() - 86000000, isDefault: true },
-    { id: 'default3', url: 'https://picsum.photos/id/42/400/300', caption: '💕 Sweet moments', author: 'Us', createdAt: Date.now() - 85000000, isDefault: true },
-    { id: 'default4', url: 'https://picsum.photos/id/58/400/300', caption: '😊 Together forever', author: 'You & me', createdAt: Date.now() - 84000000, isDefault: true },
-    { id: 'default5', url: 'https://picsum.photos/id/60/400/300', caption: 'HIS CLOTHES LOOK GOOD ON ME OHH 😝💖', author: 'Her', createdAt: Date.now() - 83000000, isDefault: true },
-    { id: 'default6', url: 'https://picsum.photos/id/64/400/300', caption: '😍 Love you!', author: 'Him', createdAt: Date.now() - 82000000, isDefault: true },
-    { id: 'default7', url: 'https://picsum.photos/id/69/400/300', caption: 'HER FAVOURITE PIC 💖', author: 'Him', createdAt: Date.now() - 81000000, isDefault: true },
-    { id: 'default8', url: 'https://picsum.photos/id/89/400/300', caption: 'HIS FAVOURITE PIC 💖', author: 'Her', createdAt: Date.now() - 80000000, isDefault: true }
+    { id: 'default1', url: 'https://picsum.photos/id/20/400/300', caption: 'AWW 💕', author: 'Shosho', created_at: new Date(Date.now() - 86400000).toISOString() },
+    { id: 'default2', url: 'https://picsum.photos/id/30/400/300', caption: 'OH BABY', author: 'Babe', created_at: new Date(Date.now() - 86000000).toISOString() },
+    { id: 'default3', url: 'https://picsum.photos/id/42/400/300', caption: '💕 Sweet moments', author: 'Us', created_at: new Date(Date.now() - 85000000).toISOString() },
+    { id: 'default4', url: 'https://picsum.photos/id/58/400/300', caption: '😊 Together forever', author: 'You & me', created_at: new Date(Date.now() - 84000000).toISOString() },
+    { id: 'default5', url: 'https://picsum.photos/id/60/400/300', caption: 'HIS CLOTHES LOOK GOOD ON ME OHH 😝💖', author: 'Her', created_at: new Date(Date.now() - 83000000).toISOString() },
+    { id: 'default6', url: 'https://picsum.photos/id/64/400/300', caption: '😍 Love you!', author: 'Him', created_at: new Date(Date.now() - 82000000).toISOString() },
+    { id: 'default7', url: 'https://picsum.photos/id/69/400/300', caption: 'HER FAVOURITE PIC 💖', author: 'Him', created_at: new Date(Date.now() - 81000000).toISOString() },
+    { id: 'default8', url: 'https://picsum.photos/id/89/400/300', caption: 'HIS FAVOURITE PIC 💖', author: 'Her', created_at: new Date(Date.now() - 80000000).toISOString() }
   ];
-
-  // Load memories from localStorage
-  function loadMemories() {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      } catch(e) {
-        console.warn('Failed to parse stored memories', e);
-      }
-    }
-    // Return fresh copy of default memories
-    return DEFAULT_MEMORIES.map(m => ({ ...m }));
-  }
-
-  // Save memories to localStorage
-  function saveMemories(memories) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(memories));
-  }
-
-  let allMemories = loadMemories();
 
   // Show toast notification
   function showToast(message, duration = 2500) {
@@ -342,45 +331,141 @@
     }, duration);
   }
 
-  // Convert file to data URL with compression for large images
-  function fileToDataURL(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result);
-      reader.onerror = (e) => reject(e);
-      reader.readAsDataURL(file);
-    });
-  }
-
-  // Compress image if needed (resize to max 800px width to save storage)
-  function compressImage(dataUrl, maxWidth = 800) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
+  // Load memories from Supabase
+  async function loadMemoriesFromSupabase() {
+    try {
+      // First, check if we have any memories in the database
+      const { data: existingMemories, error: fetchError } = await supabase
+        .from(TABLE_NAME)
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (fetchError) {
+        console.error('Error fetching memories:', fetchError);
+        // If table doesn't exist or error, use defaults
+        return DEFAULT_MEMORIES;
+      }
+      
+      // If no memories exist, seed the default ones
+      if (!existingMemories || existingMemories.length === 0) {
+        console.log('No memories found, seeding defaults...');
+        const { error: insertError } = await supabase
+          .from(TABLE_NAME)
+          .insert(DEFAULT_MEMORIES.map(m => ({
+            id: m.id,
+            url: m.url,
+            caption: m.caption,
+            author: m.author,
+            created_at: m.created_at
+          })));
         
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
+        if (insertError) {
+          console.error('Error seeding default memories:', insertError);
+          return DEFAULT_MEMORIES;
         }
         
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        // Compress as JPEG with 0.8 quality to save space
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        resolve(compressedDataUrl);
-      };
-      img.onerror = reject;
-      img.src = dataUrl;
-    });
+        return DEFAULT_MEMORIES;
+      }
+      
+      return existingMemories;
+    } catch (error) {
+      console.error('Error in loadMemoriesFromSupabase:', error);
+      return DEFAULT_MEMORIES;
+    }
   }
 
-  // Upload new memory
+  // Render gallery from Supabase data
+  async function renderGallery() {
+    const galleryDiv = document.getElementById('gallery');
+    if (!galleryDiv) return;
+    
+    galleryDiv.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="loader"></div> Loading memories... 💕</div>';
+    
+    const memories = await loadMemoriesFromSupabase();
+    
+    if (!memories || memories.length === 0) {
+      galleryDiv.innerHTML = `<div style="background: #ffeef4; border-radius: 48px; padding: 60px 20px; color: #a13e6b; font-size: 1.2rem;">✨ No memories yet? Upload your first sweet moment ✨</div>`;
+      return;
+    }
+    
+    galleryDiv.innerHTML = '';
+    
+    for (const mem of memories) {
+      const memoryDiv = document.createElement('div');
+      memoryDiv.className = 'memory';
+      
+      // Only allow deletion of non-default memories (custom uploaded ones)
+      const isDeletable = !mem.id || !mem.id.startsWith('default');
+      const deleteBtnHtml = isDeletable ? `<button class="delete-btn" data-id="${mem.id}" data-url="${mem.url}" title="remove memory">🗑️</button>` : '';
+      
+      memoryDiv.innerHTML = `
+        <div class="img-wrapper">
+          <img src="${mem.url}" alt="memory" onerror="this.src='https://placehold.co/400x300/ffd9e6/d63384?text=❤️+Memory'">
+        </div>
+        <p>
+          <span class="caption-text">${escapeHtml(mem.caption)} <small>${escapeHtml(mem.author || 'Shosho & Babe')}</small></span>
+          ${deleteBtnHtml}
+        </p>
+      `;
+      
+      galleryDiv.appendChild(memoryDiv);
+    }
+    
+    // Attach delete events
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        const url = btn.getAttribute('data-url');
+        if (id && !id.startsWith('default')) {
+          await deleteMemoryFromSupabase(id, url);
+        } else {
+          showToast("✨ Core memories are forever ✨", 1800);
+        }
+      });
+    });
+  }
+  
+  // Delete memory from Supabase
+  async function deleteMemoryFromSupabase(id, imageUrl) {
+    try {
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from(TABLE_NAME)
+        .delete()
+        .eq('id', id);
+      
+      if (dbError) {
+        console.error('Error deleting from database:', dbError);
+        showToast("Failed to delete memory 😢", 2000);
+        return;
+      }
+      
+      // Try to extract filename from URL and delete from storage
+      if (imageUrl && imageUrl.includes('/storage/v1/object/public/')) {
+        const pathParts = imageUrl.split('/storage/v1/object/public/memories/');
+        if (pathParts.length > 1) {
+          const filePath = pathParts[1];
+          const { error: storageError } = await supabase.storage
+            .from(STORAGE_BUCKET)
+            .remove([filePath]);
+          
+          if (storageError) {
+            console.warn('Could not delete from storage:', storageError);
+          }
+        }
+      }
+      
+      showToast("Memory removed 💔", 2000);
+      renderGallery(); // Refresh the gallery
+      
+    } catch (error) {
+      console.error('Error deleting memory:', error);
+      showToast("Failed to delete memory 😢", 2000);
+    }
+  }
+
+  // Upload new memory to Supabase
   async function handleUpload() {
     const fileInput = document.getElementById('uploadPic');
     const captionInput = document.getElementById('caption');
@@ -404,105 +489,66 @@
     
     const uploadBtn = document.getElementById('uploadBtn');
     const originalText = uploadBtn.innerHTML;
-    uploadBtn.innerHTML = 'Uploading 🌸 <span class="loader"></span>';
+    uploadBtn.innerHTML = 'Uploading to cloud ☁️ <span class="loader"></span>';
     uploadBtn.disabled = true;
     
     try {
-      // Convert to data URL
-      let dataUrl = await fileToDataURL(file);
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+      const filePath = `uploads/${fileName}`;
       
-      // Compress the image
-      dataUrl = await compressImage(dataUrl, 800);
+      // Upload to Supabase Storage bucket
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(filePath, file);
       
-      const newId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
-      const finalCaption = caption === '' ? '✨ Our beautiful memory ✨' : caption;
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        showToast("Upload failed: " + uploadError.message, 3000);
+        return;
+      }
       
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from(STORAGE_BUCKET)
+        .getPublicUrl(filePath);
+      
+      const publicUrl = publicUrlData.publicUrl;
+      
+      // Insert metadata into database
       const newMemory = {
-        id: newId,
-        url: dataUrl,
-        caption: finalCaption,
+        id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        url: publicUrl,
+        caption: caption || '✨ Our beautiful memory ✨',
         author: "Shosho & Babe 💑",
-        createdAt: Date.now(),
-        isDefault: false
+        created_at: new Date().toISOString()
       };
       
-      allMemories.push(newMemory);
-      saveMemories(allMemories);
+      const { error: dbError } = await supabase
+        .from(TABLE_NAME)
+        .insert([newMemory]);
+      
+      if (dbError) {
+        console.error('Database insert error:', dbError);
+        showToast("Saved to storage but failed to save metadata 😢", 3000);
+        return;
+      }
       
       // Clear inputs
       fileInput.value = '';
       captionInput.value = '';
       
-      renderGallery();
-      showToast("🎉 Memory added successfully! Forever in our hearts 💖", 2500);
+      showToast("🎉 Memory saved to cloud! Forever in our hearts 💖", 2500);
+      renderGallery(); // Refresh the gallery
       
     } catch (err) {
       console.error('Upload error:', err);
-      showToast("😢 Upload failed. Please try again with a smaller image.", 3000);
+      showToast("😢 Upload failed. Please check your Supabase configuration.", 3000);
     } finally {
       uploadBtn.innerHTML = originalText;
       uploadBtn.disabled = false;
     }
-  }
-
-  // Delete memory (only user-uploaded ones)
-  function deleteMemoryById(id) {
-    const memory = allMemories.find(m => m.id === id);
-    if (!memory) return;
-    
-    if (memory.isDefault === true) {
-      showToast("✨ Core memories are forever ✨", 1800);
-      return;
-    }
-    
-    allMemories = allMemories.filter(m => m.id !== id);
-    saveMemories(allMemories);
-    renderGallery();
-    showToast("Memory removed 💔 You can always add new ones!", 2000);
-  }
-
-  // Render gallery
-  function renderGallery() {
-    const galleryDiv = document.getElementById('gallery');
-    if (!galleryDiv) return;
-    
-    const sorted = [...allMemories].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-    
-    if (sorted.length === 0) {
-      galleryDiv.innerHTML = `<div style="background: #ffeef4; border-radius: 48px; padding: 60px 20px; color: #a13e6b; font-size: 1.2rem;">✨ No memories yet? Upload your first sweet moment ✨</div>`;
-      return;
-    }
-    
-    galleryDiv.innerHTML = '';
-    
-    sorted.forEach(mem => {
-      const memoryDiv = document.createElement('div');
-      memoryDiv.className = 'memory';
-      
-      const isDeletable = !mem.isDefault;
-      const deleteBtnHtml = isDeletable ? `<button class="delete-btn" data-id="${mem.id}" title="remove memory">🗑️</button>` : '';
-      
-      memoryDiv.innerHTML = `
-        <div class="img-wrapper">
-          <img src="${mem.url}" alt="memory" onerror="this.src='https://placehold.co/400x300/ffd9e6/d63384?text=❤️+Memory'">
-        </div>
-        <p>
-          <span class="caption-text">${escapeHtml(mem.caption)} <small>${escapeHtml(mem.author)}</small></span>
-          ${deleteBtnHtml}
-        </p>
-      `;
-      
-      galleryDiv.appendChild(memoryDiv);
-    });
-    
-    // Attach delete events
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = btn.getAttribute('data-id');
-        if (id) deleteMemoryById(id);
-      });
-    });
   }
   
   function escapeHtml(str) {
@@ -513,16 +559,6 @@
       if (m === '>') return '&gt;';
       return m;
     });
-  }
-
-  // Reset to default memories (optional feature)
-  function resetToDefaults() {
-    if (confirm('Reset to default memories? Your uploaded photos will be lost!')) {
-      allMemories = DEFAULT_MEMORIES.map(m => ({ ...m }));
-      saveMemories(allMemories);
-      renderGallery();
-      showToast("✨ Reset to beautiful default memories ✨", 2000);
-    }
   }
 
   // Setup event listeners
@@ -544,32 +580,30 @@
         if (e.key === 'Enter') handleUpload();
       });
     }
-    
-    // Optional: Add a hidden reset button (double-click title to reset)
-    const title = document.querySelector('h1');
-    if (title) {
-      title.addEventListener('dblclick', () => {
-        resetToDefaults();
-      });
-    }
   }
   
   // Initialize
-  function init() {
-    renderGallery();
+  async function init() {
     setupEventListeners();
-  }
-  
-  // Listen for storage changes across tabs
-  window.addEventListener('storage', (e) => {
-    if (e.key === STORAGE_KEY) {
-      allMemories = loadMemories();
-      renderGallery();
-      showToast("Gallery updated from another tab 💖", 1500);
+    await renderGallery();
+    
+    // Check Supabase connection
+    try {
+      const { data, error } = await supabase.from(TABLE_NAME).select('count', { count: 'exact', head: true });
+      if (error) {
+        console.warn('Supabase connection issue:', error);
+        showToast("⚠️ Using local mode. Connect Supabase for cloud storage.", 3000);
+      } else {
+        console.log('✅ Supabase connected successfully!');
+      }
+    } catch (e) {
+      console.warn('Supabase not configured:', e);
     }
-  });
+  }
   
   init();
 </script>
 </body>
 </html>
+      
+      
