@@ -24,9 +24,28 @@ body::before {
 }
 h1 { color: #b30000; margin-top: 30px; animation: pulse 2s infinite; }
 @keyframes pulse {0%{transform:scale(1);}50%{transform:scale(1.05);}100%{transform:scale(1);}}
-textarea { padding:10px; width:70%; height:100px; border-radius:8px; border:2px solid #b30000; }
-button { padding:10px 20px; background:#b30000; color:white; border:none; border-radius:8px; cursor:pointer; margin-top:10px; transition:.3s; }
-button:hover { background:white; color:#b30000; border:2px solid #b30000; }
+textarea { 
+  padding:10px; 
+  width:70%; 
+  height:100px; 
+  border-radius:8px; 
+  border:2px solid #b30000; 
+}
+button { 
+  padding:10px 20px; 
+  background:#b30000; 
+  color:white; 
+  border:none; 
+  border-radius:8px; 
+  cursor:pointer; 
+  margin-top:10px; 
+  transition:.3s; 
+}
+button:hover { 
+  background:white; 
+  color:#b30000; 
+  border:2px solid #b30000; 
+}
 #status { margin-top:10px; font-weight:bold; }
 </style>
 </head>
@@ -37,18 +56,21 @@ button:hover { background:white; color:#b30000; border:2px solid #b30000; }
 <p id="status"></p>
 
 <script>
+const currentUserId = localStorage.getItem("loveUserId");
+const currentUser = localStorage.getItem("loveUser");
+
 function saveItem() {
     const text = document.getElementById("promiseText").value.trim();
     if(!text) return alert("Please type your promise!");
     
     const vault = JSON.parse(localStorage.getItem("vault")) || [];
     vault.push({ 
-        type: "promise", 
-        text: text, 
-        date: new Date().toLocaleString(),
-        source_page: "Promises",   // ✅ label added
-        section: "Promises",
-      user_name: currentUser// ✅ label added
+        source_page: "Promises",     // ✅ consistent with Love Vault
+        section: "Promises",         // ✅ consistent
+        content: text,               // ✅ use "content" not "text"
+        created_at: new Date().toISOString(),
+        user_id: currentUserId,
+        author: currentUser || "Anonymous"
     });
     
     localStorage.setItem("vault", JSON.stringify(vault));
@@ -59,13 +81,13 @@ function saveItem() {
     `;
 }
 
-// --- Go back function ---
 function goHome() {
   window.location.href = "home.html"; 
 }
 </script>
 </body>
 </html>
+
 
 
  
