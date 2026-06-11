@@ -16,7 +16,12 @@ body{
 }
 
 h1{
-  margin-bottom:20px;
+  margin-bottom:5px;
+}
+
+#userTitle{
+  margin-bottom:15px;
+  color:#cc4444;
 }
 
 .table-container{
@@ -47,7 +52,7 @@ tr:nth-child(even){
 }
 
 .empty{
-  margin-top:30px;
+  margin-top:20px;
   color:#888;
 }
 
@@ -71,12 +76,11 @@ tr:nth-child(even){
 <body>
 
 <h1>📱 Login Devices</h1>
+<h3 id="userTitle"></h3>
 
 <button class="refresh-btn" onclick="loadDevices()">🔄 Refresh</button>
 
-<div id="status" class="status">
-Loading devices...
-</div>
+<div id="status" class="status">Loading devices...</div>
 
 <div class="table-container">
 <table id="deviceTable">
@@ -99,45 +103,51 @@ No login history found ❤️
 import { createClient }
 from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-// ✅ YOUR REAL SUPABASE (same as login page)
+// ✅ SAME SUPABASE AS LOGIN
 const supabase = createClient(
   "https://wmebpsheblrkuvygguae.supabase.co",
   "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_"
 );
 
-// ✅ CURRENT USER
-const currentUserId = localStorage.getItem("loveUserId");
+// ✅ GET USERNAME FROM PROFILE / LOGIN
+const currentUsername = localStorage.getItem("loveUser");
 
 const tableBody = document.querySelector("#deviceTable tbody");
 const status = document.getElementById("status");
 const emptyMessage = document.getElementById("emptyMessage");
+const userTitle = document.getElementById("userTitle");
 
-// ✅ LOAD ALL DEVICES
-async function loadDevices() {
+// ✅ SHOW USER NAME ON PAGE
+if(currentUsername){
+  userTitle.innerText = "💖 " + currentUsername + "'s Devices";
+}
 
-  if (!currentUserId) {
-    status.innerText = "❌ No user logged in";
+// ✅ LOAD DEVICES
+window.loadDevices = async function() {
+
+  if (!currentUsername) {
+    status.innerText = "❌ No user found";
     return;
   }
 
-  // ✅ clear previous rows
+  // clear table
   tableBody.innerHTML = "";
   emptyMessage.style.display = "none";
 
   const { data, error } = await supabase
     .from("login_logs")
-    .select("device, browser, logged_in_at")
-    .eq("user_id", currentUserId)
+    .select("username, device, browser, logged_in_at")
+    .eq("username", currentUsername)
     .order("logged_in_at", { ascending: false });
 
   if (error) {
     console.error(error);
-    status.innerText = "❌ Failed to load device history";
+    status.innerText = "❌ Failed to load devices";
     return;
   }
 
   if (!data || data.length === 0) {
-    status.innerText = "No login history found ❤️";
+    status.innerText = "No login history ❤️";
     emptyMessage.style.display = "block";
     return;
   }
@@ -148,10 +158,10 @@ async function loadDevices() {
 
     const row = document.createElement("tr");
 
-    // ✅ highlight last login (current session)
+    // ✅ highlight latest login
     if (index === 0) {
-      row.style.fontWeight = "bold";
       row.style.background = "#ffe0e0";
+      row.style.fontWeight = "bold";
     }
 
     row.innerHTML = `
@@ -162,7 +172,7 @@ async function loadDevices() {
 
     tableBody.appendChild(row);
   });
-}
+};
 
 // ✅ AUTO LOAD
 loadDevices();
@@ -170,3 +180,4 @@ loadDevices();
 
 </body>
 </html>
+
