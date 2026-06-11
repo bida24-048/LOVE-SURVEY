@@ -59,6 +59,16 @@ tr:nth-child(even){
   background:#fff8f8;
 }
 
+.current-device-badge{
+  background:#2c6e2c;
+  color:white;
+  font-size:0.7rem;
+  padding:2px 8px;
+  border-radius:20px;
+  margin-left:8px;
+  display:inline-block;
+}
+
 .empty{
   margin-top:25px;
   color:#bd8a8a;
@@ -100,12 +110,9 @@ tr:nth-child(even){
   color:#c49191;
 }
 
-.fallback-message{
-  background:#fff0f0;
-  padding:12px;
-  border-radius:20px;
-  max-width:500px;
-  margin:20px auto;
+.current-highlight{
+  background:#e8f5e9 !important;
+  border-left:4px solid #2c6e2c;
 }
 </style>
 </head>
@@ -126,336 +133,192 @@ tr:nth-child(even){
 <th>📱 Device / OS</th>
 <th>🌐 Browser</th>
 <th>🕒 Last Login Time</th>
+<th>📍 Status</th>
 </tr>
 </thead>
 <tbody id="deviceTableBody">
-<tr><td colspan="3" style="text-align:center;">✨ Loading your login history... ✨</td></tr>
+<tr><td colspan="4" style="text-align:center;">✨ Loading your login history... ✨</td></tr>
 </tbody>
 </table>
 </div>
 
 <div id="emptyMessage" class="empty" style="display:none;">
-💖 No login history found yet — log in from any device to see your sessions 💖
+💖 No login history found yet — this device will be registered automatically 💖
 </div>
 <div class="note">
-🔒 Devices are automatically recorded when you log in via the Love Vault login page
+🔒 Current device is highlighted in green | Devices are recorded when you visit this page or log in
 </div>
 
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-  // ✅ SAME SUPABASE CONFIGURATION (matches the main vault)
   const supabaseUrl = "https://wmebpsheblrkuvygguae.supabase.co";
   const supabaseKey = "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_";
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  // Helper to get current user reliably
+  // Get device info
+  function getDeviceInfo() {
+    const ua = navigator.userAgent;
+    let platform = navigator.platform || "Unknown";
+    
+    // Detect device type
+    if (/iPhone|iPad|iPod/.test(ua)) platform = "🍎 iOS Device";
+    else if (/Android/.test(ua)) platform = "🤖 Android Device";
+    else if (/Windows/.test(ua)) platform = "🪟 Windows PC";
+    else if (/Mac/.test(ua)) platform = "🍎 Mac";
+    else if (/Linux/.test(ua)) platform = "🐧 Linux";
+    
+    // Detect browser
+    let browser = "Unknown";
+    if (ua.includes("Chrome") && !ua.includes("Edg")) browser = "🌐 Chrome";
+    else if (ua.includes("Firefox")) browser = "🦊 Firefox";
+    else if (ua.includes("Safari") && !ua.includes("Chrome")) browser = "🧭 Safari";
+    else if (ua.includes("Edg")) browser = "🔷 Edge";
+    else if (ua.includes("Opera")) browser = "🎭 Opera";
+    
+    return { device: platform, browser: browser };
+  }
+
   function getCurrentUsername() {
-    // Try multiple storage keys that might contain the username
     let username = localStorage.getItem("loveUser");
     if (username && username !== "null" && username !== "undefined") return username;
-    
     username = localStorage.getItem("loveUsername");
     if (username && username !== "null" && username !== "undefined") return username;
+    return null;
+  }
+
+  // Register current device in database
+  async function registerCurrentDevice() {
+    const username = getCurrentUsername();
+    if (!username) return false;
     
-    username = sessionStorage.getItem("loveUser");
-    if (username && username !== "null" && username !== "undefined") return username;
+    const { device, browser } = getDeviceInfo();
+    const now = new Date().toISOString();
     
-    // Check if there's any user profile data
-    const userId = localStorage.getItem("loveUserId");
-    if (userId && userId !== "default_user_123" && userId !== "null") {
-      // If we have a custom userId but no username, try to extract or use fallback
-      return userId;
+    try {
+      // Check if this exact device+browser already logged in today
+      const { data: existing } = await supabase
+        .from("login_logs")
+        .select("id")
+        .eq("username", username)
+        .eq("device", device)
+        .eq("browser", browser)
+        .gte("logged_in_at", new Date(Date.now() - 24*60*60*1000).toISOString());
+      
+      // Only register once per day per device to avoid spam
+      if (!existing || existing.length === 0) {
+        const { error } = await supabase.from("login_logs").insert([{
+          username: username,
+          device: device,
+          browser: browser,
+          logged_in_at: now
+        }]);
+        if (!error) return true;
+      }
+      return true;
+    } catch(e) {
+      console.warn("Could not register device:", e);
+      return false;
     }
-    
-    // Fallback to a default only if nothing exists? Better to prompt but we'll use 'MyLove' as fallback
-    const stored = localStorage.getItem("loveUser");
-    if (!stored || stored === "null") {
-      // If never logged in, check if there's a recent login_log entry for this browser?
-      // For better UX, we can show a helpful message but still allow viewing if data exists
-      return null;
-    }
-    return stored;
   }
 
-  // DOM elements
-  const tableBody = document.getElementById("deviceTableBody");
-  const statusDiv = document.getElementById("status");
-  const emptyMessageDiv = document.getElementById("emptyMessage");
-  const userTitleSpan = document.getElementById("userTitle");
-
-  // Helper to format device string nicely
-  function formatDeviceString(deviceRaw) {
-    if (!deviceRaw || deviceRaw === "Unknown Device") return "📱 Unknown Device";
-    if (deviceRaw.toLowerCase().includes("windows")) return "🪟 " + deviceRaw;
-    if (deviceRaw.toLowerCase().includes("mac")) return "🍎 " + deviceRaw;
-    if (deviceRaw.toLowerCase().includes("iphone")) return "📱 " + deviceRaw;
-    if (deviceRaw.toLowerCase().includes("android")) return "🤖 " + deviceRaw;
-    if (deviceRaw.toLowerCase().includes("linux")) return "🐧 " + deviceRaw;
-    return "📱 " + deviceRaw;
-  }
-
-  function formatBrowserString(browserRaw) {
-    if (!browserRaw || browserRaw === "Unknown Browser") return "🌐 Unknown Browser";
-    if (browserRaw.toLowerCase().includes("chrome")) return "🌐 Chrome";
-    if (browserRaw.toLowerCase().includes("firefox")) return "🦊 Firefox";
-    if (browserRaw.toLowerCase().includes("safari")) return "🧭 Safari";
-    if (browserRaw.toLowerCase().includes("edge")) return "🔷 Edge";
-    if (browserRaw.toLowerCase().includes("opera")) return "🎭 Opera";
-    return "🌐 " + browserRaw;
-  }
-
-  // MAIN LOAD FUNCTION
   window.loadDevices = async function() {
     const currentUser = getCurrentUsername();
     
-    // Update status and UI based on user existence
-    if (!currentUser || currentUser === "null" || currentUser === "undefined") {
-      userTitleSpan.innerText = "💖 No active login session";
-      statusDiv.innerText = "⚠️ Please log in first via the main Love Vault";
-      tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:30px;">🔐 You need to log in from the Love Vault homepage to see your devices</td></tr>`;
-      emptyMessageDiv.style.display = "none";
+    if (!currentUser || currentUser === "null") {
+      document.getElementById("userTitle").innerText = "💖 No active login session";
+      document.getElementById("status").innerHTML = "⚠️ Please log in first";
+      document.getElementById("deviceTableBody").innerHTML = `<tr><td colspan="4" style="text-align:center;">🔐 You need to log in from the Love Vault homepage</td></tr>`;
       return;
     }
     
-    // Display username
-    userTitleSpan.innerText = `💖 ${currentUser}'s Login Devices`;
-    statusDiv.innerText = "🔄 Fetching your devices from cloud...";
-    tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center;">⏳ Loading login history...</td></tr>`;
-    emptyMessageDiv.style.display = "none";
+    document.getElementById("userTitle").innerText = `💖 ${currentUser}'s Login Devices`;
+    document.getElementById("status").innerText = "🔄 Fetching devices...";
+    document.getElementById("emptyMessage").style.display = "none";
+    
+    // FIRST: Register current device so it appears in list
+    await registerCurrentDevice();
     
     try {
-      // First, verify if the table 'login_logs' exists or we need to use a different table name
-      // Based on typical implementation, try 'login_logs' first, also check 'devices' or 'sessions'
       let { data, error } = await supabase
         .from("login_logs")
         .select("*")
         .eq("username", currentUser)
         .order("logged_in_at", { ascending: false });
       
-      // If error indicates table doesn't exist, try alternate table names used in the system
-      if (error && error.message && (error.message.includes("does not exist") || error.code === "42P01")) {
-        console.warn("login_logs table not found, trying 'devices' table...");
-        const { data: altData, error: altError } = await supabase
-          .from("devices")
-          .select("*")
-          .eq("username", currentUser)
-          .order("created_at", { ascending: false });
-        
-        if (!altError && altData && altData.length > 0) {
-          data = altData.map(d => ({
-            username: d.username,
-            device: d.device_name || d.device,
-            browser: d.browser || d.browser_name,
-            logged_in_at: d.created_at || d.logged_in_at || d.login_time
-          }));
-        } else {
-          // Try 'sessions' table
-          const { data: sessionData, error: sessionError } = await supabase
-            .from("sessions")
-            .select("*")
-            .eq("username", currentUser)
-            .order("created_at", { ascending: false });
-          
-          if (!sessionError && sessionData && sessionData.length > 0) {
-            data = sessionData.map(s => ({
-              username: s.username,
-              device: s.device || s.device_info,
-              browser: s.browser,
-              logged_in_at: s.created_at || s.login_time
-            }));
-          } else {
-            throw new Error("No login_logs, devices, or sessions table found. Please ensure the database has a login tracking table.");
-          }
-        }
-      }
-      
-      if (error && !error.message?.includes("does not exist")) {
-        console.error("Supabase query error:", error);
-        statusDiv.innerText = "❌ Failed to load devices: " + (error.message || "unknown error");
-        tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#b33;">⚠️ Could not fetch device history. Please try again later.</td></tr>`;
+      if (error) {
+        console.error(error);
+        document.getElementById("status").innerText = "❌ Failed to load devices";
         return;
       }
       
-      // If data is empty or no records
       if (!data || data.length === 0) {
-        statusDiv.innerText = "📭 No login devices recorded yet";
-        emptyMessageDiv.style.display = "block";
-        tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center;">✨ No devices found. Log in from different browsers or devices to see them here.</td></tr>`;
+        document.getElementById("status").innerText = "📭 No devices found";
+        document.getElementById("emptyMessage").style.display = "block";
+        document.getElementById("deviceTableBody").innerHTML = `<tr><td colspan="4" style="text-align:center;">✨ No devices yet. Refresh to register this one.</td></tr>`;
         return;
       }
       
-      // Success: display devices
-      statusDiv.innerText = `✅ ${data.length} device${data.length !== 1 ? 's' : ''} found`;
-      emptyMessageDiv.style.display = "none";
+      // Get current device info for highlighting
+      const currentDevice = getDeviceInfo();
       
-      // Clear and populate table
+      // Group by unique device+browser to show each device once
+      const uniqueDevices = new Map();
+      data.forEach(log => {
+        const key = `${log.device}|${log.browser}`;
+        if (!uniqueDevices.has(key) || new Date(log.logged_in_at) > new Date(uniqueDevices.get(key).logged_in_at)) {
+          uniqueDevices.set(key, log);
+        }
+      });
+      
+      const devicesList = Array.from(uniqueDevices.values());
+      
+      document.getElementById("status").innerHTML = `✅ ${devicesList.length} unique device${devicesList.length !== 1 ? 's' : ''} found`;
+      document.getElementById("emptyMessage").style.display = "none";
+      
+      const tableBody = document.getElementById("deviceTableBody");
       tableBody.innerHTML = "";
       
-      data.forEach((log, index) => {
+      devicesList.forEach((log, index) => {
         const row = document.createElement("tr");
         
-        // Highlight the most recent login (first row)
-        if (index === 0) {
-          row.style.background = "#ffe8e8";
-          row.style.fontWeight = "500";
-          // Add a little badge effect
+        // Check if this matches current device
+        const isCurrentDevice = (log.device === currentDevice.device && log.browser === currentDevice.browser);
+        
+        if (isCurrentDevice) {
+          row.className = "current-highlight";
         }
         
-        // Extract device string with fallback
-        let deviceValue = log.device || log.device_name || log.device_info || "Unknown Device";
-        let browserValue = log.browser || log.browser_name || "Unknown Browser";
-        let loginTimeRaw = log.logged_in_at || log.login_time || log.created_at || new Date().toISOString();
-        
-        // Ensure we have a valid date
-        let formattedDate = "✨ Just now";
+        let loginTime = "✨ Recently";
         try {
-          const dateObj = new Date(loginTimeRaw);
+          const dateObj = new Date(log.logged_in_at);
           if (!isNaN(dateObj.getTime())) {
-            formattedDate = dateObj.toLocaleString(undefined, { 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            });
-          } else {
-            formattedDate = "📅 Recent";
+            loginTime = dateObj.toLocaleString();
           }
-        } catch(e) {
-          formattedDate = "📅 Unknown date";
-        }
+        } catch(e) {}
         
         row.innerHTML = `
-          <td style="text-align:left; padding-left:20px;">${formatDeviceString(deviceValue)}</td>
-          <td>${formatBrowserString(browserValue)}</td>
-          <td>${formattedDate}</td>
+          <td style="text-align:left; padding-left:20px;">${log.device || "Unknown Device"}</td>
+          <td>${log.browser || "Unknown Browser"}</td>
+          <td>${loginTime}</td>
+          <td>${isCurrentDevice ? '<span class="current-device-badge">✅ CURRENT DEVICE</span>' : '📱 Other device'}</td>
         `;
         
         tableBody.appendChild(row);
       });
       
-      // If only one row, show a friendly note
-      if (data.length === 1) {
-        const noteRow = document.createElement("tr");
-        noteRow.style.background = "#fff5e6";
-        noteRow.innerHTML = `<td colspan="3" style="text-align:center; font-size:0.8rem; color:#b45f5f;">💡 This is your current device. New logins will appear here automatically.</td>`;
-        tableBody.appendChild(noteRow);
-      }
-      
     } catch (err) {
-      console.error("Unexpected error loading devices:", err);
-      statusDiv.innerText = "❌ Failed to load devices";
-      tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#b33;">⚠️ Error: ${err.message || "Unable to fetch device data"}</td></tr>`;
-      emptyMessageDiv.style.display = "none";
+      console.error(err);
+      document.getElementById("status").innerText = "❌ Failed to load devices";
     }
   };
   
-  // Also add a manual override function to attempt creating a test device log (for debugging)
-  window.debugCreateTestLogin = async function() {
-    const username = getCurrentUsername();
-    if (!username || username === "null") {
-      alert("Please log in first via the Love Vault homepage");
-      return;
-    }
-    
-    try {
-      // Try to insert a test record to verify table access
-      const testData = {
-        username: username,
-        device: navigator.platform || "Test Device",
-        browser: navigator.userAgent.split(" ").slice(-2).join(" ") || "Test Browser",
-        logged_in_at: new Date().toISOString()
-      };
-      
-      const { error } = await supabase.from("login_logs").insert([testData]);
-      if (error) {
-        if (error.message.includes("permission denied") || error.code === "42501") {
-          alert("⚠️ Cannot insert test login: permission denied. Make sure RLS policies allow insert for login_logs.");
-        } else {
-          alert("Test insert failed: " + error.message);
-        }
-      } else {
-        alert("✅ Test login entry added! Refresh to see it.");
-        window.loadDevices();
-      }
-    } catch(e) {
-      alert("Error: " + e.message);
-    }
-  };
-  
-  // Check for any pending or stored user session more aggressively
-  function ensureUserConsistency() {
-    const storedUser = localStorage.getItem("loveUser");
-    const storedEmail = localStorage.getItem("loveEmail");
-    
-    if (!storedUser || storedUser === "null") {
-      // Maybe the user exists in love_profile?
-      const profileData = localStorage.getItem("love_profile");
-      if (profileData) {
-        try {
-          const profile = JSON.parse(profileData);
-          if (profile.username) {
-            localStorage.setItem("loveUser", profile.username);
-            if (profile.id) localStorage.setItem("loveUserId", profile.id);
-            return profile.username;
-          }
-        } catch(e) {}
-      }
-      
-      // fallback: try to get from login_logs? can't because async, but we show message
-      return null;
-    }
-    return storedUser;
-  }
-  
-  // On page load, try to fix missing username then load devices
+  // Auto-load and register on page open
   (async function init() {
-    // Sync username from possible sources
-    let syncedUser = ensureUserConsistency();
-    if (!syncedUser && localStorage.getItem("loveUserId") && localStorage.getItem("loveUserId") !== "default_user_123") {
-      // If we have userId but no username, set a friendly default
-      const userId = localStorage.getItem("loveUserId");
-      localStorage.setItem("loveUser", userId);
-      syncedUser = userId;
-    }
-    
-    // Also check URL params (in case coming from login redirect)
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlUser = urlParams.get("user");
-    if (urlUser && (!localStorage.getItem("loveUser") || localStorage.getItem("loveUser") === "null")) {
-      localStorage.setItem("loveUser", urlUser);
-      syncedUser = urlUser;
-    }
-    
-    // Display friendly message if still no user
-    if (!syncedUser || syncedUser === "null") {
-      userTitleSpan.innerText = "💖 Welcome!";
-      statusDiv.innerHTML = "🔐 <a href='index.html' style='color:#b30000;'>Please log in from the Love Vault homepage</a> to see your devices";
-      tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:25px;">✨ Login required — your device history will appear automatically after login ✨</td></tr>`;
-      emptyMessageDiv.style.display = "none";
-    } else {
-      // Ensure loveUser is set correctly
-      if (localStorage.getItem("loveUser") !== syncedUser) localStorage.setItem("loveUser", syncedUser);
-      await window.loadDevices();
-    }
-    
-    // Optional: add a small invisible help for debugging (but not intrusive)
-    const noteElement = document.querySelector(".note");
-    if (noteElement && (!syncedUser || syncedUser === "null")) {
-      noteElement.innerHTML += `<div class="fallback-message">💡 Tip: If you've logged in before, try refreshing or going back to the main Vault page first.</div>`;
-    }
+    await window.loadDevices();
   })();
   
-  // Expose loadDevices globally for the refresh button
   window.loadDevices = window.loadDevices;
 </script>
-
-<!-- Additional fallback: if module fails to load, provide a simple non-module message -->
-<noscript>
-  <div style="background:#ffe0e0; padding:15px; margin-top:20px;">
-    ⚠️ JavaScript is required to load devices from the cloud.
-  </div>
-</noscript>
 </body>
 </html>
