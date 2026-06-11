@@ -55,30 +55,52 @@ button:hover {
 <button onclick="saveItem()">Save Promise 💖</button>
 <p id="status"></p>
 
-<script>
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabaseUrl = "https://wmebpsheblrkuvygguae.supabase.co";
+const supabaseKey = "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 const currentUserId = localStorage.getItem("loveUserId");
 const currentUser = localStorage.getItem("loveUser");
 
-function saveItem() {
-    const text = document.getElementById("promiseText").value.trim();
-    if(!text) return alert("Please type your promise!");
-    
-    const vault = JSON.parse(localStorage.getItem("vault")) || [];
-    vault.push({ 
-        source_page: "Promises",     // ✅ consistent with Love Vault
-        section: "Promises",         // ✅ consistent
-        content: text,               // ✅ use "content" not "text"
-        created_at: new Date().toISOString(),
-        user_id: currentUserId,
-        author: currentUser || "Anonymous"
-    });
-    
-    localStorage.setItem("vault", JSON.stringify(vault));
-    document.getElementById("promiseText").value = "";
-    document.getElementById("status").innerHTML = `
-      Promise saved to Vault 💌 <br>
-      <button onclick="goHome()">⬅️ Back to Home</button>
-    `;
+async function saveItem() {
+  const text = document.getElementById("promiseText").value.trim();
+  if(!text) return alert("Please type your promise!");
+
+  // ✅ Save to Supabase Love Vault
+  const { error } = await supabase.from("love_vault").insert([{
+    user_id: currentUserId,
+    source_page: "Promises",
+    section: "Promises",
+    content: text,
+    created_at: new Date().toISOString()
+  }]);
+
+  if(error){
+    console.error(error);
+    document.getElementById("status").innerHTML = "❌ Failed to save to Love Vault";
+    return;
+  }
+
+  // ✅ Also keep in localStorage for offline access
+  const vault = JSON.parse(localStorage.getItem("vault")) || [];
+  vault.push({ 
+    source_page: "Promises",
+    section: "Promises",
+    content: text,
+    created_at: new Date().toISOString(),
+    user_id: currentUserId,
+    author: currentUser || "Anonymous"
+  });
+  localStorage.setItem("vault", JSON.stringify(vault));
+
+  document.getElementById("promiseText").value = "";
+  document.getElementById("status").innerHTML = `
+    Promise saved to Love Vault 💌 <br>
+    <button onclick="goHome()">⬅️ Back to Home</button>
+  `;
 }
 
 function goHome() {
@@ -87,6 +109,7 @@ function goHome() {
 </script>
 </body>
 </html>
+
 
 
 
