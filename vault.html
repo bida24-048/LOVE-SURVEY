@@ -647,7 +647,9 @@
       if (memory.type === "question") {
         displayContent = formatQuestionAnswers(memory.content);
       } else if (memory.type === "song") {
+        // Song display block: show text content + always show "Listen online" link if link exists
         displayContent = `<div>${escapeHtml(memory.rawContent || memory.content || "")}</div>`;
+        // If there's a valid link (from song.html or manually added), show the listen button
         if (memory.link && memory.link.trim()) {
           displayContent += `<div><a href="${escapeHtml(memory.link)}" target="_blank" class="song-link">🎵 Listen online 🔗</a></div>`;
         }
