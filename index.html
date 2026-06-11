@@ -199,9 +199,9 @@
       </div>
       <div class="input-field">
         <label>🗝️ Secret Code</label>
-        <input type="password" id="loginSecret" placeholder="GL2025">
+        <input type="password" id="loginSecret" placeholder="required secret key">
       </div>
-      <button class="love-btn" id="loginBtn">💖 Enter Vault 💖</button>
+      <button class="love-btn" id="loginBtn">💖 Enter Love World 💖</button>
       <div id="loginErrorMsg" class="error-bubble" style="display: none;"></div>
     </div>
 
@@ -230,7 +230,7 @@
   </div>
   
   <div class="secret-note">
-    💞 Both login & register require the couple's secret code: GL2025 (default)
+    💞 Both login & register require the couple's secret code (shared privately)
   </div>
   <div class="footer-love">
     💕 Your promises, plans, songs & questions — encrypted with love 💕
@@ -245,7 +245,7 @@
   const supabaseKey = "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_";
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  const GLOBAL_SECRET = "GL2025";
+  const GLOBAL_SECRET = "GL2025";  // kept for verification, but never auto-filled in UI
 
   // Device detection
   function getDeviceName() { 
@@ -281,7 +281,7 @@
     setTimeout(() => { errDiv.style.display = "none"; }, 4000);
   }
 
-  // ---------- LOGIN ----------
+  // ---------- LOGIN (redirects to home.html) ----------
   async function performLogin() {
     const username = document.getElementById("loginUsername").value.trim();
     const password = document.getElementById("loginPassword").value;
@@ -289,6 +289,10 @@
 
     if (!username || !password) {
       showLoginError("❌ Please enter both username and password.");
+      return;
+    }
+    if (!secret) {
+      showLoginError("🔐 Secret code is required.");
       return;
     }
     if (secret !== GLOBAL_SECRET) {
@@ -327,7 +331,7 @@
       localStorage.setItem("loveEmail", user.email || "");
       localStorage.setItem("loveUserId", user.id);
 
-      // redirect to home/vault
+      // ✅ REDIRECT TO home.html (NOT vault)
       window.location.href = "home.html";
     } catch (err) {
       console.error(err);
@@ -335,7 +339,7 @@
     }
   }
 
-  // ---------- REGISTER (create new account) ----------
+  // ---------- REGISTER (create new account & redirect to home.html) ----------
   async function performRegister() {
     const username = document.getElementById("regUsername").value.trim();
     const email = document.getElementById("regEmail").value.trim();
@@ -352,6 +356,10 @@
     }
     if (!password || password.length < 4) {
       showRegisterError("🔒 Password must be at least 4 characters.");
+      return;
+    }
+    if (!secret) {
+      showRegisterError("🗝️ Secret code is required to register.");
       return;
     }
     if (secret !== GLOBAL_SECRET) {
@@ -407,6 +415,7 @@
         event_type: "registration"
       }]).catch(e => console.warn("log reg error"));
 
+      // ✅ REDIRECT TO home.html
       window.location.href = "home.html";
     } catch (err) {
       console.error(err);
@@ -418,11 +427,9 @@
   document.getElementById("loginBtn").addEventListener("click", performLogin);
   document.getElementById("registerBtn").addEventListener("click", performRegister);
 
-  // prefill secret fields to GL2025 for easier testing
-  const loginSecretField = document.getElementById("loginSecret");
-  const regSecretField = document.getElementById("regSecret");
-  if (loginSecretField) loginSecretField.value = "GL2025";
-  if (regSecretField) regSecretField.value = "GL2025";
+  // IMPORTANT: Do NOT prefill secret fields with any value — they remain empty for privacy
+  // The user must manually type the secret code (GL2025) themselves.
+  // (No auto-fill of secret codes, as requested)
 
   // Enter key support
   const loginInputs = ["loginUsername", "loginPassword", "loginSecret"];
