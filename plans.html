@@ -22,12 +22,43 @@ body::before {
   transform: translate(-50%,-50%); 
   z-index: -1;
 }
-h1 { color:#b30000; margin-top:30px; animation:pulse 2s infinite; }
-@keyframes pulse {0%{transform:scale(1);}50%{transform:scale(1.05);}100%{transform:scale(1);}}
-input { padding:10px; width:70%; border-radius:8px; border:2px solid #b30000; margin-top:10px; font-size:16px;}
-button { padding:10px 20px; background:#b30000; color:white; border:none; border-radius:8px; cursor:pointer; margin-top:10px; transition:.3s;}
-button:hover { background:white; color:#b30000; border:2px solid #b30000; }
-#status { margin-top:10px; font-weight:bold; }
+h1 { 
+  color:#b30000; 
+  margin-top:30px; 
+  animation:pulse 2s infinite; 
+}
+@keyframes pulse {
+  0%{transform:scale(1);}
+  50%{transform:scale(1.05);}
+  100%{transform:scale(1);}
+}
+input { 
+  padding:10px; 
+  width:70%; 
+  border-radius:8px; 
+  border:2px solid #b30000; 
+  margin-top:10px; 
+  font-size:16px;
+}
+button { 
+  padding:10px 20px; 
+  background:#b30000; 
+  color:white; 
+  border:none; 
+  border-radius:8px; 
+  cursor:pointer; 
+  margin-top:10px; 
+  transition:.3s;
+}
+button:hover { 
+  background:white; 
+  color:#b30000; 
+  border:2px solid #b30000; 
+}
+#status { 
+  margin-top:10px; 
+  font-weight:bold; 
+}
 </style>
 </head>
 <body>
@@ -37,7 +68,6 @@ button:hover { background:white; color:#b30000; border:2px solid #b30000; }
 <p id="status"></p>
 
 <script>
-  <script>
 const currentUserId = localStorage.getItem("loveUserId");
 const currentUser = localStorage.getItem("loveUser");
 
@@ -47,9 +77,9 @@ function saveItem() {
     
     const vault = JSON.parse(localStorage.getItem("vault")) || [];
     vault.push({ 
-        source_page: "Plans",
-        section: "Plans",
-        content: text,   // ✅ use "content" instead of "text"
+        source_page: "Plans",        // ✅ consistent with Love Vault
+        section: "Plans",            // ✅ consistent
+        content: text,               // ✅ use "content" not "text"
         created_at: new Date().toISOString(),
         user_id: currentUserId,
         author: currentUser || "Anonymous"
@@ -69,6 +99,7 @@ function goHome() {
 </script>
 </body>
 </html>
+
 
 
 
