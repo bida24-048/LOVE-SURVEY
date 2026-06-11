@@ -13,7 +13,6 @@
     position: relative;
     padding: 20px;
   }
-  /* Big heart background */
   body::before {
     content: "❤";
     position: fixed;
@@ -33,10 +32,10 @@
     50% { transform: scale(1.05); }
     100% { transform: scale(1); }
   }
-  h3 { color: #b30000; margin: 20px 0; }
+  h3 { color: #b30000; margin: 20px 0; font-size: 1.5rem; }
   button { 
     margin: 10px; 
-    padding: 10px 20px; 
+    padding: 12px 24px; 
     border: none; 
     border-radius: 8px; 
     font-size: 16px; 
@@ -44,61 +43,22 @@
     transition: 0.3s;
   }
   .yes { background: #b30000; color: white; }
-  .yes:hover { background: white; color: #b30000; border:2px solid #b30000; }
+  .yes:hover { background: white; color: #b30000; border: 2px solid #b30000; }
   .no { background: #ff4d4d; color: white; }
-  .no:hover { background: white; color: #ff4d4d; border:2px solid #ff4d4d; }
+  .no:hover { background: white; color: #ff4d4d; border: 2px solid #ff4d4d; }
+  .reset-btn { background: #ff9800; color: white; margin-top: 20px; margin-left: 10px; }
+  .reset-btn:hover { background: white; color: #ff9800; border: 2px solid #ff9800; }
+  .back-btn { background: #666; color: white; margin-top: 20px; }
+  .back-btn:hover { background: white; color: #666; border: 2px solid #666; }
   #status { margin-top: 10px; font-weight: bold; }
+  .progress { margin: 20px 0; font-size: 14px; color: #666; }
 </style>
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyAI-xop8tZ71-UDuG9rCH0dy72-FheWFwE",
-    authDomain: "love-hub-b4dbd.firebaseapp.com",
-    projectId: "love-hub-b4dbd",
-    storageBucket: "love-hub-b4dbd.firebasestorage.app",
-    messagingSenderId: "804508115256",
-    appId: "1:804508115256:web:611e1671d62c7b5a48e1cd",
-    measurementId: "G-D5QQ523R5L"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const messaging = getMessaging(app);
-
-  // Register service worker
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/firebase-messaging-sw.js")
-      .then(reg => console.log("Service Worker registered:", reg))
-      .catch(err => console.error("Service Worker error:", err));
-  }
-
-  // Request permission and get token
-  Notification.requestPermission().then(permission => {
-    if (permission === "granted") {
-      // 🔑 HIGHLIGHT: Paste your VAPID key here
-      getToken(messaging, { vapidKey: "BOP4pkLGY7Tk0tALGsuxRL6-57DjrGgeHIFvlvcKWJDz_6D3U9b8-qAacE6TaHU1K9-GxBJEerybyKlpvhH8LM" })
-        .then(token => {
-          console.log("FCM Token:", token);
-          // 👉 Send this token to your backend or subscribe to a topic
-        })
-        .catch(err => console.error("Token error:", err));
-    }
-  });
-
-  // Handle incoming messages
-  onMessage(messaging, payload => {
-    console.log("Message received:", payload);
-    new Notification(payload.notification.title, {
-      body: payload.notification.body
-    });
-  });
-</script>
 </head>
 <body>
 
 <h1>💌 Love Question</h1>
 <h3 id="question">Loading question...</h3>
+<div class="progress" id="progress"></div>
 
 <div>
   <button class="yes" onclick="saveLoveAnswer('Yes')">Yes ✅</button>
@@ -107,8 +67,13 @@
 
 <p id="status"></p>
 
+<div>
+  <button class="reset-btn" onclick="resetToday()">🔄 Reset Today's Answers</button>
+  <button class="back-btn" onclick="window.location.href='vault.html'">📖 Go to Vault</button>
+</div>
+
 <script>
-// --- Questions ---
+// --- 100+ Love Questions ---
 const questions = [
   "Do you love me more today than yesterday? ❤️",
   "Would you hug me tight if I was sad? 🤗",
@@ -124,31 +89,9 @@ const questions = [
   "Do you want to grow old together? 👵👴",
   "Will you keep our secrets safe? 🤫",
   "Do you like writing love notes to me? 💌",
-  "Will you forgive me if I make mistakes? 💞",
+  "Will you forgive me when I make mistakes? 💞",
   "Do you want to make me breakfast someday? 🍳",
-  "Do you love my quirks? 😘",
-  "Would you laugh with me even on bad days? 😂",
-  "Do you feel connected to me even when apart? 💖",
-  "Will you dance with me at every wedding? 💃🕺",
-  "Do you believe in our forever? 🌈",
-  "Will you send me random cute messages just because? 💌",
-  "Do you love me more today than yesterday? ❤️",
-  "Would you hug me tight if I was sad? 🤗",
-  "Do you see us together forever? 💍",
-  "Would you surprise me with chocolate? 🍫",
-  "Do you secretly smile when you see my texts? 😊",
-  "Would you dance with me in the rain? 🌧️💃",
-  "Do you believe we are soulmates? ✨",
-  "Do you want to travel the world with me? 🌍✈️",
-  "Will you always support my dreams? 🌟",
-  "Do you like my smile? 😁",
-  "Would you cuddle with me every night? 🛌❤️",
-  "Do you want to grow old together? 👵👴",
-  "Will you keep our secrets safe? 🤫",
-  "Do you like writing love notes to me? 💌",
-  "Will you forgive me if I make mistakes? 💞",
-  "Do you want to make me breakfast someday? 🍳",
-  "Do you love my quirks? 😘",
+  "Do you love my quirks and habits? 😘",
   "Would you laugh with me even on bad days? 😂",
   "Do you feel connected to me even when apart? 💖",
   "Will you dance with me at every wedding? 💃🕺",
@@ -163,115 +106,193 @@ const questions = [
   "Would you write our names in the sand? 🏖️",
   "Do you want to take silly selfies with me? 🤳",
   "Would you watch the stars with me all night? 🌌",
-  "Do you want to share your dreams with me? 🌠",
+  "Do you want to share your deepest dreams with me? 🌠",
   "Will you be patient with me when I’m moody? 😅",
   "Do you want to cook dinner together someday? 🍲",
   "Would you kiss me under the moonlight? 🌙💋",
   "Do you want to make bucket lists together? 📝",
-  "Will you dance with me in the kitchen? 🍽️💃",
+  "Will you dance with me in the kitchen while cooking? 🍽️💃",
   "Do you want to celebrate anniversaries in special ways? 🎂",
   "Would you write me poems sometimes? ✍️💖",
-  "Do you want to share secrets only we know? 🔐",
-  "Will you support me when I’m nervous? 😬",
+  "Do you want to share secrets that only we know? 🔐",
+  "Will you support me when I’m feeling nervous? 😬",
   "Do you want to plan adventures together? 🗺️",
   "Would you call me just to hear my voice? 📞",
   "Do you want to make traditions for holidays? 🎄",
-  "Will you always remind me I’m loved? 💕",
+  "Will you always remind me that I’m loved? 💕",
   "Do you want to grow spiritually together? 🙏",
-  "Would you save our photos forever? 📸",
-  "Do you want to write a love story together? 📖",
+  "Would you save all our photos forever? 📸",
+  "Do you want to write our love story together? 📖",
   "Will you always be my best friend too? 👫",
-  "Do you want to dream about our future kids? 👶",
+  "Do you want to dream about our future together? 🌟",
   "Would you celebrate Valentine’s Day with me every year? 💝",
-  "Do you want to make playlists for us? 🎶",
+  "Do you want to make playlists of our songs? 🎶",
   "Will you always be proud of me? 🏆",
   "Do you want to share morning coffee together? ☕",
   "Would you travel just to see me smile? ✈️😊",
   "Do you want to make promises that last forever? 💍",
   "Will you always choose me no matter what? 💖",
   "Do you want to write letters to open in the future? 📬",
-  "Would you hold me close during storms? ⛈️",
+  "Would you hold me close during thunderstorms? ⛈️",
   "Do you want to make silly traditions just for us? 🎭",
   "Will you always believe in our love? 💫",
   "Do you want to celebrate milestones together? 🎉",
-  "Would you whisper sweet things to me often? 💞",
+  "Would you whisper sweet things to me every day? 💞",
   "Do you want to keep surprising me forever? 🎁",
   "Will you always remind me of our first date? 🌹",
   "Do you want to make every day feel special? ✨",
   "Would you promise to never give up on us? 🤝",
-  "Do you want to write our names everywhere? 🖊️",
+  "Do you want to write our names everywhere we go? 🖊️",
   "Will you always be my safe place? 🛡️",
   "Do you want to laugh until we cry together? 😂😭",
   "Would you promise to love me endlessly? ♾️",
   "Do you want to make every kiss unforgettable? 💋",
   "Will you always be my partner in everything? 💑",
   "Do you want to share sunsets with me forever? 🌅",
-  "Would you promise to keep our love strong? 💪❤️"
+  "Would you promise to keep our love strong? 💪❤️",
+  "Do you think about me when we're apart? 💭",
+  "Would you drop everything to be with me? 🏃‍♂️💨",
+  "Do you feel butterflies when I walk in the room? 🦋",
+  "Would you defend me no matter what? 🛡️",
+  "Do you see a future with me in 10 years? 🔟",
+  "Would you take care of me when I'm old? 👵👴",
+  "Do you miss me when I'm not around? 😢",
+  "Would you learn my love language? 📖",
+  "Do you appreciate the little things I do? ✨",
+  "Would you go on a spontaneous road trip with me? 🚗",
+  "Do you trust me completely? 🤝",
+  "Would you be my rock during hard times? 🪨",
+  "Do you want to raise a family with me? 👶",
+  "Would you grow and learn with me every day? 📚",
+  "Do you accept me for who I truly am? 💯",
+  "Would you fight for our relationship? ⚔️",
+  "Do you want to create a happy home with me? 🏠",
+  "Would you be vulnerable and open with me? 🫀",
+  "Do you think we balance each other well? ⚖️",
+  "Would you choose me again if given the chance? 🔄",
+  "Do you feel at peace when you're with me? 🕊️",
+  "Would you be my sunshine on cloudy days? ☀️",
+  "Do you want to explore new hobbies together? 🎨",
+  "Would you be my date to every event? 👔",
+  "Do you feel lucky to have me in your life? 🍀",
+  "Would you write me love letters the old-fashioned way? ✉️",
+  "Do you want to sit on the porch and watch the world go by with me? 🌎",
+  "Would you be my forever Valentine? 💘",
+  "Do you believe we were meant to find each other? 🎯"
 ];
-  // --- Limit answers per day ---
+
 const MAX_PER_DAY = 5;
-
-// --- Load a random question ---
-let currentQuestion = questions[Math.floor(Math.random()*questions.length)];
-document.getElementById("question").innerText = currentQuestion;
-
-// --- Temporary buffer for today's answers ---
+let currentQuestion = questions[Math.floor(Math.random() * questions.length)];
 let todayAnswers = [];
 
-// --- Save answer ---
-function saveLoveAnswer(selectedAnswer) {
+// Load existing answers for today from localStorage
+function loadTodayAnswers() {
   const today = new Date().toLocaleDateString();
+  const saved = localStorage.getItem(`questions_${today}`);
+  if (saved) {
+    todayAnswers = JSON.parse(saved);
+  } else {
+    todayAnswers = [];
+  }
+  updateProgress();
+}
 
-  // --- Count today's answers ---
-  const vault = JSON.parse(localStorage.getItem("vault")) || [];
-  const todayCount = todayAnswers.length;
+function updateProgress() {
+  const remaining = MAX_PER_DAY - todayAnswers.length;
+  document.getElementById("progress").innerHTML = `📊 ${todayAnswers.length} of ${MAX_PER_DAY} questions answered today<br>${remaining > 0 ? remaining + ' more to go! 💖' : '🎉 Survey Complete! 🎉'}`;
+}
 
-  if(todayCount >= MAX_PER_DAY) {
-    document.getElementById("question").innerText = "Survey Complete 💖";
-    document.getElementById("status").innerHTML = `<button class="yes" onclick="goHome()">⬅️ Go Back</button>`;
+function saveLoveAnswer(selectedAnswer) {
+  // Load fresh answers
+  loadTodayAnswers();
+  
+  if (todayAnswers.length >= MAX_PER_DAY) {
+    document.getElementById("question").innerHTML = "🎉 Survey Complete for Today! 🎉";
+    document.getElementById("status").innerHTML = "Come back tomorrow for more questions! 💖";
     return;
   }
 
-  // --- Add to buffer ---
+  // Add to today's answers
   todayAnswers.push({
     question: currentQuestion,
-    answer: selectedAnswer
+    answer: selectedAnswer,
+    timestamp: new Date().toISOString()
   });
 
-  document.getElementById("status").innerText = "Answer saved 💌";
+  // Save to localStorage for today
+  const today = new Date().toLocaleDateString();
+  localStorage.setItem(`questions_${today}`, JSON.stringify(todayAnswers));
+  
+  document.getElementById("status").innerHTML = "✅ Answer saved! 💌";
+  document.getElementById("status").style.color = "#2c6e2c";
 
-  // --- If 5 answers collected, save as one entry ---
-  if(todayAnswers.length >= MAX_PER_DAY) {
-    const currentUserId = localStorage.getItem("loveUserId");
-    const currentUser = localStorage.getItem("loveUser");
-
+  // If all 5 answers collected, save to vault
+  if (todayAnswers.length >= MAX_PER_DAY) {
+    const currentUser = localStorage.getItem("loveUser") || localStorage.getItem("loveUserName") || "Anonymous";
+    let vault = JSON.parse(localStorage.getItem("vault") || "[]");
+    
     vault.push({
-      source_page: "Love Questions",   // ✅ consistent
-      section: "Love",                 // ✅ consistent
-      content: JSON.stringify(todayAnswers, null, 2), // ✅ unified field
+      source_page: "Love Questions",
+      section: "Love Questions",
+      content: JSON.stringify(todayAnswers, null, 2),
       created_at: new Date().toISOString(),
-      user_id: currentUserId,
-      author: currentUser || "Anonymous",
-      type: "love",
-      responses: todayAnswers           // keep raw responses too
+      author: currentUser,
+      type: "love-questions"
     });
-
+    
     localStorage.setItem("vault", JSON.stringify(vault));
-
-    document.getElementById("question").innerText = "Survey Complete 💖";
-    document.getElementById("status").innerHTML = `<button class="yes" onclick="goHome()">⬅️ Go Back</button>`;
+    
+    document.getElementById("question").innerHTML = "🎉 Survey Complete! 🎉";
+    document.getElementById("status").innerHTML = "✅ Your answers have been saved to the Love Vault! 💖";
+    document.getElementById("progress").innerHTML = "🎉 All 5 questions answered today! 🎉";
+    return;
+  }
+  
+  // Load next question (different from previous ones)
+  const remainingQuestions = questions.filter(q => !todayAnswers.some(a => a.question === q));
+  if (remainingQuestions.length > 0) {
+    currentQuestion = remainingQuestions[Math.floor(Math.random() * remainingQuestions.length)];
+    document.getElementById("question").innerHTML = currentQuestion;
   } else {
-    // --- Load next question ---
-    let remainingQuestions = questions.filter(q => !todayAnswers.some(a => a.question === q));
-    currentQuestion = remainingQuestions.length ? remainingQuestions[Math.floor(Math.random()*remainingQuestions.length)] : "Survey Complete 💖";
-    document.getElementById("question").innerText = currentQuestion;
+    // If all questions exhausted, just pick a random one
+    currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+    document.getElementById("question").innerHTML = currentQuestion;
+  }
+  
+  updateProgress();
+  
+  // Clear status after 2 seconds
+  setTimeout(() => {
+    if (todayAnswers.length < MAX_PER_DAY) {
+      document.getElementById("status").innerHTML = "";
+    }
+  }, 2000);
+}
+
+// Reset today's answers (for testing or if user wants to restart)
+function resetToday() {
+  if (confirm("Are you sure you want to reset today's answers? This cannot be undone.")) {
+    const today = new Date().toLocaleDateString();
+    localStorage.removeItem(`questions_${today}`);
+    todayAnswers = [];
+    currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+    document.getElementById("question").innerHTML = currentQuestion;
+    document.getElementById("status").innerHTML = "🔄 Today's answers have been reset!";
+    document.getElementById("status").style.color = "#ff9800";
+    updateProgress();
+    
+    setTimeout(() => {
+      document.getElementById("status").innerHTML = "";
+    }, 3000);
   }
 }
 
-// --- Go back function ---
-function goHome() {
-  window.location.href = "home.html"; 
-}
+// Make reset function global
+window.resetToday = resetToday;
+
+// Initialize
+document.getElementById("question").innerHTML = currentQuestion;
+loadTodayAnswers();
 </script>
 </body>
-</html>
+</html>  
