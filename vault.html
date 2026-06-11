@@ -199,9 +199,19 @@
     }
     .song-link {
       display: inline-block;
-      margin-top: 10px;
-      color: #1d4ed8;
+      margin-top: 12px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
+      color: white !important;
       text-decoration: none;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+    .song-link:hover {
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+      transform: scale(1.02);
     }
     .author {
       font-size: 0.85rem;
@@ -244,6 +254,9 @@
       font-size: 0.7rem;
       margin-left: 8px;
       font-weight: normal;
+    }
+    .song-link-container {
+      margin-top: 12px;
     }
   </style>
 </head>
@@ -294,7 +307,6 @@
   let currentSearchTerm = "";
   let currentUserProfile = { id: null, username: "MyLove" };
   let isAutoSyncing = false;
-  let pendingSyncTimer = null;
 
   // =============== PROFILE MANAGEMENT ===============
   function loadProfile() {
@@ -357,6 +369,7 @@
         type: "plan",
         created_at: plan.created_at || plan.date || new Date().toISOString(),
         author: plan.author || currentUserProfile.username,
+        link: null
       });
     });
 
@@ -382,7 +395,7 @@
           type: type,
           created_at: item.created_at || new Date().toISOString(),
           author: item.author || currentUserProfile.username,
-          link: item.link
+          link: item.link || null  // ← IMPORTANT: Preserve the song link!
         });
       }
     });
@@ -411,7 +424,7 @@
         created_at: item.created_at,
         author: item.username,
         isCloud: true,
-        link: item.link
+        link: item.link || null  // ← IMPORTANT: Preserve the song link from cloud!
       }));
     } catch (err) {
       console.error(err);
@@ -455,10 +468,11 @@
     try {
       const username = localStorage.getItem("loveUser") || "MyLove";
       const localMemories = collectFromAllPages();
-      // Fetch current cloud entries to avoid redundant upserts (simple dedup)
+      
+      // Fetch current cloud entries to avoid redundant upserts
       const { data: existingCloud } = await supabase
         .from("love_vault")
-        .select("content, created_at, type")
+        .select("content, created_at, type, link")
         .eq("username", username);
       
       const existingSet = new Set();
@@ -485,7 +499,7 @@
             content: contentStr,
             type: mem.type,
             created_at: mem.created_at,
-            link: mem.link || null
+            link: mem.link || null  // ← IMPORTANT: Save link to cloud!
           });
         if (!error) {
           syncedCount++;
@@ -500,7 +514,6 @@
         notifyDiv.innerText = `✨ Cloud is already up to date ✨`;
         setTimeout(() => { notifyDiv.style.display = "none"; }, 1500);
       } else if (!showToast && syncedCount > 0) {
-        // silent sync – just refresh display
         await loadAndDisplay();
       }
       if (syncedCount > 0) await loadAndDisplay();
@@ -559,6 +572,7 @@
     allMemories.forEach((m, i) => {
       text += `[${i+1}] ${m.type?.toUpperCase()}: ${m.source}\n`;
       text += `Content: ${(m.rawContent || m.content || "").substring(0, 200)}\n`;
+      if (m.link) text += `🔗 Link: ${m.link}\n`;
       text += `📅 ${formatDate(m.created_at)}\n✍️ ${m.author}\n\n`;
     });
     navigator.clipboard.writeText(text);
@@ -644,18 +658,26 @@
       const typeColor = getTypeColor(memory.type);
       const dateStr = formatDate(memory.created_at);
       let displayContent = "";
+      
       if (memory.type === "question") {
         displayContent = formatQuestionAnswers(memory.content);
       } else if (memory.type === "song") {
-        // Song display block: show text content + always show "Listen online" link if link exists
-        displayContent = `<div>${escapeHtml(memory.rawContent || memory.content || "")}</div>`;
-        // If there's a valid link (from song.html or manually added), show the listen button
-        if (memory.link && memory.link.trim()) {
-          displayContent += `<div><a href="${escapeHtml(memory.link)}" target="_blank" class="song-link">🎵 Listen online 🔗</a></div>`;
+        // Song display: show the song text/description
+        displayContent = `<div>🎵 ${escapeHtml(memory.rawContent || memory.content || "")}</div>`;
+        // IMPORTANT: Show the "Listen online" button if there's a link
+        if (memory.link && memory.link.trim() && memory.link !== "null") {
+          displayContent += `
+            <div class="song-link-container">
+              <a href="${escapeHtml(memory.link)}" target="_blank" class="song-link" rel="noopener noreferrer">
+                🎧 Listen Online 🔗
+              </a>
+            </div>
+          `;
         }
       } else {
         displayContent = `<div>${escapeHtml(memory.rawContent || memory.content || "")}</div>`;
       }
+      
       const cloudIcon = memory.isCloud ? " ☁️" : " 💾";
       return `
         <div class="vault-entry">
@@ -669,21 +691,18 @@
     }).join("");
   }
 
-  // =============== REALTIME CLOUD SYNC (listen to changes and refresh) ===============
+  // =============== REALTIME CLOUD SYNC ===============
   function initRealtimeAndAutoSync() {
-    // realtime subscription: refresh UI when cloud changes from other devices/tabs
     supabase.channel("vault-changes-global")
       .on("postgres_changes", { event: "*", schema: "public", table: "love_vault" }, () => {
         loadAndDisplay();
       })
       .subscribe();
     
-    // periodic auto background sync: check every 12 seconds for new local items and push to cloud
     setInterval(async () => {
       await autoSyncToCloud(false);
     }, 12000);
     
-    // also run initial auto-sync after 2 seconds
     setTimeout(async () => {
       await autoSyncToCloud(true);
     }, 2000);
@@ -704,16 +723,13 @@
     });
   });
   
-  // Listen to localStorage changes (other pages might add new memories)
   window.addEventListener("storage", (event) => {
     if (event.key === "couplePlans" || event.key === "vault") {
       loadAndDisplay();
-      // trigger background sync after slight delay
       setTimeout(() => autoSyncToCloud(false), 500);
     }
   });
   
-  // periodic refresh every 3 seconds for immediate local updates
   setInterval(() => {
     loadAndDisplay();
   }, 3000);
