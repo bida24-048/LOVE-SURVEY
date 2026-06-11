@@ -355,26 +355,37 @@
       }
 
       // log login
-      await supabase.from("login_logs").insert([{
-        user_id: user.id,
-        device: getDeviceName(),
-        browser: getBrowserName(),
-        logged_in_at: new Date().toISOString()
-      }]).catch(e => console.warn("log error", e));
+    const { error } = await supabase.from("login_logs").insert([{
+  user_id: user.id,
+  device: getDeviceName(),
+  browser: getBrowserName(),
+  logged_in_at: new Date().toISOString()
+}]);
 
-      // set session
-      localStorage.setItem("loveLogin", "true");
-      localStorage.setItem("loveUser", user.username);
-      localStorage.setItem("loveEmail", user.email || "");
-      localStorage.setItem("loveUserId", user.id);
+if (error) {
+  console.warn("Login log error:", error.message);
+}
+     // set session
+localStorage.setItem("loveLogin", "true");
+localStorage.setItem("loveUser", user.username);
+localStorage.setItem("loveEmail", user.email || "");
+localStorage.setItem("loveUserId", user.id);
+localStorage.setItem("loveLoginTime", Date.now().toString());
 
-      // Redirect to home.html
-      window.location.href = "home.html";
-    } catch (err) {
-      console.error(err);
-      showLoginError("⚠️ Server error: " + err.message);
-    }
-  }
+// TRY logging (but NEVER block redirect if it fails)
+try {
+  await supabase.from("login_logs").insert([{
+    user_id: user.id,
+    device: getDeviceName(),
+    browser: getBrowserName(),
+    logged_in_at: new Date().toISOString()
+  }]);
+} catch (e) {
+  console.warn("Login log failed (ignored):", e);
+}
+
+// 🚀 ALWAYS REDIRECT (no matter what)
+window.location.href = "home.html";
 
   // ---------- REGISTER (create new account & redirect to home.html) ----------
   async function performRegister() {
