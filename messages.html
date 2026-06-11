@@ -63,31 +63,54 @@ button:hover {
 <button onclick="saveItem()">Post Message 💌</button>
 <p id="status"></p>
 
-<script>
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabaseUrl = "https://wmebpsheblrkuvygguae.supabase.co";
+const supabaseKey = "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 const currentUserId = localStorage.getItem("loveUserId");
 const currentUser = localStorage.getItem("loveUser");
 
-function saveItem() {
-    const text = document.getElementById("msgText").value.trim();
-    if(!text) return alert("Please type a message!");
+async function saveItem() {
+  const text = document.getElementById("msgText").value.trim();
+  if(!text) return alert("Please type a message!");
 
-    const vault = JSON.parse(localStorage.getItem("vault")) || [];
-    vault.push({ 
-        source_page: "Messages",     // ✅ consistent
-        section: "Messages",         // ✅ consistent
-        content: text,               // ✅ unified field
-        created_at: new Date().toISOString(),
-        user_id: currentUserId,
-        author: currentUser || "Anonymous",
-        type: "message"
-    });
+  // ✅ Save to Supabase Love Vault
+  const { error } = await supabase.from("love_vault").insert([{
+    user_id: currentUserId,
+    source_page: "Messages",
+    section: "Messages",
+    content: text,
+    created_at: new Date().toISOString()
+  }]);
 
-    localStorage.setItem("vault", JSON.stringify(vault));
-    document.getElementById("msgText").value = "";
-    document.getElementById("status").innerText = "Message saved to Vault 💬";
+  if(error){
+    console.error(error);
+    document.getElementById("status").innerText = "❌ Failed to save to Love Vault";
+    return;
+  }
+
+  // ✅ Also save to localStorage for offline access
+  const vault = JSON.parse(localStorage.getItem("vault")) || [];
+  vault.push({ 
+    source_page: "Messages",
+    section: "Messages",
+    content: text,
+    created_at: new Date().toISOString(),
+    user_id: currentUserId,
+    author: currentUser || "Anonymous",
+    type: "message"
+  });
+  localStorage.setItem("vault", JSON.stringify(vault));
+
+  document.getElementById("msgText").value = "";
+  document.getElementById("status").innerText = "Message saved to Love Vault 💬";
 }
 </script>
 </body>
 </html>
+
 
 
