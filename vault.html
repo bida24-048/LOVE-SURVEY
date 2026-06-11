@@ -35,11 +35,12 @@ h1,h2{color:#b30000;}
 <div id="vault">Loading vault...</div>
 <p id="notify"></p>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
 const supabaseUrl = "https://wmebpsheblrkuvygguae.supabase.co";
 const supabaseKey = "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_";
-const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 let vaultData = [];
 const currentUserId = localStorage.getItem("loveUserId"); // must match love_users.id
@@ -66,11 +67,11 @@ function renderVault(data){
     vaultDiv.innerHTML = "<h3>Vault is empty 😘</h3>";
     return;
   }
-  vaultDiv.innerHTML = data.map((entry, index) => {
+  vaultDiv.innerHTML = data.map((entry) => {
     const source = entry.source_page || entry.section || "General";
     const date = entry.created_at ? new Date(entry.created_at).toLocaleString() : "Unknown Date";
     const content = entry.content || "No content";
-    const author = entry.love_users?.username || "Anonymous";
+    const author = entry.love_users?.username || entry.author || "Anonymous";
     return `
       <div class="vault-entry">
         <div class="source-label">📂 Source: ${source}</div>
@@ -86,7 +87,7 @@ document.getElementById("search").addEventListener("input", function(e){
   const filtered = vaultData.filter(entry => {
     const source = (entry.source_page || entry.section || "").toLowerCase();
     const content = (entry.content || "").toLowerCase();
-    const author = (entry.love_users?.username || "").toLowerCase();
+    const author = (entry.love_users?.username || entry.author || "").toLowerCase();
     return (source.includes(term) || content.includes(term) || author.includes(term));
   });
   renderVault(filtered);
@@ -108,6 +109,7 @@ async function syncLocalToSupabase(){
   loadVault();
 }
 
+// Realtime updates
 supabase.channel("love-vault")
 .on("postgres_changes",{event:"INSERT",schema:"public",table:"love_vault"},payload=>{
   document.getElementById("notify").innerText = "✨ New memory added to the Vault 💕";
@@ -119,10 +121,17 @@ supabase.channel("love-vault")
 })
 .subscribe();
 
+function shareVault(){
+  const text = vaultData.map(e => `${e.source_page}: ${e.content}`).join("\n\n");
+  navigator.clipboard.writeText(text);
+  alert("📲 Vault copied to clipboard!");
+}
+
 loadVault();
 </script>
 </body>
 </html>
+
 
 
 
