@@ -7,20 +7,34 @@
   body {
     font-family: Arial, sans-serif;
     text-align: center;
-    background: #f0f8ff;
+    background: white;
+    color: #b30000;
     margin: 0;
     padding: 20px;
+    min-height: 100vh;
+  }
+  body::before {
+    content: "❤";
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    font-size: 40rem;
+    color: rgba(179,0,0,0.08);
+    transform: translate(-50%,-50%);
+    z-index: -1;
   }
   h1 { color: #1d4ed8; }
   input, textarea {
-    width: 80%;
-    padding: 10px;
+    width: 70%;
+    max-width: 500px;
+    padding: 12px;
     margin: 10px 0;
-    border: 1px solid #1d4ed8;
+    border: 2px solid #1d4ed8;
     border-radius: 8px;
+    font-family: inherit;
   }
   button {
-    padding: 10px 20px;
+    padding: 12px 24px;
     margin: 10px;
     border: none;
     border-radius: 8px;
@@ -28,7 +42,10 @@
     cursor: pointer;
   }
   .save-btn { background: #1d4ed8; color: white; }
+  .save-btn:hover { background: #0f3a9e; }
   .back-btn { background: #10b981; color: white; }
+  .back-btn:hover { background: #0a8a5e; }
+  #status { margin-top: 10px; font-weight: bold; color: #2c6e2c; }
 </style>
 </head>
 <body>
@@ -36,81 +53,63 @@
 <h1>🎶 Add a Song</h1>
 
 <input type="text" id="songTitle" placeholder="Song Title"><br>
-<textarea id="songDesc" placeholder="Why this song is special 💖"></textarea><br>
+<textarea id="songDesc" placeholder="Why this song is special 💖" rows="4"></textarea><br>
 <input type="url" id="songLink" placeholder="Paste song link (YouTube, Spotify, etc.)"><br>
-<input type="file" id="songFile" accept="audio/*"><br>
 
 <button class="save-btn" onclick="saveSong()">Save to Vault 💖</button>
-<button class="back-btn" onclick="window.location.href='vault.html'">Go to Vault 📖</button>
+<button class="back-btn" onclick="window.location.href='vault.html'">📖 Go to Vault</button>
 
-<script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+<p id="status"></p>
 
-const supabaseUrl = "https://wmebpsheblrkuvygguae.supabase.co";
-const supabaseKey = "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_";
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-const currentUserId = localStorage.getItem("loveUserId");
-const currentUser = localStorage.getItem("loveUser");
-
-async function saveSong() {
+<script>
+function saveSong() {
   const title = document.getElementById("songTitle").value.trim();
   const desc = document.getElementById("songDesc").value.trim();
   const link = document.getElementById("songLink").value.trim();
-  const fileInput = document.getElementById("songFile");
-
-  let fileUrl = "";
-  if (fileInput.files.length > 0) {
-    fileUrl = URL.createObjectURL(fileInput.files[0]);
-  }
 
   if (!title) {
-    return alert("Please enter a song title 🎵");
-  }
-
-  // ✅ Save to Supabase Love Vault
-  const { error } = await supabase.from("love_vault").insert([{
-    user_id: currentUserId,
-    source_page: "Songs",
-    section: "Songs",
-    content: `🎵 ${title}\n\n💖 ${desc}\n\n🔗 ${link}`,
-    created_at: new Date().toISOString()
-  }]);
-
-  if(error){
-    console.error(error);
-    alert("❌ Failed to save to Love Vault");
+    alert("Please enter a song title 🎵");
     return;
   }
 
-  // ✅ Also save locally for offline access
-  const vault = JSON.parse(localStorage.getItem("vault")) || [];
+  // Get current user info
+  const currentUser = localStorage.getItem("loveUser") || "Anonymous";
+  
+  // Format the content nicely
+  let content = `🎵 ${title}`;
+  if (desc) content += `\n\n💖 ${desc}`;
+  if (link) content += `\n\n🔗 ${link}`;
+  
+  // Get existing vault or create new
+  let vault = JSON.parse(localStorage.getItem("vault") || "[]");
+  
+  // Add new song
   vault.push({
     source_page: "Songs",
     section: "Songs",
-    content: `🎵 ${title}\n\n💖 ${desc}\n\n🔗 ${link}`,
+    content: content,
     created_at: new Date().toISOString(),
-    user_id: currentUserId,
-    author: currentUser || "Anonymous",
+    author: currentUser,
     type: "song",
     title: title,
     desc: desc,
-    link: link,
-    file: fileUrl
+    link: link
   });
+  
+  // Save back to localStorage
   localStorage.setItem("vault", JSON.stringify(vault));
-
-  alert("Song saved to Love Vault 💖");
 
   // Clear form
   document.getElementById("songTitle").value = "";
   document.getElementById("songDesc").value = "";
   document.getElementById("songLink").value = "";
-  document.getElementById("songFile").value = "";
+  
+  document.getElementById("status").innerHTML = "✅ Song saved to Love Vault! 🎵<br>Go to Vault to see it.";
+  
+  setTimeout(() => {
+    document.getElementById("status").innerHTML = "";
+  }, 3000);
 }
 </script>
 </body>
 </html>
-
-
-
