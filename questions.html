@@ -230,7 +230,9 @@ function saveLoveAnswer(selectedAnswer) {
     document.getElementById("question").innerText = "Survey Complete 💖";
     document.getElementById("status").innerHTML = `<button class="yes" onclick="goHome()">⬅️ Go Back</button>`;
     return;
-  }// --- Add to buffer ---
+  }
+
+  // --- Add to buffer ---
   todayAnswers.push({
     question: currentQuestion,
     answer: selectedAnswer
@@ -240,19 +242,26 @@ function saveLoveAnswer(selectedAnswer) {
 
   // --- If 5 answers collected, save as one entry ---
   if(todayAnswers.length >= MAX_PER_DAY) {
+    const currentUserId = localStorage.getItem("loveUserId");
+    const currentUser = localStorage.getItem("loveUser");
+
     vault.push({
+      source_page: "Love Questions",   // ✅ consistent
+      section: "Love",                 // ✅ consistent
+      content: JSON.stringify(todayAnswers, null, 2), // ✅ unified field
+      created_at: new Date().toISOString(),
+      user_id: currentUserId,
+      author: currentUser || "Anonymous",
       type: "love",
-      date: new Date().toLocaleString(),
-      source_page: "Love Questions",
-      section: "Love",
-      responses: todayAnswers,
-     user_name: currentUser// ✅ all 5 stored together
+      responses: todayAnswers           // keep raw responses too
     });
+
     localStorage.setItem("vault", JSON.stringify(vault));
 
     document.getElementById("question").innerText = "Survey Complete 💖";
     document.getElementById("status").innerHTML = `<button class="yes" onclick="goHome()">⬅️ Go Back</button>`;
-  } else {// --- Load next question ---
+  } else {
+    // --- Load next question ---
     let remainingQuestions = questions.filter(q => !todayAnswers.some(a => a.question === q));
     currentQuestion = remainingQuestions.length ? remainingQuestions[Math.floor(Math.random()*remainingQuestions.length)] : "Survey Complete 💖";
     document.getElementById("question").innerText = currentQuestion;
@@ -263,7 +272,3 @@ function saveLoveAnswer(selectedAnswer) {
 function goHome() {
   window.location.href = "home.html"; 
 }
-</script>
-</body>
-</html>
-  
