@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -115,6 +115,14 @@
     .sync-btn:hover {
       background: #0f3b5e;
     }
+    .delete-all-btn {
+      background: #8b2c2c;
+      border-color: #5e1a1a;
+      color: white;
+    }
+    .delete-all-btn:hover {
+      background: #6b1e1e;
+    }
     h2 {
       border-left: 6px solid #e68a8a;
       padding-left: 18px;
@@ -127,7 +135,7 @@
       border-radius: 32px;
       border: 1px solid #ffcdcd;
       padding: 20px 16px;
-      max-height: 620px;
+      max-height: 580px;
       overflow-y: auto;
       box-shadow: 0 6px 14px rgba(0, 0, 0, 0.03);
     }
@@ -139,6 +147,7 @@
       border: 1px solid #ffdddd;
       transition: all 0.1s ease;
       box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      position: relative;
     }
     .vault-entry:hover {
       border-color: #e6a0a0;
@@ -183,6 +192,37 @@
       gap: 6px;
       margin-top: 8px;
       font-weight: 500;
+    }
+    .entry-actions {
+      margin-top: 14px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .delete-entry-btn {
+      background: #e0c3c3;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 30px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: #a12222;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .delete-entry-btn:hover {
+      background: #c97070;
+      color: white;
+    }
+    .bottom-actions {
+      margin-top: 25px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
     }
     .empty-memories {
       text-align: center;
@@ -239,8 +279,13 @@
 <div id="vault">
   <div style="text-align:center; padding: 2rem;">✨ Loading memories from heart & cloud...</div>
 </div>
+
+<div class="bottom-actions">
+  <button id="deleteAllBtn" class="action-btn delete-all-btn">🗑️ DELETE ALL MEMORIES</button>
+</div>
+
 <div id="notify" style="display: none;"></div>
-<div class="footer-meta">❤️ Every entry shows author & timestamp — from local or shared vault</div>
+<div class="footer-meta">❤️ Each memory can be deleted individually | Delete all clears both local & cloud</div>
 
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
@@ -250,76 +295,43 @@
   const supabaseKey = "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_";
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  // ----- Consistent user identity (fallback if no user, but we store/retrieve username via love_users)
-  // IMPORTANT: We need to ensure love_users table exists and user has an ID.
-  // For demo: generate or reuse a persistent userId + username from localStorage
-  // Because original code used currentUserId but no actual user creation. We'll create/retrieve a stable "LoveUser"
-  let currentUserId = localStorage.getItem("loveUserId");
-  let currentUserName = localStorage.getItem("loveUserName");
-
-  if (!currentUserId) {
-    // generate new love user on the fly? better to create/retrieve from supabase love_users
-    // but because there might be no row yet, we'll let sync use null user_id? but foreign key fails.
-    // FIX: create a local virtual user id but must exist in love_users table. We'll auto-register on startup if missing.
-    // To respect schema: we call ensureLoveUser() that inserts or fetches existing user with a deviceName.
-    currentUserId = localStorage.getItem("loveUserId");
-    currentUserName = localStorage.getItem("loveUserName");
-  }
-  
-  // Helper: ensure we have a valid love_users entry before any operation
-  async function ensureLoveUser() {
-    let uid = localStorage.getItem("loveUserId");
-    let uname = localStorage.getItem("loveUserName");
-    if (uid && uname) {
-      // verify still exists? skip validation for performance
-      return { id: uid, username: uname };
-    }
-    // try to fetch any user from this device? we assume browser device name + random
-    const deviceName = "lover_" + Math.random().toString(36).substring(2, 8);
-    // check if we already have a user with same device fingerprint? not needed - insert new
-    const { data, error } = await supabase
-      .from("love_users")
-      .insert({ username: deviceName })
-      .select()
-      .single();
-    if (error && error.code !== "23505") { // duplicate? unlikely
-      console.warn("Could not create user, fallback to anonymous", error);
-      // fallback anonymous id but can't use foreign keys, we set null? Better to use dummy id - but need real.
-      // provide offline mode? but sync will fail. Instead create offline user placeholder ID - but we can bypass by using local only for demo.
-      // safer: create local only mode, but for full integration we attempt insert with retry.
-      const fallbackId = crypto.randomUUID ? crypto.randomUUID() : "fallback-" + Date.now();
-      localStorage.setItem("loveUserId", fallbackId);
-      localStorage.setItem("loveUserName", "anonymous_lover");
-      return { id: fallbackId, username: "anonymous_lover" };
-    }
-    if (data && data.length) {
-      const userRecord = Array.isArray(data) ? data[0] : data;
-      localStorage.setItem("loveUserId", userRecord.id);
-      localStorage.setItem("loveUserName", userRecord.username);
-      return { id: userRecord.id, username: userRecord.username };
-    }
-    // fallback
-    const dummyId = crypto.randomUUID ? crypto.randomUUID() : "usr_" + Date.now();
-    localStorage.setItem("loveUserId", dummyId);
-    localStorage.setItem("loveUserName", "romantic_soul");
-    return { id: dummyId, username: "romantic_soul" };
-  }
-
   let vaultData = [];       // combined array for rendering
   let currentSearchTerm = "";
+  
+  // Helper to get current user id/name from localStorage (set by your login page)
+  function getCurrentUser() {
+    const userId = localStorage.getItem("loveUserId");
+    const userName = localStorage.getItem("loveUserName");
+    return { id: userId, username: userName || "sweetheart" };
+  }
 
-  // =============== RENDER FUNCTION (shows author & date & content) ===============
+  // ensure we have at least a local user context for fallback author on new entries
+  async function ensureLocalUserContext() {
+    let uid = localStorage.getItem("loveUserId");
+    let uname = localStorage.getItem("loveUserName");
+    if (!uid) {
+      // fallback for demo if no login page yet
+      uid = crypto.randomUUID ? crypto.randomUUID() : "local_" + Date.now();
+      uname = uname || "beloved";
+      localStorage.setItem("loveUserId", uid);
+      localStorage.setItem("loveUserName", uname);
+    }
+    return { id: uid, username: uname };
+  }
+
+  // =============== RENDER FUNCTION with delete buttons ===============
   function renderVault(entriesArray) {
     const vaultDiv = document.getElementById("vault");
     if (!entriesArray || entriesArray.length === 0) {
       vaultDiv.innerHTML = `<div class="empty-memories">🌸 No memories yet... write your first love note! 🌸</div>`;
       return;
     }
-    // make sure each entry has proper fields
+    
     vaultDiv.innerHTML = entriesArray.map((entry, idx) => {
-      // extract source / section
+      // extract source
       const source = entry.source_page || entry.section || "💖 Heart note";
-      // date formatting: handle ISO or local created_at or fallback
+      
+      // format date
       let dateRaw = entry.created_at || entry.timestamp || null;
       let dateString = "✨ Timeless";
       if (dateRaw) {
@@ -327,63 +339,139 @@
           const d = new Date(dateRaw);
           if (!isNaN(d.getTime())) {
             dateString = d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
-          } else {
-            dateString = "📅 recently";
           }
         } catch(e) { dateString = "❤️ remembered"; }
       } else if (entry.local_fallback_date) {
         dateString = entry.local_fallback_date;
-      } else {
-        dateString = "💞 beloved moment";
       }
       
       let content = entry.content || "💭 (no text provided)";
-      // escape HTML but preserve line breaks?
       const safeContent = content.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
       
-      // AUTHOR: critical fix — use love_users.username from join OR entry.author OR fallback
+      // author extraction
       let authorName = "Anonymous Writer";
       if (entry.love_users && typeof entry.love_users === 'object' && entry.love_users.username) {
         authorName = entry.love_users.username;
-      } else if (entry.author && entry.author !== "Anonymous" && entry.author !== "") {
+      } else if (entry.author && entry.author !== "Anonymous") {
         authorName = entry.author;
-      } else if (entry.username) {   // sometimes flattened
+      } else if (entry.username) {
         authorName = entry.username;
-      } else if (entry.user_name) {
-        authorName = entry.user_name;
-      } else {
-        // check if local entry stored explicit author (for local unsynced items)
-        authorName = entry.writerName || "Anonymous Lover";
+      } else if (entry.writerName) {
+        authorName = entry.writerName;
       }
       
+      // determine if entry has an id (remote) or local temp id
+      const entryId = entry.id || entry.local_temp_id || `local_${idx}`;
+      const isRemote = !!entry.id && typeof entry.id === 'number';
+      
+      // delete button data attribute
       return `
-        <div class="vault-entry">
+        <div class="vault-entry" data-entry-id="${entryId}" data-is-remote="${isRemote}">
           <div class="source-label">📂 ${escapeHtml(source)}</div>
           <div class="date-label">📅 ${escapeHtml(dateString)}</div>
           <div class="message-box"><strong>💌 Message:</strong><br><br>${safeContent}</div>
           <div class="author">✍️ Written by: ${escapeHtml(authorName)}</div>
+          <div class="entry-actions">
+            <button class="delete-entry-btn" data-id="${entryId}" data-remote="${isRemote}">🗑️ Delete this memory</button>
+          </div>
         </div>
       `;
     }).join("");
+    
+    // attach delete event listeners to each delete button
+    document.querySelectorAll('.delete-entry-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const entryId = btn.getAttribute('data-id');
+        const isRemote = btn.getAttribute('data-remote') === 'true';
+        if (confirm("💔 Delete this memory forever?")) {
+          await deleteSingleEntry(entryId, isRemote);
+        }
+      });
+    });
   }
   
   function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;});}
   
+  // DELETE single entry (local or remote)
+  async function deleteSingleEntry(entryId, isRemote) {
+    const notifyDiv = document.getElementById("notify");
+    notifyDiv.style.display = "block";
+    
+    if (isRemote) {
+      // delete from supabase by id
+      const numericId = parseInt(entryId);
+      if (isNaN(numericId)) {
+        notifyDiv.innerText = "❌ Invalid remote entry";
+        setTimeout(()=>{notifyDiv.style.display="none";},1500);
+        return;
+      }
+      const { error } = await supabase.from("love_vault").delete().eq("id", numericId);
+      if (error) {
+        notifyDiv.innerText = "❌ Failed to delete from cloud: " + error.message;
+        setTimeout(()=>{notifyDiv.style.display="none";},2000);
+        return;
+      }
+      notifyDiv.innerText = "✨ Memory deleted from cloud 💔";
+      setTimeout(()=>{notifyDiv.style.display="none";},1500);
+      await loadVault(); // refresh
+    } else {
+      // delete from localStorage vault
+      let localVault = JSON.parse(localStorage.getItem("vault") || "[]");
+      // find by local_temp_id or compare content? we stored local_temp_id when creating.
+      const newLocal = localVault.filter(entry => entry.local_temp_id !== entryId);
+      localStorage.setItem("vault", JSON.stringify(newLocal));
+      notifyDiv.innerText = "🗑️ Local memory erased.";
+      setTimeout(()=>{notifyDiv.style.display="none";},1000);
+      await loadVault();
+    }
+  }
+  
+  // DELETE ALL (both local & remote)
+  async function deleteAllMemories() {
+    const confirmDelete = confirm("⚠️ PERMANENT ACTION: Delete ALL memories from local storage AND the cloud? This cannot be undone. ⚠️");
+    if (!confirmDelete) return;
+    
+    const notifyDiv = document.getElementById("notify");
+    notifyDiv.style.display = "block";
+    notifyDiv.innerText = "🗑️ Deleting all memories...";
+    
+    try {
+      // 1. clear local vault
+      localStorage.setItem("vault", "[]");
+      
+      // 2. delete all entries from supabase (for current user? but better delete ALL in shared vault? we'll delete all rows)
+      // careful: if multiple users share same table, you may want to filter by user_id. but this matches typical personal vault.
+      const { error } = await supabase.from("love_vault").delete().neq("id", 0);
+      if (error) {
+        console.warn("Supabase delete all error:", error);
+        notifyDiv.innerText = "⚠️ Cloud deletion failed: " + error.message + " but local cleared.";
+      } else {
+        notifyDiv.innerText = "✅ All memories wiped from local & cloud 💔";
+      }
+      await loadVault();
+      setTimeout(()=>{notifyDiv.style.display="none";},2000);
+    } catch (err) {
+      notifyDiv.innerText = "❌ Error during delete all: " + err.message;
+      setTimeout(()=>{notifyDiv.style.display="none";},2000);
+    }
+  }
+  
   // =============== LOAD VAULT (localStorage + Supabase JOIN) ===============
   async function loadVault() {
-    // 1) load local vault (unsynced)
+    // 1) load local vault
     let localVault = JSON.parse(localStorage.getItem("vault") || "[]");
-    // enrich local entries with flag and author from localStorage's user context
-    const currentUser = await ensureLoveUser();  // but local entries might have no author name -> we assign device username if missing
-    const localEnhanced = localVault.map(entry => ({
+    const currentUser = await ensureLocalUserContext();
+    
+    const localEnhanced = localVault.map((entry, idx) => ({
       ...entry,
-      author: entry.author || currentUser.username || "local keeper",
-      // for date fallback if missing created_at
+      local_temp_id: entry.local_temp_id || `local_${Date.now()}_${idx}_${Math.random()}`,
+      author: entry.author || currentUser.username,
       created_at: entry.created_at || new Date().toISOString(),
       local_fallback_date: entry.created_at ? null : "✨ saved offline"
     }));
     
-    // 2) load supabase data with love_users join (crucial for username)
+    // 2) load supabase with love_users join
     let { data: remoteEntries, error } = await supabase
       .from("love_vault")
       .select(`
@@ -415,13 +503,10 @@
         };
       });
     } else if (error) {
-      console.warn("Supabase fetch error (maybe table missing or perms):", error);
-      // still show local data gracefully
+      console.warn("Supabase fetch error:", error);
     }
     
-    // combine: remote first (newest) + local after (but we'll keep order by date descending)
     let combined = [...remoteFormatted, ...localEnhanced];
-    // sort by created_at descending
     combined.sort((a,b) => (new Date(b.created_at) - new Date(a.created_at)));
     vaultData = combined;
     applySearchFilter();
@@ -439,22 +524,21 @@
       let authorField = "";
       if (entry.love_users?.username) authorField = entry.love_users.username.toLowerCase();
       else if (entry.author) authorField = entry.author.toLowerCase();
-      else if (entry.writerName) authorField = entry.writerName.toLowerCase();
       else authorField = "";
       return source.includes(term) || content.includes(term) || authorField.includes(term);
     });
     renderVault(filtered);
   }
   
-  // =============== SYNC LOCAL TO SUPABASE (using current love user) ===============
+  // =============== SYNC LOCAL TO SUPABASE ===============
   window.syncLocalToSupabaseWrapper = async function() {
     const notifyDiv = document.getElementById("notify");
     notifyDiv.style.display = "block";
     notifyDiv.innerText = "🔄 Syncing your precious words...";
     try {
-      const userRecord = await ensureLoveUser();
+      const userRecord = await ensureLocalUserContext();
       if (!userRecord || !userRecord.id) {
-        notifyDiv.innerText = "❌ User error: cannot sync without valid love user. Try again.";
+        notifyDiv.innerText = "❌ User error: cannot sync.";
         setTimeout(()=>{notifyDiv.style.display="none";},3000);
         return;
       }
@@ -474,26 +558,22 @@
           created_at: entry.created_at || new Date().toISOString()
         });
         if (!error) inserted++;
-        else console.warn("insert error", error);
       }
       if (inserted > 0) {
-        // after sync, clear local vault? optional but many users expect to keep local as backup, but we just reload remote.
         notifyDiv.innerText = `✅ ${inserted} memories synced to the cloud! ❤️`;
-        // clear local duplicates by removing local entries (optional but keep from double showing? We'll clear local to avoid duplicate render)
         localStorage.setItem("vault", "[]");
         await loadVault();
       } else {
-        notifyDiv.innerText = "⚠️ No new entries synced (maybe already uploaded).";
+        notifyDiv.innerText = "⚠️ No new entries synced.";
       }
       setTimeout(()=>{notifyDiv.style.display="none";},3000);
     } catch (err) {
-      console.error(err);
       notifyDiv.innerText = "💔 Sync failed: " + (err.message || "connection issue");
       setTimeout(()=>{notifyDiv.style.display="none";},3000);
     }
   };
   
-  // Share whole vault (text with author & date)
+  // Share vault
   window.shareVaultUI = function() {
     if (!vaultData.length) {
       alert("Vault is empty, write some love first 💕");
@@ -512,7 +592,7 @@
       notifyDiv.style.display = "block";
       notifyDiv.innerText = "📋 Vault copied to clipboard! Share the love.";
       setTimeout(()=>{notifyDiv.style.display="none";},2500);
-    }).catch(()=> alert("Could not copy, but vault is full of love!"));
+    }).catch(()=> alert("Could not copy"));
   };
   
   // search listener
@@ -521,10 +601,13 @@
     applySearchFilter();
   });
   
-  // realtime subscription: listen for inserts/deletes on love_vault
+  // delete all button listener
+  document.getElementById("deleteAllBtn").addEventListener("click", deleteAllMemories);
+  
+  // realtime subscription
   function subscribeRealtime() {
     supabase.channel("love-vault-realtime")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "love_vault" }, (payload) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "love_vault" }, () => {
         const notifyDiv = document.getElementById("notify");
         notifyDiv.style.display = "block";
         notifyDiv.innerText = "✨ New memory added to the Vault 💕";
@@ -541,18 +624,19 @@
       .subscribe();
   }
   
-  // also allow manually adding demo entries? to test author/date visibility, we prepopulate local demo entries
+  // seed local demo entries if empty (so you have something to delete)
   async function seedLocalDemoIfEmpty() {
     const localCheck = JSON.parse(localStorage.getItem("vault") || "[]");
     if (localCheck.length === 0) {
-      const demoUser = await ensureLoveUser();
+      const demoUser = await ensureLocalUserContext();
       const demoEntry = {
         source_page: "First Kiss",
         section: "Memories",
         content: "The way you smiled under the cherry blossoms — I knew it was forever. 🌸",
         created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
-        author: demoUser.username || "Your dearest",
-        writerName: demoUser.username
+        author: demoUser.username,
+        writerName: demoUser.username,
+        local_temp_id: `demo_${Date.now()}_1`
       };
       const demoEntry2 = {
         source_page: "Midnight Letters",
@@ -560,25 +644,23 @@
         content: "You are my home. Every day I'm grateful for your laughter and light.",
         created_at: new Date(Date.now() - 86400000).toISOString(),
         author: demoUser.username,
-        writerName: demoUser.username
+        writerName: demoUser.username,
+        local_temp_id: `demo_${Date.now()}_2`
       };
       localStorage.setItem("vault", JSON.stringify([demoEntry, demoEntry2]));
     }
   }
   
-  // initializer
   async function init() {
-    await ensureLoveUser();    // ensure user exists in love_users & localStorage
+    await ensureLocalUserContext();
     await seedLocalDemoIfEmpty();
     await loadVault();
     subscribeRealtime();
-    // also provide a global function for dev console?
-    window.refreshVault = loadVault;
   }
   
   init().catch(e => {
-    console.warn("initialization warning", e);
-    document.getElementById("vault").innerHTML = "<div class='empty-memories'>💖 loading vault, please wait...<br>make sure supabase tables exist: love_users & love_vault</div>";
+    console.warn("init warning", e);
+    document.getElementById("vault").innerHTML = "<div class='empty-memories'>💖 loading vault...</div>";
   });
 </script>
 </body>
