@@ -98,13 +98,18 @@ h1,h2{ color:#b30000; }
   const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
   let vaultData = [];
+  const currentUserId = localStorage.getItem("loveUserId");
+  const currentUsername = localStorage.getItem("loveUser");
 
   async function loadVault(){
       let localVault = JSON.parse(localStorage.getItem("vault") || "[]");
+
       const { data, error } = await supabase
           .from("love_vault")
           .select("*")
-          .order("created_at",{ascending:false});
+          .eq("user_id", currentUserId)   // ✅ only this user’s entries
+          .order("id",{ascending:false});
+
       let combined = [...localVault];
       if(!error && data){ combined = [...localVault,...data]; }
       vaultData = combined;
@@ -121,7 +126,7 @@ h1,h2{ color:#b30000; }
           const source = entry.source_page || entry.section || "General";
           const date = entry.date || (entry.created_at ? new Date(entry.created_at).toLocaleString() : "Unknown Date");
           const content = entry.content || entry.text || entry.question || "No content";
-          const author = entry.author || "Anonymous";
+          const author = currentUsername || "Anonymous";   // ✅ show username only
           return `
           <div class="vault-entry">
               <div class="source-label">📂 Source: ${source}</div>
@@ -145,7 +150,7 @@ h1,h2{ color:#b30000; }
       const filtered = vaultData.filter(entry => {
           const source = (entry.source_page || entry.section || "").toLowerCase();
           const content = (entry.content || entry.text || "").toLowerCase();
-          const author = (entry.author || "").toLowerCase();
+          const author = (currentUsername || "").toLowerCase();
           return (source.includes(term) || content.includes(term) || author.includes(term));
       });
       renderVault(filtered);
@@ -157,7 +162,7 @@ h1,h2{ color:#b30000; }
       vaultData.forEach(entry => {
           const source = entry.source_page || entry.section || "General";
           const date = entry.date || (entry.created_at ? new Date(entry.created_at).toLocaleString() : "");
-          text += `📂 Source: ${source}\n📅 Date: ${date}\n\n💌 ${entry.content || entry.text || ""}\n\n✍️ ${entry.author || "Anonymous"}\n--------------------------------\n\n`;
+          text += `📂 Source: ${source}\n📅 Date: ${date}\n\n💌 ${entry.content || entry.text || ""}\n\n✍️ ${currentUsername || "Anonymous"}\n--------------------------------\n\n`;
       });
       window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
   }
@@ -187,10 +192,10 @@ h1,h2{ color:#b30000; }
       for(const entry of localVault){
           try{
               await supabase.from("love_vault").insert({
+                  user_id: currentUserId,   // ✅ link to this user
                   source_page: entry.source_page || entry.section || "General",
                   section: entry.section || "General",
                   content: entry.content || entry.text || "",
-                  author: entry.author || "Anonymous",
                   created_at: entry.created_at || new Date().toISOString()
               });
           }catch(err){ console.error(err); }
@@ -201,18 +206,7 @@ h1,h2{ color:#b30000; }
 
   supabase.channel("love-vault")
   .on("postgres_changes",{event:"INSERT",schema:"public",table:"love_vault"},payload=>{
-      document.getElementById("notify").innerText = "✨ New memory added to the Vault 💕";
-      loadVault();
-  }).subscribe();
-
-  loadVault();
-</script>
-
-<p style="text-align:center;color:#b30000;margin-top:30px;font-weight:bold;">
-❤️ I LOVE YOU SO MUCH 💖
-</p>
-</body>
-</html>
+      document.getElementById("notify").innerText = "✨ New memory added to the Vault 💕
 
 
 
