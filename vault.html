@@ -17,7 +17,6 @@
       position: relative;
       min-height: 100vh;
     }
-    /* subtle heart watermark */
     body::before {
       content: "❤️";
       position: fixed;
@@ -28,7 +27,6 @@
       transform: translate(-50%, -50%);
       z-index: -1;
       pointer-events: none;
-      font-weight: 400;
     }
     h1 {
       text-align: center;
@@ -49,6 +47,20 @@
       border-radius: 40px;
       font-weight: normal;
       color: #b3002d;
+    }
+    .profile-badge {
+      text-align: center;
+      background: linear-gradient(135deg, #ffe6e6, #fff0f0);
+      padding: 10px 20px;
+      border-radius: 60px;
+      display: inline-block;
+      margin: 0 auto 20px;
+      font-size: 0.95rem;
+      border: 1px solid #ffcccc;
+      color: #a33535;
+    }
+    .profile-badge strong {
+      color: #c0392b;
     }
     .sub {
       text-align: center;
@@ -135,7 +147,7 @@
       border-radius: 32px;
       border: 1px solid #ffcdcd;
       padding: 20px 16px;
-      max-height: 580px;
+      max-height: 550px;
       overflow-y: auto;
       box-shadow: 0 6px 14px rgba(0, 0, 0, 0.03);
     }
@@ -247,6 +259,16 @@
       text-align: center;
       color: #c49191;
     }
+    .warning-badge {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      color: #856404;
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      margin-top: 10px;
+      display: inline-block;
+    }
     ::-webkit-scrollbar {
       width: 5px;
     }
@@ -267,6 +289,11 @@
 <body>
 
 <h1>📖 Love Vault <small>eternal whispers</small></h1>
+
+<div id="profileInfo" class="profile-badge" style="display: none;">
+  💝 Writing as: <strong id="displayUsername">Loading...</strong>
+</div>
+
 <div class="sub">💞 every word, every heartbeat — preserved</div>
 
 <div class="toolbar">
@@ -285,7 +312,7 @@
 </div>
 
 <div id="notify" style="display: none;"></div>
-<div class="footer-meta">❤️ Each memory can be deleted individually | Delete all clears both local & cloud</div>
+<div class="footer-meta">❤️ Each memory can be deleted individually | Your profile name from profile.html appears on every entry</div>
 
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
@@ -295,28 +322,61 @@
   const supabaseKey = "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_";
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  let vaultData = [];       // combined array for rendering
+  let vaultData = [];
   let currentSearchTerm = "";
-  
-  // Helper to get current user id/name from localStorage (set by your login page)
-  function getCurrentUser() {
+  let currentUserProfile = { id: null, username: "Anonymous" };
+
+  // =============== READ USERNAME FROM PROFILE.HTML (via localStorage) ===============
+  function loadProfileFromLocalStorage() {
+    // Your profile.html should store these values after login/registration
     const userId = localStorage.getItem("loveUserId");
     const userName = localStorage.getItem("loveUserName");
-    return { id: userId, username: userName || "sweetheart" };
-  }
-
-  // ensure we have at least a local user context for fallback author on new entries
-  async function ensureLocalUserContext() {
-    let uid = localStorage.getItem("loveUserId");
-    let uname = localStorage.getItem("loveUserName");
-    if (!uid) {
-      // fallback for demo if no login page yet
-      uid = crypto.randomUUID ? crypto.randomUUID() : "local_" + Date.now();
-      uname = uname || "beloved";
-      localStorage.setItem("loveUserId", uid);
-      localStorage.setItem("loveUserName", uname);
+    const userEmail = localStorage.getItem("loveUserEmail"); // optional
+    
+    if (userId && userName) {
+      currentUserProfile = {
+        id: userId,
+        username: userName,
+        email: userEmail || ""
+      };
+      
+      // Display the profile badge with username
+      const profileDiv = document.getElementById("profileInfo");
+      const displayNameSpan = document.getElementById("displayUsername");
+      if (displayNameSpan) {
+        displayNameSpan.textContent = userName;
+        profileDiv.style.display = "inline-block";
+      }
+      console.log(`✅ Profile loaded: ${userName} (ID: ${userId})`);
+      return true;
+    } else {
+      // No profile found - show warning and fallback
+      console.warn("⚠️ No profile found in localStorage. Make sure profile.html saves loveUserId and loveUserName");
+      const profileDiv = document.getElementById("profileInfo");
+      const displayNameSpan = document.getElementById("displayUsername");
+      if (displayNameSpan) {
+        displayNameSpan.textContent = "Not logged in (set in profile.html)";
+        profileDiv.style.backgroundColor = "#fff3cd";
+        profileDiv.style.borderColor = "#ffc107";
+        profileDiv.style.color = "#856404";
+        profileDiv.style.display = "inline-block";
+      }
+      // Create a temporary fallback ID (but warn user)
+      if (!localStorage.getItem("loveUserId")) {
+        localStorage.setItem("loveUserId", "temp_" + Date.now());
+        localStorage.setItem("loveUserName", "Guest_Lover");
+        currentUserProfile = {
+          id: localStorage.getItem("loveUserId"),
+          username: "Guest_Lover"
+        };
+      } else {
+        currentUserProfile = {
+          id: localStorage.getItem("loveUserId"),
+          username: localStorage.getItem("loveUserName") || "Guest"
+        };
+      }
+      return false;
     }
-    return { id: uid, username: uname };
   }
 
   // =============== RENDER FUNCTION with delete buttons ===============
@@ -328,10 +388,8 @@
     }
     
     vaultDiv.innerHTML = entriesArray.map((entry, idx) => {
-      // extract source
       const source = entry.source_page || entry.section || "💖 Heart note";
       
-      // format date
       let dateRaw = entry.created_at || entry.timestamp || null;
       let dateString = "✨ Timeless";
       if (dateRaw) {
@@ -348,23 +406,22 @@
       let content = entry.content || "💭 (no text provided)";
       const safeContent = content.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
       
-      // author extraction
+      // AUTHOR: PRIORITY = love_users.username (from cloud) OR entry.author OR current profile username
       let authorName = "Anonymous Writer";
       if (entry.love_users && typeof entry.love_users === 'object' && entry.love_users.username) {
         authorName = entry.love_users.username;
-      } else if (entry.author && entry.author !== "Anonymous") {
+      } else if (entry.author && entry.author !== "Anonymous" && entry.author !== "") {
         authorName = entry.author;
-      } else if (entry.username) {
-        authorName = entry.username;
       } else if (entry.writerName) {
         authorName = entry.writerName;
+      } else if (currentUserProfile && currentUserProfile.username) {
+        // Fallback to logged-in user's name for local entries
+        authorName = currentUserProfile.username;
       }
       
-      // determine if entry has an id (remote) or local temp id
       const entryId = entry.id || entry.local_temp_id || `local_${idx}`;
       const isRemote = !!entry.id && typeof entry.id === 'number';
       
-      // delete button data attribute
       return `
         <div class="vault-entry" data-entry-id="${entryId}" data-is-remote="${isRemote}">
           <div class="source-label">📂 ${escapeHtml(source)}</div>
@@ -378,7 +435,6 @@
       `;
     }).join("");
     
-    // attach delete event listeners to each delete button
     document.querySelectorAll('.delete-entry-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -393,13 +449,12 @@
   
   function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;});}
   
-  // DELETE single entry (local or remote)
+  // DELETE single entry
   async function deleteSingleEntry(entryId, isRemote) {
     const notifyDiv = document.getElementById("notify");
     notifyDiv.style.display = "block";
     
     if (isRemote) {
-      // delete from supabase by id
       const numericId = parseInt(entryId);
       if (isNaN(numericId)) {
         notifyDiv.innerText = "❌ Invalid remote entry";
@@ -414,11 +469,9 @@
       }
       notifyDiv.innerText = "✨ Memory deleted from cloud 💔";
       setTimeout(()=>{notifyDiv.style.display="none";},1500);
-      await loadVault(); // refresh
+      await loadVault();
     } else {
-      // delete from localStorage vault
       let localVault = JSON.parse(localStorage.getItem("vault") || "[]");
-      // find by local_temp_id or compare content? we stored local_temp_id when creating.
       const newLocal = localVault.filter(entry => entry.local_temp_id !== entryId);
       localStorage.setItem("vault", JSON.stringify(newLocal));
       notifyDiv.innerText = "🗑️ Local memory erased.";
@@ -427,7 +480,7 @@
     }
   }
   
-  // DELETE ALL (both local & remote)
+  // DELETE ALL
   async function deleteAllMemories() {
     const confirmDelete = confirm("⚠️ PERMANENT ACTION: Delete ALL memories from local storage AND the cloud? This cannot be undone. ⚠️");
     if (!confirmDelete) return;
@@ -437,14 +490,9 @@
     notifyDiv.innerText = "🗑️ Deleting all memories...";
     
     try {
-      // 1. clear local vault
       localStorage.setItem("vault", "[]");
-      
-      // 2. delete all entries from supabase (for current user? but better delete ALL in shared vault? we'll delete all rows)
-      // careful: if multiple users share same table, you may want to filter by user_id. but this matches typical personal vault.
       const { error } = await supabase.from("love_vault").delete().neq("id", 0);
       if (error) {
-        console.warn("Supabase delete all error:", error);
         notifyDiv.innerText = "⚠️ Cloud deletion failed: " + error.message + " but local cleared.";
       } else {
         notifyDiv.innerText = "✅ All memories wiped from local & cloud 💔";
@@ -457,21 +505,22 @@
     }
   }
   
-  // =============== LOAD VAULT (localStorage + Supabase JOIN) ===============
+  // =============== LOAD VAULT ===============
   async function loadVault() {
-    // 1) load local vault
+    // 1) Load local vault
     let localVault = JSON.parse(localStorage.getItem("vault") || "[]");
-    const currentUser = await ensureLocalUserContext();
     
+    // ENHANCE LOCAL ENTRIES WITH CURRENT PROFILE USERNAME
     const localEnhanced = localVault.map((entry, idx) => ({
       ...entry,
       local_temp_id: entry.local_temp_id || `local_${Date.now()}_${idx}_${Math.random()}`,
-      author: entry.author || currentUser.username,
+      author: entry.author || currentUserProfile.username,  // Use profile username!
+      writerName: entry.writerName || currentUserProfile.username,
       created_at: entry.created_at || new Date().toISOString(),
       local_fallback_date: entry.created_at ? null : "✨ saved offline"
     }));
     
-    // 2) load supabase with love_users join
+    // 2) Load supabase with love_users join
     let { data: remoteEntries, error } = await supabase
       .from("love_vault")
       .select(`
@@ -530,15 +579,14 @@
     renderVault(filtered);
   }
   
-  // =============== SYNC LOCAL TO SUPABASE ===============
+  // SYNC LOCAL TO SUPABASE (uses profile user ID)
   window.syncLocalToSupabaseWrapper = async function() {
     const notifyDiv = document.getElementById("notify");
     notifyDiv.style.display = "block";
     notifyDiv.innerText = "🔄 Syncing your precious words...";
     try {
-      const userRecord = await ensureLocalUserContext();
-      if (!userRecord || !userRecord.id) {
-        notifyDiv.innerText = "❌ User error: cannot sync.";
+      if (!currentUserProfile.id || currentUserProfile.id.startsWith("temp_")) {
+        notifyDiv.innerText = "❌ Please set up your profile first (login in profile.html)";
         setTimeout(()=>{notifyDiv.style.display="none";},3000);
         return;
       }
@@ -551,7 +599,7 @@
       let inserted = 0;
       for (const entry of localVault) {
         const { error } = await supabase.from("love_vault").insert({
-          user_id: userRecord.id,
+          user_id: currentUserProfile.id,
           source_page: entry.source_page || "Love Note",
           section: entry.section || "General",
           content: entry.content || "",
@@ -573,13 +621,13 @@
     }
   };
   
-  // Share vault
+  // SHARE VAULT
   window.shareVaultUI = function() {
     if (!vaultData.length) {
       alert("Vault is empty, write some love first 💕");
       return;
     }
-    let shareText = "📖 LOVE VAULT — shared with care 💌\n\n";
+    let shareText = `📖 LOVE VAULT — shared by ${currentUserProfile.username} 💌\n\n`;
     vaultData.forEach((entry, idx) => {
       let source = entry.source_page || entry.section || "Memory";
       let dateRaw = entry.created_at ? new Date(entry.created_at).toLocaleString() : "~";
@@ -595,16 +643,15 @@
     }).catch(()=> alert("Could not copy"));
   };
   
-  // search listener
+  // Event Listeners
   document.getElementById("search").addEventListener("input", (e) => {
     currentSearchTerm = e.target.value;
     applySearchFilter();
   });
   
-  // delete all button listener
   document.getElementById("deleteAllBtn").addEventListener("click", deleteAllMemories);
   
-  // realtime subscription
+  // Realtime subscription
   function subscribeRealtime() {
     supabase.channel("love-vault-realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "love_vault" }, () => {
@@ -624,35 +671,26 @@
       .subscribe();
   }
   
-  // seed local demo entries if empty (so you have something to delete)
+  // Seed demo entries (optional, but uses profile username)
   async function seedLocalDemoIfEmpty() {
     const localCheck = JSON.parse(localStorage.getItem("vault") || "[]");
-    if (localCheck.length === 0) {
-      const demoUser = await ensureLocalUserContext();
+    if (localCheck.length === 0 && currentUserProfile.username !== "Guest_Lover") {
       const demoEntry = {
-        source_page: "First Kiss",
+        source_page: "First Message",
         section: "Memories",
-        content: "The way you smiled under the cherry blossoms — I knew it was forever. 🌸",
-        created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
-        author: demoUser.username,
-        writerName: demoUser.username,
+        content: `This is my first love note saved as ${currentUserProfile.username}. Every word matters. 💕`,
+        created_at: new Date().toISOString(),
+        author: currentUserProfile.username,
+        writerName: currentUserProfile.username,
         local_temp_id: `demo_${Date.now()}_1`
       };
-      const demoEntry2 = {
-        source_page: "Midnight Letters",
-        section: "Promise",
-        content: "You are my home. Every day I'm grateful for your laughter and light.",
-        created_at: new Date(Date.now() - 86400000).toISOString(),
-        author: demoUser.username,
-        writerName: demoUser.username,
-        local_temp_id: `demo_${Date.now()}_2`
-      };
-      localStorage.setItem("vault", JSON.stringify([demoEntry, demoEntry2]));
+      localStorage.setItem("vault", JSON.stringify([demoEntry]));
     }
   }
   
+  // INITIALIZE
   async function init() {
-    await ensureLocalUserContext();
+    loadProfileFromLocalStorage();  // CRITICAL: reads from profile.html localStorage
     await seedLocalDemoIfEmpty();
     await loadVault();
     subscribeRealtime();
