@@ -50,6 +50,7 @@
       margin: 10px 0;
       color: #b65c5c;
       font-size: 0.9rem;
+      font-weight: bold;
     }
     .toolbar {
       display: flex;
@@ -86,16 +87,10 @@
       border-color: #0e6b5f;
       color: white;
     }
-    .share-btn:hover {
-      background: #0b6b5f;
-    }
     .sync-btn {
       background: #1e4a76;
       border-color: #0f3554;
       color: white;
-    }
-    .sync-btn:hover {
-      background: #0f3b5e;
     }
     .delete-all-btn {
       background: #8b2c2c;
@@ -161,7 +156,7 @@
     }
     .type-badge.plan { background: #2c6e2c; }
     .type-badge.promise { background: #8b4513; }
-    .type-badge.love-questions { background: #9b59b6; }
+    .type-badge.question { background: #9b59b6; }
     .type-badge.message { background: #1e4a76; }
     .type-badge.song { background: #1d4ed8; }
     .source-label {
@@ -208,37 +203,11 @@
       color: #1d4ed8;
       text-decoration: none;
     }
-    .song-link:hover {
-      text-decoration: underline;
-    }
     .author {
       font-size: 0.85rem;
       color: #7b4a4a;
       margin-top: 8px;
       font-weight: 500;
-    }
-    .entry-actions {
-      margin-top: 14px;
-      display: flex;
-      justify-content: flex-end;
-    }
-    .delete-entry-btn {
-      background: #e0c3c3;
-      border: none;
-      padding: 6px 14px;
-      border-radius: 30px;
-      cursor: pointer;
-      font-size: 0.75rem;
-    }
-    .delete-entry-btn:hover {
-      background: #c97070;
-      color: white;
-    }
-    .bottom-actions {
-      margin-top: 25px;
-      display: flex;
-      justify-content: center;
-      gap: 15px;
     }
     .empty-memories {
       text-align: center;
@@ -288,7 +257,7 @@
   <button class="filter-btn active" data-filter="all">📋 All</button>
   <button class="filter-btn" data-filter="plan">📝 Plans</button>
   <button class="filter-btn" data-filter="promise">🤝 Promises</button>
-  <button class="filter-btn" data-filter="love-questions">❓ Love Questions</button>
+  <button class="filter-btn" data-filter="question">❓ Questions</button>
   <button class="filter-btn" data-filter="message">💬 Messages</button>
   <button class="filter-btn" data-filter="song">🎵 Songs</button>
 </div>
@@ -297,13 +266,10 @@
 <div id="vault">
   <div style="text-align:center; padding: 2rem;">✨ Loading memories from all your pages... ✨</div>
 </div>
-<div class="refresh-note">🔄 Auto-refreshes every 3 seconds | Data from Plans, Promises, Love Questions, Messages & Songs pages</div>
-
-<div class="bottom-actions">
-  <button id="deleteAllBtn" class="action-btn delete-all-btn">🗑️ DELETE ALL CLOUD DATA</button>
-</div>
+<div class="refresh-note">🔄 Auto-refreshes every 3 seconds | Data from messages.html, plans.html, promise.html, song.html & questions.html</div>
 
 <div id="notify" style="display: none;"></div>
+<div class="footer-meta">❤️ Every memory you save appears here automatically</div>
 
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
@@ -331,6 +297,14 @@
       };
       document.getElementById("displayUsername").innerHTML = `Writing as: <strong>${username}</strong>`;
     } else {
+      // Set a default profile
+      localStorage.setItem("loveUser", "MyLove");
+      localStorage.setItem("loveUserId", "default_user_123");
+      currentUserProfile = {
+        id: "default_user_123",
+        username: "MyLove",
+        email: ""
+      };
       document.getElementById("displayUsername").innerHTML = `Writing as: <strong>MyLove</strong>`;
     }
   }
@@ -355,27 +329,20 @@
     return `<div>${escapeHtml(content)}</div>`;
   }
 
-  function formatSongContent(content, link) {
-    let display = `<div>${escapeHtml(content)}</div>`;
-    if (link && link.trim()) {
-      display += `<div><a href="${escapeHtml(link)}" target="_blank" class="song-link">🎵 Listen on ${link.includes('youtube') ? 'YouTube' : (link.includes('spotify') ? 'Spotify' : 'Link')} 🔗</a></div>`;
-    }
-    return display;
-  }
-
   // =============== COLLECT FROM ALL PAGES ===============
   function collectFromAllPages() {
     const allEntries = [];
 
     // 1. PLANS page - "couplePlans"
     let plans = JSON.parse(localStorage.getItem("couplePlans") || "[]");
+    console.log(`📝 Found ${plans.length} plans`);
     plans.forEach((plan, index) => {
       allEntries.push({
         id: `plan_${Date.now()}_${index}_${Math.random()}`,
-        source: plan.title || "Our Plan",
-        content: plan.text || plan.content || "",
+        source: "Plans",
+        content: plan.title ? `${plan.title}: ${plan.text}` : (plan.text || plan.content || ""),
         type: "plan",
-        created_at: plan.date || plan.created_at || new Date().toISOString(),
+        created_at: plan.created_at || plan.date || new Date().toISOString(),
         author: plan.author || currentUserProfile.username,
         rawContent: plan.text || plan.content || ""
       });
@@ -383,45 +350,49 @@
 
     // 2. Get all entries from main "vault" localStorage
     let vault = JSON.parse(localStorage.getItem("vault") || "[]");
+    console.log(`📦 Found ${vault.length} vault entries`);
     
     vault.forEach((item, index) => {
       const sourcePage = item.source_page || "";
       let type = "";
-      let displayContent = "";
+      let displaySource = "";
       
-      if (sourcePage === "Promises") {
+      if (sourcePage === "Promises" || sourcePage === "promise") {
         type = "promise";
-        displayContent = `<div>${escapeHtml(item.content || "")}</div>`;
+        displaySource = "Promises";
       } 
-      else if (sourcePage === "Love Questions") {
-        type = "love-questions";
-        displayContent = formatQuestionAnswers(item.content);
+      else if (sourcePage === "Love Questions" || sourcePage === "questions" || sourcePage === "Questions") {
+        type = "question";
+        displaySource = "Love Questions";
       }
-      else if (sourcePage === "Messages") {
+      else if (sourcePage === "Messages" || sourcePage === "messages") {
         type = "message";
-        displayContent = `<div>💬 ${escapeHtml(item.content || "")}</div>`;
+        displaySource = "Messages";
       }
-      else if (sourcePage === "Songs") {
+      else if (sourcePage === "Songs" || sourcePage === "songs") {
         type = "song";
-        displayContent = formatSongContent(item.content || "", item.link);
+        displaySource = "Songs";
+      }
+      else if (sourcePage === "Plans" || sourcePage === "plans") {
+        type = "plan";
+        displaySource = "Plans";
       }
       
       if (type) {
         allEntries.push({
           id: `${type}_${Date.now()}_${index}_${Math.random()}`,
-          source: sourcePage,
+          source: displaySource,
           content: item.content || "",
           type: type,
           created_at: item.created_at || new Date().toISOString(),
           author: item.author || currentUserProfile.username,
           rawContent: item.content || "",
-          link: item.link,
-          formattedContent: displayContent
+          link: item.link
         });
       }
     });
 
-    console.log(`📊 Collected ${allEntries.length} entries from localStorage`);
+    console.log(`📊 Total collected: ${allEntries.length} entries`);
     return allEntries;
   }
 
@@ -438,9 +409,10 @@
         return remoteEntries.map(item => {
           let type = item.type || item.section || "memory";
           if (item.source_page === "Promises") type = "promise";
-          if (item.source_page === "Love Questions") type = "love-questions";
+          if (item.source_page === "Love Questions") type = "question";
           if (item.source_page === "Messages") type = "message";
           if (item.source_page === "Songs") type = "song";
+          if (item.source_page === "Plans") type = "plan";
           
           return {
             id: item.id,
@@ -487,7 +459,7 @@
     const stats = {
       plan: allMemories.filter(m => m.type === "plan").length,
       promise: allMemories.filter(m => m.type === "promise").length,
-      question: allMemories.filter(m => m.type === "love-questions").length,
+      question: allMemories.filter(m => m.type === "question").length,
       message: allMemories.filter(m => m.type === "message").length,
       song: allMemories.filter(m => m.type === "song").length,
       total: allMemories.length
@@ -518,7 +490,7 @@
     switch(type) {
       case "plan": return "📝";
       case "promise": return "🤝";
-      case "love-questions": return "❓";
+      case "question": return "❓";
       case "message": return "💬";
       case "song": return "🎵";
       default: return "💖";
@@ -529,7 +501,7 @@
     switch(type) {
       case "plan": return "#2c6e2c";
       case "promise": return "#8b4513";
-      case "love-questions": return "#9b59b6";
+      case "question": return "#9b59b6";
       case "message": return "#1e4a76";
       case "song": return "#1d4ed8";
       default: return "#b30000";
@@ -540,7 +512,7 @@
     switch(type) {
       case "plan": return "Plan";
       case "promise": return "Promise";
-      case "love-questions": return "Love Questions";
+      case "question": return "Love Question";
       case "message": return "Message";
       case "song": return "Song";
       default: return "Memory";
@@ -552,7 +524,7 @@
     try {
       const d = new Date(dateString);
       if (!isNaN(d.getTime())) {
-        return d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+        return d.toLocaleString();
       }
     } catch(e) {}
     return "✨ Recently";
@@ -562,7 +534,13 @@
     const vaultDiv = document.getElementById("vault");
     
     if (!memories || memories.length === 0) {
-      vaultDiv.innerHTML = `<div class="empty-memories">🌸 No memories yet. Go write some in Plans, Promises, Love Questions, Messages, or Songs pages! 🌸</div>`;
+      vaultDiv.innerHTML = `<div class="empty-memories">
+        🌸 No memories yet! 🌸<br><br>
+        Go to your pages and save something:<br><br>
+        📝 plans.html &nbsp;|&nbsp; 🤝 promise.html &nbsp;|&nbsp; ❓ questions.html<br>
+        💬 messages.html &nbsp;|&nbsp; 🎵 song.html<br><br>
+        Then come back here - memories will appear automatically!
+      </div>`;
       return;
     }
     
@@ -573,91 +551,32 @@
       const dateStr = formatDate(memory.created_at);
       
       let displayContent = "";
-      if (memory.type === "love-questions") {
-        try {
-          const parsed = JSON.parse(memory.content);
-          if (Array.isArray(parsed)) {
-            displayContent = `
-              <div style="margin: 10px 0;">
-                ${parsed.map(qa => `
-                  <div class="qa-pair">
-                    <div class="question-text">❓ ${escapeHtml(qa.question)}</div>
-                    <div class="answer-text">💖 Answer: ${escapeHtml(qa.answer)}</div>
-                  </div>
-                `).join('')}
-              </div>
-            `;
-          } else {
-            displayContent = `<div>${escapeHtml(memory.content)}</div>`;
-          }
-        } catch(e) {
-          displayContent = `<div>${escapeHtml(memory.content)}</div>`;
-        }
+      if (memory.type === "question") {
+        displayContent = formatQuestionAnswers(memory.content);
       } else if (memory.type === "song") {
         displayContent = `<div>${escapeHtml(memory.rawContent || memory.content || "")}</div>`;
         if (memory.link && memory.link.trim()) {
-          displayContent += `<div><a href="${escapeHtml(memory.link)}" target="_blank" class="song-link">🎵 Listen on ${memory.link.includes('youtube') ? 'YouTube' : (memory.link.includes('spotify') ? 'Spotify' : 'Link')} 🔗</a></div>`;
+          displayContent += `<div><a href="${escapeHtml(memory.link)}" target="_blank" class="song-link">🎵 Listen online 🔗</a></div>`;
         }
       } else {
         displayContent = `<div>${escapeHtml(memory.rawContent || memory.content || "")}</div>`;
       }
       
       return `
-        <div class="vault-entry" data-id="${memory.id}">
+        <div class="vault-entry">
           <div class="type-badge" style="background: ${typeColor}">${typeEmoji} ${typeName}</div>
           <div class="source-label">📂 ${escapeHtml(memory.source || "Untitled")}</div>
           <div class="date-label">📅 ${escapeHtml(dateStr)}</div>
           <div class="message-box"><strong>💌 Memory:</strong><br><br>${displayContent}</div>
           <div class="author">✍️ By: ${escapeHtml(memory.author || "Anonymous")}</div>
-          <div class="entry-actions">
-            <button class="delete-entry-btn" data-id="${memory.id}" data-iscloud="${memory.isCloud}">🗑️ Delete</button>
-          </div>
         </div>
       `;
     }).join("");
-    
-    document.querySelectorAll('.delete-entry-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const id = btn.getAttribute('data-id');
-        const isCloud = btn.getAttribute('data-iscloud') === 'true';
-        if (confirm("Delete this memory forever?")) {
-          await deleteMemory(id, isCloud);
-        }
-      });
-    });
-  }
-
-  async function deleteMemory(id, isCloud) {
-    const notifyDiv = document.getElementById("notify");
-    notifyDiv.style.display = "block";
-    
-    if (isCloud && id && !isNaN(parseInt(id))) {
-      await supabase.from("love_vault").delete().eq("id", parseInt(id));
-      notifyDiv.innerText = "✨ Deleted from cloud";
-    } else {
-      notifyDiv.innerText = "⚠️ Local entries: delete from original page";
-    }
-    
-    setTimeout(() => { notifyDiv.style.display = "none"; }, 1500);
-    await loadAndDisplay();
-  }
-
-  async function deleteAllCloudMemories() {
-    if (!confirm("⚠️ DELETE ALL CLOUD MEMORIES? Your local data on all pages will remain. This cannot be undone! ⚠️")) return;
-    
-    const notifyDiv = document.getElementById("notify");
-    notifyDiv.style.display = "block";
-    notifyDiv.innerText = "🗑️ Deleting all cloud memories...";
-    
-    await supabase.from("love_vault").delete().neq("id", 0);
-    notifyDiv.innerText = "✅ All cloud memories deleted";
-    setTimeout(() => { notifyDiv.style.display = "none"; }, 2000);
-    await loadAndDisplay();
   }
 
   function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
+    return String(str).replace(/[&<>]/g, function(m) {
       if (m === '&') return '&amp;';
       if (m === '<') return '&lt;';
       if (m === '>') return '&gt;';
@@ -719,7 +638,6 @@
       }
       
       notifyDiv.innerText = `✅ Synced ${synced} memories to cloud!`;
-      await loadAndDisplay();
       setTimeout(() => { notifyDiv.style.display = "none"; }, 3000);
     } catch (err) {
       notifyDiv.innerText = "💔 Sync failed: " + err.message;
@@ -730,7 +648,7 @@
   // =============== SHARE VAULT ===============
   window.shareVaultUI = function() {
     if (!allMemories.length) {
-      alert("No memories to share yet!");
+      alert("No memories to share yet! Go save something first.");
       return;
     }
     let text = `📖 LOVE VAULT - ${currentUserProfile.username}\n${new Date().toLocaleString()}\n\n`;
@@ -748,8 +666,6 @@
     currentSearchTerm = e.target.value;
     applyFiltersAndSearch();
   });
-  
-  document.getElementById("deleteAllBtn").addEventListener("click", deleteAllCloudMemories);
   
   document.querySelectorAll(".filter-btn").forEach(btn => {
     btn.addEventListener("click", () => {
