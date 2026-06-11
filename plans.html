@@ -2,127 +2,106 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>🌟 Future Plans</title>
+<title>📝 Our Plans</title>
 <style>
-body { 
-  font-family: Arial; 
-  text-align: center; 
-  background: white; 
-  color: #b30000; 
-  min-height: 100vh; 
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background: white;
+  color: #b30000;
+  min-height: 100vh;
   position: relative;
+  padding: 20px;
 }
-body::before { 
-  content: "❤"; 
-  position: fixed; 
-  top: 50%; 
-  left: 50%; 
-  font-size: 40rem; 
-  color: rgba(179,0,0,0.08); 
-  transform: translate(-50%,-50%); 
+body::before {
+  content: "❤";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  font-size: 40rem;
+  color: rgba(179,0,0,0.08);
+  transform: translate(-50%,-50%);
   z-index: -1;
 }
-h1 { 
-  color:#b30000; 
-  margin-top:30px; 
-  animation:pulse 2s infinite; 
+h1 { color: #2c6e2c; margin-top: 30px; }
+input, textarea {
+  padding: 12px;
+  width: 70%;
+  max-width: 500px;
+  margin: 10px 0;
+  border: 2px solid #2c6e2c;
+  border-radius: 8px;
+  font-family: inherit;
 }
-@keyframes pulse {
-  0%{transform:scale(1);}
-  50%{transform:scale(1.05);}
-  100%{transform:scale(1);}
+button {
+  padding: 12px 24px;
+  background: #2c6e2c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 10px;
 }
-input { 
-  padding:10px; 
-  width:70%; 
-  border-radius:8px; 
-  border:2px solid #b30000; 
-  margin-top:10px; 
-  font-size:16px;
+button:hover {
+  background: #1a4a1a;
 }
-button { 
-  padding:10px 20px; 
-  background:#b30000; 
-  color:white; 
-  border:none; 
-  border-radius:8px; 
-  cursor:pointer; 
-  margin-top:10px; 
-  transition:.3s;
-}
-button:hover { 
-  background:white; 
-  color:#b30000; 
-  border:2px solid #b30000; 
-}
-#status { 
-  margin-top:10px; 
-  font-weight:bold; 
-}
+.back-btn { background: #666; }
+#status { margin-top: 10px; font-weight: bold; color: #2c6e2c; }
 </style>
 </head>
 <body>
-<h1>🌟 Future Plans</h1>
-<input type="text" id="planText" placeholder="Write your dream... ✨"><br>
-<button onclick="saveItem()">Add Plan ✨</button>
+<h1>📝 Our Plans</h1>
+<input type="text" id="planTitle" placeholder="Plan Title (e.g., 'Weekend Getaway')"><br>
+<textarea id="planText" placeholder="Describe your plan..." rows="4"></textarea><br>
+<button onclick="savePlan()">Save Plan 💖</button>
+<button onclick="window.location.href='vault.html'" class="back-btn">📖 Go to Vault</button>
 <p id="status"></p>
 
-<script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-const supabaseUrl = "https://wmebpsheblrkuvygguae.supabase.co";
-const supabaseKey = "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_";
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-const currentUserId = localStorage.getItem("loveUserId");
-const currentUser = localStorage.getItem("loveUser");
-
-async function saveItem() {
+<script>
+function savePlan() {
+  const title = document.getElementById("planTitle").value.trim();
   const text = document.getElementById("planText").value.trim();
-  if(!text) return alert("Please type your plan!");
-
-  // ✅ Save to Supabase Love Vault
-  const { error } = await supabase.from("love_vault").insert([{
-    user_id: currentUserId,
-    source_page: "Plans",
-    section: "Plans",
-    content: text,
-    created_at: new Date().toISOString()
-  }]);
-
-  if(error){
-    console.error(error);
-    document.getElementById("status").innerHTML = "❌ Failed to save to Love Vault";
+  
+  if (!text) {
+    alert("Please describe your plan!");
     return;
   }
-
-  // ✅ Also keep in localStorage for offline access
-  const vault = JSON.parse(localStorage.getItem("vault")) || [];
-  vault.push({ 
-    source_page: "Plans",
-    section: "Plans",
+  
+  const currentUser = localStorage.getItem("loveUser") || "Anonymous";
+  
+  // Get existing plans
+  let plans = JSON.parse(localStorage.getItem("couplePlans") || "[]");
+  
+  plans.push({
+    title: title || "Our Plan",
+    text: text,
     content: text,
     created_at: new Date().toISOString(),
-    user_id: currentUserId,
-    author: currentUser || "Anonymous"
+    author: currentUser
+  });
+  
+  localStorage.setItem("couplePlans", JSON.stringify(plans));
+  
+  // Also save to main vault for consistency
+  let vault = JSON.parse(localStorage.getItem("vault") || "[]");
+  vault.push({
+    source_page: "Plans",
+    section: "Plans",
+    content: `${title ? title + ": " : ""}${text}`,
+    created_at: new Date().toISOString(),
+    author: currentUser,
+    type: "plan"
   });
   localStorage.setItem("vault", JSON.stringify(vault));
-
+  
+  document.getElementById("planTitle").value = "";
   document.getElementById("planText").value = "";
-  document.getElementById("status").innerHTML = `
-    Plan saved to Love Vault 🌟 <br>
-    <button onclick="goHome()">⬅️ Back to Home</button>
-  `;
-}
-
-function goHome() {
-  window.location.href = "home.html"; 
+  document.getElementById("status").innerHTML = "✅ Plan saved to Love Vault! 📝<br>Go to Vault to see it.";
+  
+  setTimeout(() => {
+    document.getElementById("status").innerHTML = "";
+  }, 3000);
 }
 </script>
 </body>
 </html>
-
-
-
-
-
