@@ -259,16 +259,6 @@
       text-align: center;
       color: #c49191;
     }
-    .warning-badge {
-      background: #fff3cd;
-      border: 1px solid #ffc107;
-      color: #856404;
-      padding: 8px 16px;
-      border-radius: 30px;
-      font-size: 0.8rem;
-      margin-top: 10px;
-      display: inline-block;
-    }
     ::-webkit-scrollbar {
       width: 5px;
     }
@@ -312,7 +302,7 @@
 </div>
 
 <div id="notify" style="display: none;"></div>
-<div class="footer-meta">❤️ Each memory can be deleted individually | Your profile name from profile.html appears on every entry</div>
+<div class="footer-meta">❤️ Each memory can be deleted individually | Your profile name appears on every entry</div>
 
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
@@ -324,34 +314,35 @@
 
   let vaultData = [];
   let currentSearchTerm = "";
-  let currentUserProfile = { id: null, username: "Anonymous" };
+  let currentUserProfile = { id: null, username: "Anonymous", email: null };
 
-  // =============== READ USERNAME FROM PROFILE.HTML (via localStorage) ===============
+  // =============== READ USERNAME FROM YOUR PROFILE.HTML ===============
   function loadProfileFromLocalStorage() {
-    // Your profile.html should store these values after login/registration
-    const userId = localStorage.getItem("loveUserId");
-    const userName = localStorage.getItem("loveUserName");
-    const userEmail = localStorage.getItem("loveUserEmail"); // optional
+    // Your profile.html stores these exact keys:
+    const username = localStorage.getItem("loveUser");      // ← key from your profile.html
+    const email = localStorage.getItem("loveEmail");        // ← key from your profile.html
     
-    if (userId && userName) {
+    console.log("Reading from localStorage - loveUser:", username, "loveEmail:", email);
+    
+    if (username && username !== "null" && username !== "undefined") {
       currentUserProfile = {
-        id: userId,
-        username: userName,
-        email: userEmail || ""
+        id: username,  // Using username as ID since your profile doesn't store userId separately
+        username: username,
+        email: email || ""
       };
       
-      // Display the profile badge with username
+      // Display the profile badge
       const profileDiv = document.getElementById("profileInfo");
       const displayNameSpan = document.getElementById("displayUsername");
       if (displayNameSpan) {
-        displayNameSpan.textContent = userName;
+        displayNameSpan.textContent = username;
         profileDiv.style.display = "inline-block";
       }
-      console.log(`✅ Profile loaded: ${userName} (ID: ${userId})`);
+      console.log(`✅ Profile loaded from profile.html: ${username}`);
       return true;
     } else {
-      // No profile found - show warning and fallback
-      console.warn("⚠️ No profile found in localStorage. Make sure profile.html saves loveUserId and loveUserName");
+      // No profile found
+      console.warn("⚠️ No profile found. Please set your profile in profile.html first.");
       const profileDiv = document.getElementById("profileInfo");
       const displayNameSpan = document.getElementById("displayUsername");
       if (displayNameSpan) {
@@ -361,25 +352,75 @@
         profileDiv.style.color = "#856404";
         profileDiv.style.display = "inline-block";
       }
-      // Create a temporary fallback ID (but warn user)
-      if (!localStorage.getItem("loveUserId")) {
-        localStorage.setItem("loveUserId", "temp_" + Date.now());
-        localStorage.setItem("loveUserName", "Guest_Lover");
+      
+      // Create fallback (but show warning)
+      if (!localStorage.getItem("loveUser")) {
+        localStorage.setItem("loveUser", "Guest_Lover");
+        localStorage.setItem("loveEmail", "guest@example.com");
         currentUserProfile = {
-          id: localStorage.getItem("loveUserId"),
-          username: "Guest_Lover"
+          id: "Guest_Lover",
+          username: "Guest_Lover",
+          email: "guest@example.com"
         };
       } else {
         currentUserProfile = {
-          id: localStorage.getItem("loveUserId"),
-          username: localStorage.getItem("loveUserName") || "Guest"
+          id: localStorage.getItem("loveUser"),
+          username: localStorage.getItem("loveUser"),
+          email: localStorage.getItem("loveEmail") || ""
         };
       }
       return false;
     }
   }
 
-  // =============== RENDER FUNCTION with delete buttons ===============
+  // Get or create user in love_users table (to get actual database ID)
+  async function ensureUserInDatabase() {
+    try {
+      // First, try to find user by username
+      let { data: existingUser, error: findError } = await supabase
+        .from("love_users")
+        .select("id, username")
+        .eq("username", currentUserProfile.username)
+        .maybeSingle();
+      
+      if (findError && findError.code !== 'PGRST116') {
+        console.error("Error finding user:", findError);
+      }
+      
+      if (existingUser) {
+        // User exists, use their real database ID
+        currentUserProfile.id = existingUser.id;
+        console.log("✅ Found existing user in DB:", existingUser);
+        return existingUser.id;
+      } else {
+        // Create new user in love_users table
+        const { data: newUser, error: insertError } = await supabase
+          .from("love_users")
+          .insert({ 
+            username: currentUserProfile.username,
+            email: currentUserProfile.email
+          })
+          .select()
+          .single();
+        
+        if (insertError) {
+          console.error("Error creating user:", insertError);
+          return null;
+        }
+        
+        if (newUser) {
+          currentUserProfile.id = newUser.id;
+          console.log("✅ Created new user in DB:", newUser);
+          return newUser.id;
+        }
+      }
+    } catch (err) {
+      console.error("ensureUserInDatabase error:", err);
+    }
+    return null;
+  }
+
+  // =============== RENDER FUNCTION ===============
   function renderVault(entriesArray) {
     const vaultDiv = document.getElementById("vault");
     if (!entriesArray || entriesArray.length === 0) {
@@ -399,23 +440,20 @@
             dateString = d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
           }
         } catch(e) { dateString = "❤️ remembered"; }
-      } else if (entry.local_fallback_date) {
-        dateString = entry.local_fallback_date;
       }
       
       let content = entry.content || "💭 (no text provided)";
       const safeContent = content.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
       
-      // AUTHOR: PRIORITY = love_users.username (from cloud) OR entry.author OR current profile username
-      let authorName = "Anonymous Writer";
+      // AUTHOR: Get from love_users join or entry author or current profile
+      let authorName = "Anonymous";
       if (entry.love_users && typeof entry.love_users === 'object' && entry.love_users.username) {
         authorName = entry.love_users.username;
-      } else if (entry.author && entry.author !== "Anonymous" && entry.author !== "") {
+      } else if (entry.author && entry.author !== "Anonymous") {
         authorName = entry.author;
       } else if (entry.writerName) {
         authorName = entry.writerName;
       } else if (currentUserProfile && currentUserProfile.username) {
-        // Fallback to logged-in user's name for local entries
         authorName = currentUserProfile.username;
       }
       
@@ -423,7 +461,7 @@
       const isRemote = !!entry.id && typeof entry.id === 'number';
       
       return `
-        <div class="vault-entry" data-entry-id="${entryId}" data-is-remote="${isRemote}">
+        <div class="vault-entry">
           <div class="source-label">📂 ${escapeHtml(source)}</div>
           <div class="date-label">📅 ${escapeHtml(dateString)}</div>
           <div class="message-box"><strong>💌 Message:</strong><br><br>${safeContent}</div>
@@ -493,14 +531,14 @@
       localStorage.setItem("vault", "[]");
       const { error } = await supabase.from("love_vault").delete().neq("id", 0);
       if (error) {
-        notifyDiv.innerText = "⚠️ Cloud deletion failed: " + error.message + " but local cleared.";
+        notifyDiv.innerText = "⚠️ Cloud deletion failed: " + error.message;
       } else {
-        notifyDiv.innerText = "✅ All memories wiped from local & cloud 💔";
+        notifyDiv.innerText = "✅ All memories wiped 💔";
       }
       await loadVault();
       setTimeout(()=>{notifyDiv.style.display="none";},2000);
     } catch (err) {
-      notifyDiv.innerText = "❌ Error during delete all: " + err.message;
+      notifyDiv.innerText = "❌ Error: " + err.message;
       setTimeout(()=>{notifyDiv.style.display="none";},2000);
     }
   }
@@ -510,14 +548,12 @@
     // 1) Load local vault
     let localVault = JSON.parse(localStorage.getItem("vault") || "[]");
     
-    // ENHANCE LOCAL ENTRIES WITH CURRENT PROFILE USERNAME
     const localEnhanced = localVault.map((entry, idx) => ({
       ...entry,
       local_temp_id: entry.local_temp_id || `local_${Date.now()}_${idx}_${Math.random()}`,
-      author: entry.author || currentUserProfile.username,  // Use profile username!
+      author: entry.author || currentUserProfile.username,
       writerName: entry.writerName || currentUserProfile.username,
-      created_at: entry.created_at || new Date().toISOString(),
-      local_fallback_date: entry.created_at ? null : "✨ saved offline"
+      created_at: entry.created_at || new Date().toISOString()
     }));
     
     // 2) Load supabase with love_users join
@@ -538,8 +574,11 @@
       remoteFormatted = remoteEntries.map(item => {
         let userObj = item.love_users;
         let username = null;
-        if (userObj && !Array.isArray(userObj) && typeof userObj === 'object') username = userObj.username;
-        else if (Array.isArray(userObj) && userObj.length) username = userObj[0]?.username;
+        if (userObj && typeof userObj === 'object' && !Array.isArray(userObj)) {
+          username = userObj.username;
+        } else if (Array.isArray(userObj) && userObj.length) {
+          username = userObj[0]?.username;
+        }
         return {
           id: item.id,
           source_page: item.source_page,
@@ -551,8 +590,6 @@
           isRemote: true
         };
       });
-    } else if (error) {
-      console.warn("Supabase fetch error:", error);
     }
     
     let combined = [...remoteFormatted, ...localEnhanced];
@@ -579,27 +616,30 @@
     renderVault(filtered);
   }
   
-  // SYNC LOCAL TO SUPABASE (uses profile user ID)
+  // SYNC LOCAL TO SUPABASE
   window.syncLocalToSupabaseWrapper = async function() {
     const notifyDiv = document.getElementById("notify");
     notifyDiv.style.display = "block";
-    notifyDiv.innerText = "🔄 Syncing your precious words...";
+    notifyDiv.innerText = "🔄 Syncing...";
     try {
-      if (!currentUserProfile.id || currentUserProfile.id.startsWith("temp_")) {
-        notifyDiv.innerText = "❌ Please set up your profile first (login in profile.html)";
+      const dbUserId = await ensureUserInDatabase();
+      if (!dbUserId) {
+        notifyDiv.innerText = "❌ Could not create/find user in database";
         setTimeout(()=>{notifyDiv.style.display="none";},3000);
         return;
       }
+      
       const localVault = JSON.parse(localStorage.getItem("vault") || "[]");
       if (localVault.length === 0) {
-        notifyDiv.innerText = "✨ Nothing to sync — local vault is empty.";
+        notifyDiv.innerText = "✨ Nothing to sync — vault is empty.";
         setTimeout(()=>{notifyDiv.style.display="none";},2000);
         return;
       }
+      
       let inserted = 0;
       for (const entry of localVault) {
         const { error } = await supabase.from("love_vault").insert({
-          user_id: currentUserProfile.id,
+          user_id: dbUserId,
           source_page: entry.source_page || "Love Note",
           section: entry.section || "General",
           content: entry.content || "",
@@ -607,8 +647,9 @@
         });
         if (!error) inserted++;
       }
+      
       if (inserted > 0) {
-        notifyDiv.innerText = `✅ ${inserted} memories synced to the cloud! ❤️`;
+        notifyDiv.innerText = `✅ ${inserted} memories synced to cloud! ❤️`;
         localStorage.setItem("vault", "[]");
         await loadVault();
       } else {
@@ -616,7 +657,7 @@
       }
       setTimeout(()=>{notifyDiv.style.display="none";},3000);
     } catch (err) {
-      notifyDiv.innerText = "💔 Sync failed: " + (err.message || "connection issue");
+      notifyDiv.innerText = "💔 Sync failed: " + err.message;
       setTimeout(()=>{notifyDiv.style.display="none";},3000);
     }
   };
@@ -624,7 +665,7 @@
   // SHARE VAULT
   window.shareVaultUI = function() {
     if (!vaultData.length) {
-      alert("Vault is empty, write some love first 💕");
+      alert("Vault is empty 💕");
       return;
     }
     let shareText = `📖 LOVE VAULT — shared by ${currentUserProfile.username} 💌\n\n`;
@@ -638,9 +679,9 @@
     navigator.clipboard.writeText(shareText).then(() => {
       const notifyDiv = document.getElementById("notify");
       notifyDiv.style.display = "block";
-      notifyDiv.innerText = "📋 Vault copied to clipboard! Share the love.";
+      notifyDiv.innerText = "📋 Vault copied to clipboard!";
       setTimeout(()=>{notifyDiv.style.display="none";},2500);
-    }).catch(()=> alert("Could not copy"));
+    });
   };
   
   // Event Listeners
@@ -662,44 +703,20 @@
         loadVault();
       })
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "love_vault" }, () => {
-        const notifyDiv = document.getElementById("notify");
-        notifyDiv.style.display = "block";
-        notifyDiv.innerText = "🗑️ A memory was removed...";
-        setTimeout(()=>{notifyDiv.style.display="none";},2000);
         loadVault();
       })
       .subscribe();
   }
   
-  // Seed demo entries (optional, but uses profile username)
-  async function seedLocalDemoIfEmpty() {
-    const localCheck = JSON.parse(localStorage.getItem("vault") || "[]");
-    if (localCheck.length === 0 && currentUserProfile.username !== "Guest_Lover") {
-      const demoEntry = {
-        source_page: "First Message",
-        section: "Memories",
-        content: `This is my first love note saved as ${currentUserProfile.username}. Every word matters. 💕`,
-        created_at: new Date().toISOString(),
-        author: currentUserProfile.username,
-        writerName: currentUserProfile.username,
-        local_temp_id: `demo_${Date.now()}_1`
-      };
-      localStorage.setItem("vault", JSON.stringify([demoEntry]));
-    }
-  }
-  
   // INITIALIZE
   async function init() {
-    loadProfileFromLocalStorage();  // CRITICAL: reads from profile.html localStorage
-    await seedLocalDemoIfEmpty();
+    loadProfileFromLocalStorage();  // Reads from your profile.html's keys
+    await ensureUserInDatabase();   // Creates/finds user in love_users table
     await loadVault();
     subscribeRealtime();
   }
   
-  init().catch(e => {
-    console.warn("init warning", e);
-    document.getElementById("vault").innerHTML = "<div class='empty-memories'>💖 loading vault...</div>";
-  });
+  init();
 </script>
 </body>
 </html>
