@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>💖 My Profile</title>
-
 <style>
 body{
     font-family:Arial,sans-serif;
@@ -12,12 +11,10 @@ body{
     text-align:center;
     padding:20px;
 }
-
 .container{
     max-width:700px;
     margin:auto;
 }
-
 img{
     width:180px;
     height:180px;
@@ -25,7 +22,6 @@ img{
     object-fit:cover;
     border:4px solid #b30000;
 }
-
 input,textarea{
     width:90%;
     padding:12px;
@@ -33,7 +29,6 @@ input,textarea{
     border-radius:8px;
     border:2px solid #b30000;
 }
-
 button{
     padding:12px 25px;
     background:#b30000;
@@ -42,7 +37,6 @@ button{
     border-radius:8px;
     cursor:pointer;
 }
-
 button:hover{
     background:white;
     color:#b30000;
@@ -50,190 +44,75 @@ button:hover{
 }
 </style>
 </head>
-
 <body>
 
 <div class="container">
-
 <h1>💖 My Love Profile</h1>
 
-<img id="profilePreview"
-src="https://via.placeholder.com/180">
-
-<br><br>
+<img id="profilePreview" src="https://via.placeholder.com/180"><br><br>
 
 <input type="file" id="photo">
-
-<input type="text" id="fullName"
-placeholder="Full Name">
-
-<input type="text" id="nickname"
-placeholder="Nickname">
-
-<textarea id="bio"
-placeholder="About Me"></textarea>
-
-<h2>🔒 Private Area</h2>
-
-<input type="password"
-id="privatePin"
-placeholder="Private PIN">
-
-<textarea
-id="privateNotes"
-placeholder="Private Notes"></textarea>
-
-<textarea
-id="privateMemories"
-placeholder="Private Memories"></textarea>
+<input type="text" id="fullName" placeholder="Full Name">
+<input type="text" id="nickname" placeholder="Nickname">
+<textarea id="bio" placeholder="About Me"></textarea>
 
 <br><br>
-
-<button onclick="saveProfile()">
-💖 Save Profile
-</button>
-
+<button onclick="saveProfile()">💖 Save Profile</button>
 </div>
 
 <script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-import { createClient }
-from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+const supabaseUrl = "https://wmebpsheblrkuvygguae.supabase.co";
+const supabaseKey = "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-const supabaseUrl =
-"YOUR_SUPABASE_URL";
-
-const supabaseKey =
-"YOUR_PUBLISHABLE_KEY";
-
-const supabase =
-createClient(supabaseUrl,supabaseKey);
-
-const username =
-localStorage.getItem("loveUser");
-
-const email =
-localStorage.getItem("loveEmail");
+const username = localStorage.getItem("loveUser");
+const email = localStorage.getItem("loveEmail");
 
 async function loadProfile(){
+  const { data } = await supabase
+    .from("love_users")
+    .select("profile_pic,bio")
+    .eq("username", username)
+    .maybeSingle();
 
-const { data } = await supabase
-.from("user_profiles")
-.select("*")
-.eq("username",username)
-.maybeSingle();
+  if(!data) return;
 
-if(!data) return;
-
-document.getElementById("fullName").value =
-data.full_name || "";
-
-document.getElementById("nickname").value =
-data.nickname || "";
-
-document.getElementById("bio").value =
-data.bio || "";
-
-document.getElementById("privatePin").value =
-data.private_pin || "";
-
-document.getElementById("privateNotes").value =
-data.private_notes || "";
-
-document.getElementById("privateMemories").value =
-data.private_memories || "";
-
-if(data.profile_picture){
-document.getElementById("profilePreview").src =
-data.profile_picture;
-}
+  document.getElementById("bio").value = data.bio || "";
+  if(data.profile_pic){
+    document.getElementById("profilePreview").src = data.profile_pic;
+  }
 }
 
 async function saveProfile(){
+  const file = document.getElementById("photo").files[0];
+  let imageUrl = null;
 
-const file =
-document.getElementById("photo").files[0];
+  if(file){
+    const fileName = Date.now()+"_"+file.name;
+    await supabase.storage.from("profile-pictures").upload(fileName, file);
+    const { data } = supabase.storage.from("profile-pictures").getPublicUrl(fileName);
+    imageUrl = data.publicUrl;
+  }
 
-let imageUrl = null;
+  const profileData = {
+    bio: document.getElementById("bio").value
+  };
+  if(imageUrl){
+    profileData.profile_pic = imageUrl;
+  }
 
-if(file){
+  await supabase.from("love_users").update(profileData).eq("username", username);
 
-const fileName =
-Date.now()+"_"+file.name;
-
-await supabase.storage
-.from("profile-pictures")
-.upload(fileName,file);
-
-const { data } =
-supabase.storage
-.from("profile-pictures")
-.getPublicUrl(fileName);
-
-imageUrl =
-data.publicUrl;
-}
-
-const profileData = {
-
-username,
-email,
-
-full_name:
-document.getElementById("fullName").value,
-
-nickname:
-document.getElementById("nickname").value,
-
-bio:
-document.getElementById("bio").value,
-
-private_pin:
-document.getElementById("privatePin").value,
-
-private_notes:
-document.getElementById("privateNotes").value,
-
-private_memories:
-document.getElementById("privateMemories").value
-};
-
-if(imageUrl){
-profileData.profile_picture =
-imageUrl;
-}
-
-const { data: existing } =
-await supabase
-.from("user_profiles")
-.select("id")
-.eq("username",username)
-.maybeSingle();
-
-if(existing){
-
-await supabase
-.from("user_profiles")
-.update(profileData)
-.eq("username",username);
-
-}else{
-
-await supabase
-.from("user_profiles")
-.insert([profileData]);
-
-}
-
-alert("💖 Profile Saved");
+  alert("💖 Profile Saved");
+  loadProfile();
 }
 
 loadProfile();
-
-window.saveProfile =
-saveProfile;
-
+window.saveProfile = saveProfile;
 </script>
 
 </body>
 </html>
+
