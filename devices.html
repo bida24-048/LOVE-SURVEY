@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>📱 Login Devices</title>
+<style>
+body { font-family: Arial; text-align: center; background: #fff; color: #b30000; }
+table { margin: 20px auto; border-collapse: collapse; width: 80%; }
+th, td { border: 1px solid #b30000; padding: 10px; }
+th { background: #ffe6e6; }
+</style>
+</head>
+<body>
+<h1>📱 Devices Used to Login</h1>
+<table id="deviceTable">
+  <tr><th>Device</th><th>Login Time</th></tr>
+</table>
+
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabaseUrl = "https://YOUR_PROJECT.supabase.co";
+const supabaseKey = "YOUR_ANON_KEY";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+const currentUserId = localStorage.getItem("loveUserId");
+
+async function loadDevices(){
+  const { data, error } = await supabase
+    .from("login_logs")
+    .select("device, logged_in_at")
+    .eq("user_id", currentUserId)
+    .order("logged_in_at", { ascending: false });
+
+  if(error){ console.error(error); return; }
+
+  const table = document.getElementById("deviceTable");
+  data.forEach(log => {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td>${log.device}</td><td>${new Date(log.logged_in_at).toLocaleString()}</td>`;
+    table.appendChild(row);
+  });
+}
+
+loadDevices();
+</script>
+</body>
+</html>
