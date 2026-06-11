@@ -2,47 +2,162 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>📱 Login Devices</title>
+
 <style>
-body { font-family: Arial; text-align: center; background: #fff; color: #b30000; }
-table { margin: 20px auto; border-collapse: collapse; width: 80%; }
-th, td { border: 1px solid #b30000; padding: 10px; }
-th { background: #ffe6e6; }
+body{
+    font-family: Arial, sans-serif;
+    background:#fffaf7;
+    color:#b30000;
+    text-align:center;
+    margin:0;
+    padding:20px;
+}
+
+h1{
+    margin-bottom:20px;
+}
+
+.table-container{
+    overflow-x:auto;
+}
+
+table{
+    margin:auto;
+    border-collapse:collapse;
+    width:90%;
+    max-width:900px;
+    background:white;
+    border-radius:12px;
+    overflow:hidden;
+}
+
+th{
+    background:#ffe6e6;
+    color:#b30000;
+}
+
+th,td{
+    border:1px solid #ffd0d0;
+    padding:12px;
+}
+
+tr:nth-child(even){
+    background:#fff8f8;
+}
+
+.empty{
+    margin-top:30px;
+    color:#888;
+}
+
+.status{
+    margin-bottom:15px;
+    font-weight:bold;
+}
 </style>
 </head>
+
 <body>
-<h1>📱 Devices Used to Login</h1>
+
+<h1>📱 Login Devices</h1>
+
+<div id="status" class="status">
+Loading devices...
+</div>
+
+<div class="table-container">
 <table id="deviceTable">
-  <tr><th>Device</th><th>Login Time</th></tr>
+<thead>
+<tr>
+<th>📱 Device</th>
+<th>🌐 Browser</th>
+<th>🕒 Login Time</th>
+</tr>
+</thead>
+<tbody></tbody>
 </table>
+</div>
+
+<div id="emptyMessage" class="empty" style="display:none;">
+No login history found ❤️
+</div>
 
 <script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+import { createClient }
+from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
 const supabaseUrl = "https://YOUR_PROJECT.supabase.co";
 const supabaseKey = "YOUR_ANON_KEY";
-const supabase = createClient(supabaseUrl, supabaseKey);
 
-const currentUserId = localStorage.getItem("loveUserId");
+const supabase = createClient(
+  supabaseUrl,
+  supabaseKey
+);
 
-async function loadDevices(){
+const currentUserId =
+  localStorage.getItem("loveUserId");
+
+const tableBody =
+  document.querySelector("#deviceTable tbody");
+
+const status =
+  document.getElementById("status");
+
+const emptyMessage =
+  document.getElementById("emptyMessage");
+
+async function loadDevices() {
+
+  if (!currentUserId) {
+    status.innerText =
+      "❌ No user ID found";
+    return;
+  }
+
   const { data, error } = await supabase
     .from("login_logs")
-    .select("device, logged_in_at")
+    .select("*")
     .eq("user_id", currentUserId)
-    .order("logged_in_at", { ascending: false });
+    .order("logged_in_at", {
+      ascending: false
+    });
 
-  if(error){ console.error(error); return; }
+  if (error) {
+    console.error(error);
+    status.innerText =
+      "❌ Failed to load devices";
+    return;
+  }
 
-  const table = document.getElementById("deviceTable");
+  status.innerText =
+    `📊 ${data.length} login records`;
+
+  if (!data.length) {
+    emptyMessage.style.display = "block";
+    return;
+  }
+
   data.forEach(log => {
-    const row = document.createElement("tr");
-    row.innerHTML = `<td>${log.device}</td><td>${new Date(log.logged_in_at).toLocaleString()}</td>`;
-    table.appendChild(row);
+
+    const row =
+      document.createElement("tr");
+
+    row.innerHTML = `
+      <td>${log.device || "Unknown Device"}</td>
+      <td>${log.browser || "Unknown Browser"}</td>
+      <td>${new Date(
+        log.logged_in_at
+      ).toLocaleString()}</td>
+    `;
+
+    tableBody.appendChild(row);
   });
 }
 
 loadDevices();
 </script>
+
 </body>
 </html>
