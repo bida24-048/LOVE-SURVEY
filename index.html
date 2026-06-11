@@ -81,6 +81,28 @@ button:hover {
   <input type="password" id="loginSecret" placeholder="Secret Code 🔐"><br>
   <button onclick="loginUser()">Login 💖</button>
 </div>
+  function getDeviceName() {
+  const ua = navigator.userAgent;
+
+  if (/Android/i.test(ua)) return "Android Phone";
+  if (/iPhone|iPad/i.test(ua)) return "iPhone / iPad";
+  if (/Windows/i.test(ua)) return "Windows PC";
+  if (/Mac/i.test(ua)) return "Mac";
+  if (/Linux/i.test(ua)) return "Linux";
+
+  return "Unknown Device";
+}
+
+function getBrowserName() {
+  const ua = navigator.userAgent;
+
+  if (ua.includes("Edg")) return "Edge";
+  if (ua.includes("Chrome")) return "Chrome";
+  if (ua.includes("Firefox")) return "Firefox";
+  if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari";
+
+  return "Unknown Browser";
+}
 
 <p id="error"></p>
 
@@ -141,15 +163,12 @@ async function loginUser() {
   if (!user) return showError("❌ Invalid username or password");
 
   // ✅ Capture device info
-  const deviceInfo = navigator.userAgent;
-
-  // ✅ Save login log
-  await supabase.from("login_logs").insert([{
-    user_id: user.id,
-    device: deviceInfo,
-    logged_in_at: new Date().toISOString()
-  }]);
-
+ await supabase.from("login_logs").insert([{
+  user_id: user.id,
+  device: getDeviceName(),
+  browser: getBrowserName(),
+  logged_in_at: new Date().toISOString()
+}]); 
   localStorage.setItem("loveLogin", "true");
   localStorage.setItem("loveUser", user.username);
   localStorage.setItem("loveEmail", user.email);
