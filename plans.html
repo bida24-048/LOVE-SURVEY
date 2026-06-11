@@ -37,18 +37,22 @@ button:hover { background:white; color:#b30000; border:2px solid #b30000; }
 <p id="status"></p>
 
 <script>
+  <script>
+const currentUserId = localStorage.getItem("loveUserId");
+const currentUser = localStorage.getItem("loveUser");
+
 function saveItem() {
     const text = document.getElementById("planText").value.trim();
     if(!text) return alert("Please type your plan!");
     
     const vault = JSON.parse(localStorage.getItem("vault")) || [];
     vault.push({ 
-        type: "plan", 
-        text: text, 
-        date: new Date().toLocaleString(),
-        source_page: "Plans",   // ✅ label added
+        source_page: "Plans",
         section: "Plans",
-       user_name: currentUser
+        content: text,   // ✅ use "content" instead of "text"
+        created_at: new Date().toISOString(),
+        user_id: currentUserId,
+        author: currentUser || "Anonymous"
     });
     
     localStorage.setItem("vault", JSON.stringify(vault));
@@ -59,7 +63,6 @@ function saveItem() {
     `;
 }
 
-// --- Go back function ---
 function goHome() {
   window.location.href = "home.html"; 
 }
