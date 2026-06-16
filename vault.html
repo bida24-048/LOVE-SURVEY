@@ -392,592 +392,152 @@
 <div id="notify" style="display: none;"></div>
 <div class="footer-meta">❤️ Everything is backed up to the shared cloud — see what your love writes!</div>
 <div class="debug-info" id="debugInfo">📡 Initializing...</div>
-
 <script type="module">
-  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-  const supabaseUrl = "https://wmebpsheblrkuvygguae.supabase.co";
-  const supabaseKey = "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_";
-  const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = "https://wmebpsheblrkuvygguae.supabase.co";
+const supabaseKey = "sb_publishable_rUkBj0Th3x6ZXGbPkLGsHQ_f5WG3jB_";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-  let allMemories = [];
-  let currentFilter = "all";
-  let currentSearchTerm = "";
-  let currentUserProfile = { id: null, username: "MyLove" };
-  let isAutoSyncing = false;
-  let syncStatus = "idle";
+let allMemories = [];
+let currentUser = localStorage.getItem("loveUser") || "MyLove";
 
-  // =============== DEBUG LOGGING ===============
-  function debugLog(message) {
-    console.log("[DEBUG]", message);
-    const debugEl = document.getElementById("debugInfo");
-    if (debugEl) {
-      const timestamp = new Date().toLocaleTimeString();
-      debugEl.textContent = `📡 [${timestamp}] ${message}`;
-    }
+/* ================= PROFILE ================= */
+function loadProfile() {
+  if (!localStorage.getItem("loveUser")) {
+    showLogin();
+    return false;
+  }
+  document.getElementById("displayUsername").innerHTML =
+    `👤 <strong>${currentUser}</strong>`;
+  return true;
+}
+
+function showLogin() {
+  document.getElementById("vault").innerHTML = `
+    <div class="login-section">
+      <h3>Join Shared Vault 💖</h3>
+      <input id="nameInput" placeholder="Your name" />
+      <button onclick="login()">Enter</button>
+    </div>
+  `;
+}
+
+window.login = function () {
+  const name = document.getElementById("nameInput").value.trim();
+  if (!name) return alert("Enter your name");
+  localStorage.setItem("loveUser", name);
+  location.reload();
+};
+
+/* ================= REALTIME LOAD ================= */
+async function loadFromCloud() {
+  const { data, error } = await supabase
+    .from("love_vault")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return;
   }
 
-  function setSyncStatus(status) {
-    syncStatus = status;
-    const indicator = document.getElementById("syncIndicator");
-    if (indicator) {
-      indicator.className = `sync-indicator ${status}`;
-    }
+  allMemories = data || [];
+  renderVault(allMemories);
+}
+
+/* ================= REALTIME SUB ================= */
+function initRealtime() {
+  supabase.channel("live-vault")
+    .on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "love_vault"
+    }, () => {
+      loadFromCloud();
+    })
+    .subscribe();
+}
+
+/* ================= DUPLICATE CHECK ================= */
+async function isDuplicate(mem) {
+  const { data } = await supabase
+    .from("love_vault")
+    .select("id")
+    .eq("content", mem.content.trim())
+    .eq("type", mem.type)
+    .eq("username", currentUser);
+
+  return data && data.length > 0;
+}
+
+/* ================= PUSH NEW MEMORY ================= */
+window.pushToVault = async function(mem) {
+
+  if (!mem || !mem.content) return;
+
+  // ✅ check duplicate first
+  if (await isDuplicate(mem)) {
+    console.log("Skipped duplicate");
+    return;
   }
 
-  // =============== PROFILE MANAGEMENT ===============
-  function loadProfile() {
-    const username = localStorage.getItem("loveUser");
-    const email = localStorage.getItem("loveEmail");
-    const userId = localStorage.getItem("loveUserId");
-    
-    if (username && username !== "null" && username !== "undefined") {
-      currentUserProfile = {
-        id: userId || username,
-        username: username,
-        email: email || ""
-      };
-      document.getElementById("displayUsername").innerHTML = `👤 <strong>${username}</strong> <span style="font-size:0.7rem;color:#888;">(shared vault)</span>`;
-      debugLog(`✅ User loaded: ${username}`);
-      return true;
-    } else {
-      showLoginPrompt();
-      debugLog("⚠️ No user found, showing login");
-      return false;
-    }
+  const { error } = await supabase
+    .from("love_vault")
+    .insert({
+      username: currentUser,
+      content: mem.content.trim(),
+      type: mem.type || "memory",
+      source_page: mem.source || "Memory",
+      created_at: new Date().toISOString(),
+      link: mem.link || null
+    });
+
+  if (error) {
+    alert("Error: " + error.message);
+  }
+};
+
+/* ================= RENDER ================= */
+function renderVault(memories) {
+  const vault = document.getElementById("vault");
+  if (!memories.length) {
+    vault.innerHTML = "No memories yet 💖";
+    return;
   }
 
-  function showLoginPrompt() {
-    const vaultDiv = document.getElementById("vault");
-    vaultDiv.innerHTML = `
-      <div class="login-section">
-        <h3>💝 Welcome to the Shared Love Vault</h3>
-        <p style="color:#666;font-size:0.9rem;">Enter your name to join the shared vault</p>
-        <input type="text" id="loginUsername" placeholder="Your name..." style="width:80%;padding:12px;border-radius:30px;border:2px solid #e6b0b0;font-size:1rem;margin:10px 0;">
-        <br>
-        <button onclick="loginUser()" style="background:#b30000;color:white;border:none;padding:12px 30px;border-radius:30px;font-weight:bold;cursor:pointer;font-size:1rem;">
-          💖 Join Vault
-        </button>
-        <p style="font-size:0.8rem;color:#999;margin-top:15px;">Everyone in the vault can see and share memories ❤️</p>
-      </div>
-    `;
-  }
+  vault.innerHTML = memories.map(m => `
+    <div class="vault-entry">
+      <div><strong>${m.type.toUpperCase()}</strong></div>
+      <div>${m.content}</div>
+      ${m.link ? `${m.link}🎵 Listen</a>` : ""}
+      <div>✍️ ${m.username}</div>
+      <div>${new Date(m.created_at).toLocaleString()}</div>
+    </div>
+  `).join("");
+}
 
-  window.loginUser = function() {
-    const input = document.getElementById("loginUsername");
-    if (!input) return;
-    const username = input.value.trim();
-    if (!username) {
-      alert("Please enter your name!");
-      return;
-    }
-    localStorage.setItem("loveUser", username);
-    localStorage.setItem("loveUserId", username + "_" + Date.now());
-    debugLog(`👤 User logged in: ${username}`);
-    location.reload();
-  };
-
-  // =============== COLLECT LOCAL MEMORIES FROM ALL PAGES ===============
-  function collectFromAllPages() {
-    const allEntries = [];
-    const username = localStorage.getItem("loveUser") || "MyLove";
-    debugLog(`📂 Collecting local memories for ${username}...`);
-
-    // 1. PLANS from couplePlans
-    const plansData = localStorage.getItem("couplePlans");
-    if (plansData) {
-      try {
-        const plans = JSON.parse(plansData);
-        debugLog(`📝 Found ${plans.length} plans in localStorage`);
-        plans.forEach((plan, index) => {
-          let contentText = plan.title ? `${plan.title}: ${plan.text}` : (plan.text || plan.content || "");
-          if (contentText) {
-            allEntries.push({
-              id: `plan_${Date.now()}_${index}_${Math.random()}`,
-              source: "Plans",
-              content: contentText,
-              rawContent: plan.text || plan.content || "",
-              type: "plan",
-              created_at: plan.created_at || plan.date || new Date().toISOString(),
-              author: plan.author || username,
-              link: null,
-              fromLocal: true
-            });
-          }
-        });
-      } catch (e) {
-        debugLog(`❌ Error parsing couplePlans: ${e.message}`);
-      }
-    } else {
-      debugLog(`⚠️ No couplePlans found in localStorage`);
-    }
-
-    // 2. VAULT from localStorage
-    const vaultData = localStorage.getItem("vault");
-    if (vaultData) {
-      try {
-        const vault = JSON.parse(vaultData);
-        debugLog(`💾 Found ${vault.length} items in vault localStorage`);
-        vault.forEach((item, idx) => {
-          const sourcePage = item.source_page || "";
-          let type = "";
-          let displaySource = "";
-          
-          if (sourcePage === "Promises" || sourcePage === "promise") { type = "promise"; displaySource = "Promises"; }
-          else if (sourcePage === "Love Questions" || sourcePage === "questions" || sourcePage === "Questions") { type = "question"; displaySource = "Love Questions"; }
-          else if (sourcePage === "Messages" || sourcePage === "messages") { type = "message"; displaySource = "Messages"; }
-          else if (sourcePage === "Songs" || sourcePage === "songs") { type = "song"; displaySource = "Songs"; }
-          else if (sourcePage === "Plans" || sourcePage === "plans") { type = "plan"; displaySource = "Plans"; }
-          
-          if (type && item.content) {
-            allEntries.push({
-              id: `${type}_${Date.now()}_${idx}_${Math.random()}`,
-              source: displaySource,
-              content: item.content || "",
-              rawContent: item.content || "",
-              type: type,
-              created_at: item.created_at || new Date().toISOString(),
-              author: item.author || username,
-              link: item.link || null,
-              fromLocal: true
-            });
-          }
-        });
-      } catch (e) {
-        debugLog(`❌ Error parsing vault: ${e.message}`);
-      }
-    } else {
-      debugLog(`⚠️ No vault found in localStorage`);
-    }
-
-    debugLog(`📊 Total local entries collected: ${allEntries.length}`);
-    return allEntries;
-  }
-
-  // =============== LOAD FROM CLOUD (ALL USERS) ===============
-  async function loadFromCloud() {
-    try {
-      debugLog("☁️ Fetching all entries from Supabase...");
-      setSyncStatus("syncing");
-      
-      let { data, error } = await supabase
-        .from("love_vault")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (error) {
-        console.error("Cloud load error:", error);
-        debugLog(`❌ Cloud load error: ${error.message}`);
-        setSyncStatus("error");
-        return [];
-      }
-      
-      debugLog(`✅ Loaded ${data?.length || 0} entries from Supabase`);
-      setSyncStatus("synced");
-      
-      return (data || []).map(item => ({
-        id: item.id,
-        source: item.source_page || "Memory",
-        content: item.content || "",
-        rawContent: item.content || "",
-        type: item.type || item.section || "memory",
-        created_at: item.created_at,
-        author: item.username || "Anonymous",
-        isCloud: true,
-        link: item.link || null
-      }));
-    } catch (err) {
-      console.error(err);
-      debugLog(`❌ Exception loading from cloud: ${err.message}`);
-      setSyncStatus("error");
-      return [];
-    }
-  }
-
-  // =============== SYNC LOCAL TO CLOUD ===============
-  async function syncToCloud(showToast = false) {
-    if (isAutoSyncing) {
-      debugLog("⏳ Sync already in progress, skipping...");
-      return;
-    }
-    
-    isAutoSyncing = true;
-    setSyncStatus("syncing");
-    const notifyDiv = document.getElementById("notify");
-    
-    try {
-      const username = localStorage.getItem("loveUser") || "MyLove";
-      debugLog(`🔄 Starting sync for ${username}...`);
-      
-      const localMemories = collectFromAllPages();
-      
-      if (localMemories.length === 0) {
-        debugLog("ℹ️ No local memories to sync");
-        setSyncStatus("synced");
-        if (showToast) {
-          notifyDiv.style.display = "block";
-          notifyDiv.innerText = "ℹ️ No local memories to sync";
-          setTimeout(() => { notifyDiv.style.display = "none"; }, 1500);
-        }
-        isAutoSyncing = false;
-        return;
-      }
-      
-      // Get existing cloud entries to check duplicates
-      const { data: existingCloud } = await supabase
-        .from("love_vault")
-        .select("content, created_at, type, username");
-      
-      const existingSet = new Set();
-      if (existingCloud) {
-        existingCloud.forEach(rec => {
-          const key = `${rec.content}|${new Date(rec.created_at).toISOString().slice(0,19)}|${rec.type}|${rec.username}`;
-          existingSet.add(key);
-        });
-      }
-      
-      let syncedCount = 0;
-      let errorCount = 0;
-      
-      for (const mem of localMemories) {
-        const contentStr = mem.rawContent || mem.content || "";
-        if (!contentStr) continue;
-        
-        const timeKey = new Date(mem.created_at).toISOString().slice(0,19);
-        const dupKey = `${contentStr}|${timeKey}|${mem.type}|${username}`;
-        
-        if (existingSet.has(dupKey)) {
-          debugLog(`⏭️ Skipping duplicate: ${contentStr.substring(0, 20)}...`);
-          continue;
-        }
-        
-        debugLog(`📤 Syncing: ${contentStr.substring(0, 30)}...`);
-       const { error } = await supabase
-  .from("love_vault")
-  .insert({
-    username: username,
-    source_page: mem.source || "Memory",
-    section: mem.type || "memory",
-    content: contentStr,
-    type: mem.type || "memory",
-    created_at: mem.created_at || new Date().toISOString(),
-    link: mem.link || null
-  });
-
-if (!error) {
-  syncedCount++;
-} else {
-  errorCount++;
-
-  console.error("FULL INSERT ERROR:", error);
-
-  alert(
-    "Supabase Error:\n" +
-    error.message
+/* ================= SEARCH ================= */
+document.getElementById("search").addEventListener("input", e => {
+  const t = e.target.value.toLowerCase();
+  const filtered = allMemories.filter(m =>
+    m.content.toLowerCase().includes(t) ||
+    m.username.toLowerCase().includes(t)
   );
+  renderVault(filtered);
+});
 
-  debugLog(`❌ ${error.message}`);
-} 
-      
-      const message = `✅ Synced ${syncedCount} new memories to cloud${errorCount > 0 ? ` (${errorCount} errors)` : ''}`;
-      debugLog(message);
-      
-      if (syncedCount > 0 || errorCount > 0) {
-        setSyncStatus("synced");
-        if (showToast) {
-          notifyDiv.style.display = "block";
-          notifyDiv.innerText = message;
-          setTimeout(() => { notifyDiv.style.display = "none"; }, 3000);
-        }
-        await loadAndDisplay();
-      } else {
-        setSyncStatus("synced");
-        if (showToast) {
-          notifyDiv.style.display = "block";
-          notifyDiv.innerText = `✨ Cloud is up to date (${existingCloud?.length || 0} memories)`;
-          setTimeout(() => { notifyDiv.style.display = "none"; }, 2000);
-        }
-      }
-    } catch (err) {
-      console.warn("Sync error", err);
-      debugLog(`❌ Sync error: ${err.message}`);
-      setSyncStatus("error");
-      if (showToast) {
-        notifyDiv.style.display = "block";
-        notifyDiv.innerText = `⚠️ Sync error: ${err.message}`;
-        setTimeout(() => { notifyDiv.style.display = "none"; }, 3000);
-      }
-    } finally {
-      isAutoSyncing = false;
-    }
-  }
+/* ================= LOGOUT ================= */
+window.logoutUser = function() {
+  localStorage.removeItem("loveUser");
+  location.reload();
+};
 
-  // =============== LOAD AND DISPLAY ===============
-  async function loadAndDisplay() {
-    debugLog("📖 Loading and displaying memories...");
-    const localMemories = collectFromAllPages();
-    const cloudMemories = await loadFromCloud();
-    
-    let merged = [...cloudMemories];
-    let localAdded = 0;
-    
-    for (const local of localMemories) {
-      const isDuplicate = merged.some(cloud => 
-        cloud.rawContent === local.rawContent && 
-        Math.abs(new Date(cloud.created_at) - new Date(local.created_at)) < 60000 &&
-        cloud.author === local.author
-      );
-      if (!isDuplicate) {
-        merged.push({ ...local, isLocal: true });
-        localAdded++;
-      }
-    }
-    
-    debugLog(`📊 Merged: ${cloudMemories.length} from cloud + ${localAdded} new local = ${merged.length} total`);
-    
-    merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    allMemories = merged;
-    updateStats();
-    applyFiltersAndSearch();
-  }
-
-  // =============== MANUAL FORCE SYNC ===============
-  window.manualSyncNow = async function() {
-    debugLog("🔨 Manual force sync triggered");
-    await syncToCloud(true);
-  };
-
-  // =============== LOGOUT ===============
-  window.logoutUser = function() {
-    if (confirm("Logout from the shared vault?")) {
-      const username = localStorage.getItem("loveUser") || "MyLove";
-      localStorage.removeItem("loveUser");
-      localStorage.removeItem("loveUserId");
-      localStorage.removeItem("loveEmail");
-      debugLog(`👋 User ${username} logged out`);
-      location.reload();
-    }
-  };
-
-  // =============== SHARE VAULT ===============
-  window.shareVaultUI = function() {
-    if (!allMemories.length) {
-      alert("No memories to share yet! Go save something first.");
-      return;
-    }
-    let text = `📖 SHARED LOVE VAULT\n${new Date().toLocaleString()}\n\n`;
-    allMemories.forEach((m, i) => {
-      text += `[${i+1}] ${m.type?.toUpperCase()}: ${m.source}\n`;
-      text += `Content: ${(m.rawContent || m.content || "").substring(0, 200)}\n`;
-      if (m.link) text += `🔗 Link: ${m.link}\n`;
-      text += `📅 ${formatDate(m.created_at)}\n`;
-      text += `✍️ By: ${m.author}\n\n`;
-    });
-    navigator.clipboard.writeText(text);
-    alert("📋 Vault copied to clipboard!");
-  };
-
-  function formatDate(dateString) {
-    if (!dateString) return "✨ Recently";
-    try {
-      const d = new Date(dateString);
-      if (!isNaN(d.getTime())) return d.toLocaleString();
-    } catch(e) {}
-    return "✨ Recently";
-  }
-
-  function updateStats() {
-    const stats = {
-      plan: allMemories.filter(m => m.type === "plan").length,
-      promise: allMemories.filter(m => m.type === "promise").length,
-      question: allMemories.filter(m => m.type === "question").length,
-      message: allMemories.filter(m => m.type === "message").length,
-      song: allMemories.filter(m => m.type === "song").length,
-      total: allMemories.length
-    };
-    const uniqueAuthors = [...new Set(allMemories.map(m => m.author))];
-    document.getElementById("statsDisplay").innerHTML = 
-      `📊 ${stats.total} total | 📝 ${stats.plan} plans | 🤝 ${stats.promise} promises | ❓ ${stats.question} questions | 💬 ${stats.message} messages | 🎵 ${stats.song} songs | 👥 ${uniqueAuthors.length} contributors`;
-  }
-
-  function applyFiltersAndSearch() {
-    let filtered = [...allMemories];
-    
-    if (currentFilter === "mine") {
-      const currentUser = localStorage.getItem("loveUser") || "MyLove";
-      filtered = filtered.filter(m => m.author === currentUser);
-    } else if (currentFilter !== "all") {
-      filtered = filtered.filter(m => m.type === currentFilter);
-    }
-    
-    if (currentSearchTerm.trim()) {
-      const term = currentSearchTerm.toLowerCase();
-      filtered = filtered.filter(m => 
-        (m.rawContent || m.content || "").toLowerCase().includes(term) ||
-        (m.source || "").toLowerCase().includes(term) ||
-        (m.author || "").toLowerCase().includes(term)
-      );
-    }
-    renderVault(filtered);
-  }
-
-  function getTypeEmoji(type) {
-    const map = { plan:"📝", promise:"🤝", question:"❓", message:"💬", song:"🎵" };
-    return map[type] || "💖";
-  }
-  function getTypeColor(type) {
-    const map = { plan:"#2c6e2c", promise:"#8b4513", question:"#9b59b6", message:"#1e4a76", song:"#1d4ed8" };
-    return map[type] || "#b30000";
-  }
-  function getTypeName(type) {
-    const map = { plan:"Plan", promise:"Promise", question:"Love Question", message:"Message", song:"Song" };
-    return map[type] || "Memory";
-  }
-
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>]/g, function(m) {
-      if (m === '&') return '&amp;';
-      if (m === '<') return '&lt;';
-      if (m === '>') return '&gt;';
-      return m;
-    });
-  }
-
-  function formatQuestionAnswers(content) {
-    try {
-      const parsed = JSON.parse(content);
-      if (Array.isArray(parsed)) {
-        return `
-          <div style="margin: 10px 0;">
-            ${parsed.map(qa => `
-              <div class="qa-pair">
-                <div class="question-text">❓ ${escapeHtml(qa.question)}</div>
-                <div class="answer-text">💖 Answer: ${escapeHtml(qa.answer)}</div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-      }
-    } catch(e) {}
-    return `<div>${escapeHtml(content)}</div>`;
-  }
-
-  function renderVault(memories) {
-    const vaultDiv = document.getElementById("vault");
-    if (!memories || memories.length === 0) {
-      const msg = currentFilter === "mine" ? 
-        "You haven't written any memories yet! 💝" :
-        "No memories in the shared vault yet! Be the first to write something ❤️";
-      vaultDiv.innerHTML = `<div class="empty-memories">🌸 ${msg}<br><br>Go to your pages and save something to share with your love!<br><br>📝 Plans | 🤝 Promises | ❓ Questions | 💬 Messages | 🎵 Songs</div>`;
-      return;
-    }
-    
-    const currentUser = localStorage.getItem("loveUser") || "MyLove";
-    
-    vaultDiv.innerHTML = memories.map((memory) => {
-      const typeName = getTypeName(memory.type);
-      const typeEmoji = getTypeEmoji(memory.type);
-      const typeColor = getTypeColor(memory.type);
-      const dateStr = formatDate(memory.created_at);
-      const isCurrentUser = memory.author === currentUser;
-      
-      let displayContent = "";
-      
-      if (memory.type === "question") {
-        displayContent = formatQuestionAnswers(memory.content);
-      } else if (memory.type === "song") {
-        displayContent = `<div>🎵 ${escapeHtml(memory.rawContent || memory.content || "")}</div>`;
-        if (memory.link && memory.link.trim() && memory.link !== "null") {
-          displayContent += `
-            <div class="song-link-container">
-              <a href="${escapeHtml(memory.link)}" target="_blank" class="song-link" rel="noopener noreferrer">
-                🎧 Listen Online 🔗
-              </a>
-            </div>
-          `;
-        }
-      } else {
-        displayContent = `<div>${escapeHtml(memory.rawContent || memory.content || "")}</div>`;
-      }
-      
-      const cloudIcon = memory.isCloud ? " ☁️" : " 💾";
-      const authorClass = isCurrentUser ? "author current-user" : "author";
-      const entryClass = isCurrentUser ? "vault-entry current-user" : "vault-entry";
-      const authorLabel = isCurrentUser ? ' <span class="author-label">You</span>' : '';
-      
-      return `
-        <div class="${entryClass}">
-          <div class="type-badge" style="background: ${typeColor}">${typeEmoji} ${typeName}</div>
-          <div class="source-label">📂 ${escapeHtml(memory.source || "Untitled")}${cloudIcon}</div>
-          <div class="date-label">📅 ${escapeHtml(dateStr)}</div>
-          <div class="message-box"><strong>💌 Memory:</strong><br><br>${displayContent}</div>
-          <div class="${authorClass}">
-            ✍️ By: ${escapeHtml(memory.author || "Anonymous")}${authorLabel}
-          </div>
-        </div>
-      `;
-    }).join("");
-  }
-
-  // =============== REALTIME & AUTO SYNC ===============
-  function initRealtimeAndAutoSync() {
-    debugLog("🔌 Setting up real-time subscription...");
-    supabase.channel("vault-changes-global")
-      .on("postgres_changes", { event: "*", schema: "public", table: "love_vault" }, () => {
-        debugLog("🔄 Real-time update received from Supabase");
-        loadAndDisplay();
-      })
-      .subscribe((status) => {
-        debugLog(`📡 Real-time subscription status: ${status}`);
-      });
-    
-    // Auto-sync every 15 seconds
-    setInterval(async () => {
-      await syncToCloud(false);
-    }, 15000);
-    
-    // Initial sync after 2 seconds
-    setTimeout(async () => {
-      debugLog("🚀 Performing initial auto-sync...");
-      await syncToCloud(true);
-    }, 2000);
-  }
-
-  // =============== EVENT LISTENERS ===============
-  document.getElementById("search").addEventListener("input", (e) => {
-    currentSearchTerm = e.target.value;
-    applyFiltersAndSearch();
-  });
-  
-  document.querySelectorAll(".filter-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      currentFilter = btn.getAttribute("data-filter");
-      applyFiltersAndSearch();
-    });
-  });
-  
-  window.addEventListener("storage", (event) => {
-    // Watch for changes to localStorage from other pages
-    if (event.key === "couplePlans" || event.key === "vault") {
-      debugLog(`📝 localStorage changed: ${event.key}`);
-      loadAndDisplay();
-      setTimeout(() => syncToCloud(false), 500);
-    }
-  });
-  
-  setInterval(() => {
-    loadAndDisplay();
-  }, 3000);
-
-  // =============== INITIALIZATION ===============
-  if (loadProfile()) {
-    loadAndDisplay().then(() => {
-      initRealtimeAndAutoSync();
-    });
-  }
+/* ================= INIT ================= */
+if (loadProfile()) {
+  loadFromCloud();
+  initRealtime();
+}
 </script>
 </body>
 </html>
