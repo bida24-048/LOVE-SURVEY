@@ -403,7 +403,6 @@ let allMemories = [];
 let currentUser = "Anonymous";
 
 /* ================= PROFILE ================= */
-
 function loadProfile() {
   const storedUser =
     localStorage.getItem("loveUser") ||
@@ -412,7 +411,6 @@ function loadProfile() {
 
   if (!storedUser) {
     document.getElementById("displayUsername").innerText = "👤 Anonymous";
-    console.log("⚠️ No username found in localStorage");
     return false;
   }
 
@@ -421,15 +419,11 @@ function loadProfile() {
   document.getElementById("displayUsername").innerHTML =
     `👤 <strong>${currentUser}</strong>`;
 
-  console.log("✅ Loaded user:", currentUser);
   return true;
 }
 
 /* ================= LOAD FROM CLOUD ================= */
-
 async function loadFromCloud() {
-  console.log("🔄 Loading from Supabase...");
-
   const { data, error } = await supabase
     .from("love_vault")
     .select("*")
@@ -438,43 +432,36 @@ async function loadFromCloud() {
   if (error) {
     console.error("❌ LOAD ERROR:", error);
     document.getElementById("vault").innerHTML =
-      "❌ Failed to load memories. Check console.";
+      "❌ Failed to load memories.";
     return;
   }
-
-  console.log("✅ Cloud data:", data);
 
   allMemories = data || [];
   renderVault(allMemories);
 }
 
 /* ================= REALTIME ================= */
-
 function initRealtime() {
   supabase.channel("live-vault")
     .on("postgres_changes", {
       event: "*",
       schema: "public",
-      table: "love_vault",
+      table: "love_vault"
     }, () => {
-      console.log("🔄 Realtime update received");
       loadFromCloud();
     })
     .subscribe();
 }
 
-/* ================= SYNC TRACKING ================= */
-
+/* ================= SYNC TRACK ================= */
 function getSyncedKeys() {
   return JSON.parse(localStorage.getItem("syncedMemories") || "[]");
 }
-
 function saveSyncedKeys(keys) {
   localStorage.setItem("syncedMemories", JSON.stringify(keys));
 }
 
-/* ================= COLLECT LOCAL DATA ================= */
-
+/* ================= COLLECT LOCAL ================= */
 function collectLocalMemories() {
   let entries = [];
 
@@ -484,8 +471,7 @@ function collectLocalMemories() {
       entries.push({
         content: p.text,
         type: "plan",
-        source: "Plans",
-        link: null,
+        source: "Plans"
       });
     }
   });
@@ -496,69 +482,54 @@ function collectLocalMemories() {
       entries.push({
         content: v.content,
         type: v.type || "memory",
-        source: v.source_page || "Memory",
-        link: v.link || null,
+        source: v.source_page || "Memory"
       });
     }
   });
 
-  console.log("📦 Local memories found:", entries);
   return entries;
 }
 
-/* ================= SYNC NEW DATA ================= */
-
+/* ================= SYNC NEW ONLY ================= */
 async function syncNewLocalData() {
-  console.log("📤 Starting sync...");
-
   const localData = collectLocalMemories();
   let syncedKeys = getSyncedKeys();
 
   for (const mem of localData) {
     const key = mem.content.trim().toLowerCase() + "_" + mem.type;
 
-    if (syncedKeys.includes(key)) {
-      continue;
-    }
-
-    console.log("➡️ Syncing:", mem);
+    if (syncedKeys.includes(key)) continue;
 
     const { error } = await supabase.from("love_vault").insert({
       username: currentUser,
       content: mem.content.trim(),
       type: mem.type,
       source_page: mem.source,
-      created_at: new Date().toISOString(),
-      link: mem.link || null,
+      created_at: new Date().toISOString()
     });
 
-    if (error) {
-      console.error("❌ INSERT ERROR:", error);
-    } else {
-      console.log("✅ Synced:", mem.content);
+    if (!error) {
       syncedKeys.push(key);
       saveSyncedKeys(syncedKeys);
+    } else {
+      console.error("❌ INSERT ERROR:", error);
     }
   }
 }
 
 /* ================= STORAGE LISTENER ================= */
-
 window.addEventListener("storage", (e) => {
   if (e.key === "couplePlans" || e.key === "vault") {
-    console.log("📦 Detected external change");
     syncNewLocalData();
   }
 });
 
-/* ================= FORCE SYNC BUTTON ================= */
-
+/* ================= MANUAL SYNC ================= */
 window.manualSyncNow = function () {
   syncNewLocalData();
 };
 
 /* ================= RENDER ================= */
-
 function renderVault(memories) {
   const vault = document.getElementById("vault");
 
@@ -567,24 +538,59 @@ function renderVault(memories) {
     return;
   }
 
-  vault.innerHTML = memories.map(m => `
-    <div class="vault-entry">
-      <div><strong>${(m.type || "memory").toUpperCase()}</strong></div>
-      <div>${m.content || ""}</div>
+  vault.innerHTML = memories.map(m => {
 
-      ${m.link ? `
-        <a href="${m.link}" targetten
-        </a>
-      ` : ""}
+    const content = m.content || "";
 
-      <div>✍️ ${m.username || "Anonymous"}</div>
-      <div>${new Date(m.created_at).toLocaleString()}</div>
-    </div>
-  `).join("");
+    /* ✅ DETECT LINK */
+    const urlMatch = content.match(/https?:\/\/[^\s]+/);
+    const url = urlMatch ? urlMatch[0] : null;
+
+    const cleanText = url
+      ? content.replace(url, "").trim()
+      : content;
+
+    let displayContent = cleanText;
+
+    /* ✅ CLEAN QUESTION FORMAT */
+    if (m.type === "question") {
+      try {
+        const parsed = JSON.parse(content);
+
+        if (Array.isArray(parsed)) {
+          displayContent = parsed.map((qa, index) => `
+            <div style="margin-bottom:10px;">
+              <div><strong>Question ${index + 1}:</strong></div>
+              <div>❓ ${qa.question}</div>
+              <div style="color:#2c6e2c;">💖 Answer: ${qa.answer}</div>
+            </div>
+          `).join("");
+        }
+      } catch (e) {
+        displayContent = cleanText;
+      }
+    }
+
+    return `
+      <div class="vault-entry">
+        <div><strong>${(m.type || "memory").toUpperCase()}</strong></div>
+
+        <div>${displayContent}</div>
+
+        ${
+          url ? `
+          <a href="${url}" target="_blank" class="song  </a>
+        ` : ""
+        }
+
+        <div>✍️ ${m.username || "Anonymous"}</div>
+        <div>${new Date(m.created_at).toLocaleString()}</div>
+      </div>
+    `;
+  }).join("");
 }
 
 /* ================= SEARCH ================= */
-
 document.getElementById("search").addEventListener("input", e => {
   const t = e.target.value.toLowerCase();
   const filtered = allMemories.filter(m =>
@@ -595,7 +601,6 @@ document.getElementById("search").addEventListener("input", e => {
 });
 
 /* ================= LOGOUT ================= */
-
 window.logoutUser = function () {
   localStorage.removeItem("loveUser");
   localStorage.removeItem("syncedMemories");
@@ -603,15 +608,16 @@ window.logoutUser = function () {
 };
 
 /* ================= INIT ================= */
-
 loadProfile();
 loadFromCloud();
 initRealtime();
 
-// ✅ VERY IMPORTANT: initial sync
+// ✅ IMPORTANT: initial sync
 setTimeout(syncNewLocalData, 1000);
 
 </script>
+ 
+
 
 
 </body>
