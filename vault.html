@@ -92,11 +92,6 @@
       border-color: #0f3554;
       color: white;
     }
-    .delete-all-btn {
-      background: #8b2c2c;
-      border-color: #5e1a1a;
-      color: white;
-    }
     .filter-buttons {
       display: flex;
       flex-wrap: wrap;
@@ -285,15 +280,6 @@
     .song-link-container {
       margin-top: 12px;
     }
-    .shared-badge {
-      background: #ffd700;
-      color: #8b6914;
-      font-size: 0.65rem;
-      padding: 2px 10px;
-      border-radius: 20px;
-      margin-left: 8px;
-      font-weight: bold;
-    }
     .login-section {
       background: white;
       padding: 20px;
@@ -400,12 +386,11 @@
         email: email || ""
       };
       document.getElementById("displayUsername").innerHTML = `👤 <strong>${username}</strong> <span style="font-size:0.7rem;color:#888;">(shared vault)</span>`;
+      return true;
     } else {
-      // Show login prompt if no user is set
       showLoginPrompt();
       return false;
     }
-    return true;
   }
 
   function showLoginPrompt() {
@@ -424,7 +409,6 @@
     `;
   }
 
-  // Make login function globally accessible
   window.loginUser = function() {
     const input = document.getElementById("loginUsername");
     if (!input) return;
@@ -438,10 +422,25 @@
     location.reload();
   };
 
-  // =============== USER-SPECIFIC STORAGE KEYS ===============
-  function getStorageKey(baseKey) {
+  // =============== HELPER: READ FROM BOTH OLD AND NEW KEYS ===============
+  function readStorageWithFallback(baseKey) {
     const username = localStorage.getItem("loveUser") || "MyLove";
-    return `${baseKey}_${username}`;
+    
+    // Try user-specific key first
+    const userKey = `${baseKey}_${username}`;
+    let data = localStorage.getItem(userKey);
+    
+    // If not found, try the generic key (for backward compatibility)
+    if (!data) {
+      data = localStorage.getItem(baseKey);
+      // If found in generic key, migrate it to user-specific key
+      if (data) {
+        localStorage.setItem(userKey, data);
+        // Optionally keep the generic key for other pages
+      }
+    }
+    
+    return data;
   }
 
   // =============== COLLECT LOCAL MEMORIES ===============
@@ -449,9 +448,9 @@
     const allEntries = [];
     const username = localStorage.getItem("loveUser") || "MyLove";
 
-    // 1. PLANS - user specific
-    const plansKey = getStorageKey("couplePlans");
-    let plans = JSON.parse(localStorage.getItem(plansKey) || "[]");
+    // 1. PLANS - try both user-specific and generic
+    const plansData = readStorageWithFallback("couplePlans");
+    let plans = JSON.parse(plansData || "[]");
     plans.forEach((plan, index) => {
       let contentText = plan.title ? `${plan.title}: ${plan.text}` : (plan.text || plan.content || "");
       allEntries.push({
@@ -466,9 +465,9 @@
       });
     });
 
-    // 2. VAULT - user specific
-    const vaultKey = getStorageKey("vault");
-    let vault = JSON.parse(localStorage.getItem(vaultKey) || "[]");
+    // 2. VAULT - try both user-specific and generic
+    const vaultData = readStorageWithFallback("vault");
+    let vault = JSON.parse(vaultData || "[]");
     vault.forEach((item, idx) => {
       const sourcePage = item.source_page || "";
       let type = "";
@@ -499,7 +498,6 @@
   // =============== LOAD FROM CLOUD (ALL USERS) ===============
   async function loadFromCloud() {
     try {
-      // ✅ FETCH ALL ENTRIES - NO USERNAME FILTER
       let { data, error } = await supabase
         .from("love_vault")
         .select("*")
@@ -517,7 +515,7 @@
         rawContent: item.content || "",
         type: item.type || item.section || "memory",
         created_at: item.created_at,
-        author: item.username || "Anonymous",  // ← Who wrote it
+        author: item.username || "Anonymous",
         isCloud: true,
         link: item.link || null
       }));
@@ -534,7 +532,6 @@
     
     let merged = [...cloudMemories];
     
-    // Add local memories if not already in cloud
     for (const local of localMemories) {
       const isDuplicate = merged.some(cloud => 
         cloud.rawContent === local.rawContent && 
@@ -565,7 +562,6 @@
       const username = localStorage.getItem("loveUser") || "MyLove";
       const localMemories = collectFromAllPages();
       
-      // ✅ Fetch ALL existing cloud entries (no username filter)
       const { data: existingCloud } = await supabase
         .from("love_vault")
         .select("content, created_at, type, link, username");
@@ -588,7 +584,7 @@
         const { error } = await supabase
           .from("love_vault")
           .insert({
-            username: username,  // ← This is the author
+            username: username,
             source_page: mem.source,
             section: mem.type,
             content: contentStr,
@@ -660,7 +656,6 @@
   // =============== LOGOUT ===============
   window.logoutUser = function() {
     if (confirm("Logout from the shared vault?")) {
-      // Clear user-specific local storage
       const username = localStorage.getItem("loveUser") || "MyLove";
       localStorage.removeItem(`couplePlans_${username}`);
       localStorage.removeItem(`vault_${username}`);
@@ -866,7 +861,9 @@
   
   window.addEventListener("storage", (event) => {
     const username = localStorage.getItem("loveUser") || "MyLove";
-    if (event.key === `couplePlans_${username}` || event.key === `vault_${username}`) {
+    // Check both user-specific and generic keys
+    if (event.key === `couplePlans_${username}` || event.key === `vault_${username}` ||
+        event.key === "couplePlans" || event.key === "vault") {
       loadAndDisplay();
       setTimeout(() => autoSyncToCloud(false), 500);
     }
