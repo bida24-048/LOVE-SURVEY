@@ -321,6 +321,37 @@
     .logout-btn:hover {
       background: #444;
     }
+    .debug-info {
+      font-size: 0.7rem;
+      color: #999;
+      text-align: center;
+      margin-top: 10px;
+      padding: 5px;
+      background: #f5f5f5;
+      border-radius: 10px;
+    }
+    .sync-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-left: 8px;
+    }
+    .sync-indicator.synced {
+      background: #2ecc71;
+    }
+    .sync-indicator.syncing {
+      background: #f39c12;
+      animation: pulse 1s infinite;
+    }
+    .sync-indicator.error {
+      background: #e74c3c;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.3; }
+      100% { opacity: 1; }
+    }
   </style>
 </head>
 <body>
@@ -330,6 +361,7 @@
 <div id="profileInfo" class="profile-badge">
   💝 <span id="displayUsername">Loading profile...</span>
   <span class="cloud-badge" id="cloudSyncStatus">☁️ shared vault</span>
+  <span class="sync-indicator" id="syncIndicator"></span>
 </div>
 
 <div class="stats" id="statsDisplay"></div>
@@ -359,6 +391,7 @@
 
 <div id="notify" style="display: none;"></div>
 <div class="footer-meta">❤️ Everything is backed up to the shared cloud — see what your love writes!</div>
+<div class="debug-info" id="debugInfo">📡 Initializing...</div>
 
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
@@ -372,6 +405,25 @@
   let currentSearchTerm = "";
   let currentUserProfile = { id: null, username: "MyLove" };
   let isAutoSyncing = false;
+  let syncStatus = "idle";
+
+  // =============== DEBUG LOGGING ===============
+  function debugLog(message) {
+    console.log("[DEBUG]", message);
+    const debugEl = document.getElementById("debugInfo");
+    if (debugEl) {
+      const timestamp = new Date().toLocaleTimeString();
+      debugEl.textContent = `📡 [${timestamp}] ${message}`;
+    }
+  }
+
+  function setSyncStatus(status) {
+    syncStatus = status;
+    const indicator = document.getElementById("syncIndicator");
+    if (indicator) {
+      indicator.className = `sync-indicator ${status}`;
+    }
+  }
 
   // =============== PROFILE MANAGEMENT ===============
   function loadProfile() {
@@ -386,9 +438,11 @@
         email: email || ""
       };
       document.getElementById("displayUsername").innerHTML = `👤 <strong>${username}</strong> <span style="font-size:0.7rem;color:#888;">(shared vault)</span>`;
+      debugLog(`✅ User loaded: ${username}`);
       return true;
     } else {
       showLoginPrompt();
+      debugLog("⚠️ No user found, showing login");
       return false;
     }
   }
@@ -419,85 +473,93 @@
     }
     localStorage.setItem("loveUser", username);
     localStorage.setItem("loveUserId", username + "_" + Date.now());
+    debugLog(`👤 User logged in: ${username}`);
     location.reload();
   };
 
-  // =============== HELPER: READ FROM BOTH OLD AND NEW KEYS ===============
-  function readStorageWithFallback(baseKey) {
-    const username = localStorage.getItem("loveUser") || "MyLove";
-    
-    // Try user-specific key first
-    const userKey = `${baseKey}_${username}`;
-    let data = localStorage.getItem(userKey);
-    
-    // If not found, try the generic key (for backward compatibility)
-    if (!data) {
-      data = localStorage.getItem(baseKey);
-      // If found in generic key, migrate it to user-specific key
-      if (data) {
-        localStorage.setItem(userKey, data);
-        // Optionally keep the generic key for other pages
-      }
-    }
-    
-    return data;
-  }
-
-  // =============== COLLECT LOCAL MEMORIES ===============
+  // =============== COLLECT LOCAL MEMORIES FROM ALL PAGES ===============
   function collectFromAllPages() {
     const allEntries = [];
     const username = localStorage.getItem("loveUser") || "MyLove";
+    debugLog(`📂 Collecting local memories for ${username}...`);
 
-    // 1. PLANS - try both user-specific and generic
-    const plansData = readStorageWithFallback("couplePlans");
-    let plans = JSON.parse(plansData || "[]");
-    plans.forEach((plan, index) => {
-      let contentText = plan.title ? `${plan.title}: ${plan.text}` : (plan.text || plan.content || "");
-      allEntries.push({
-        id: `plan_${Date.now()}_${index}_${Math.random()}`,
-        source: "Plans",
-        content: contentText,
-        rawContent: plan.text || plan.content || "",
-        type: "plan",
-        created_at: plan.created_at || plan.date || new Date().toISOString(),
-        author: plan.author || username,
-        link: null
-      });
-    });
-
-    // 2. VAULT - try both user-specific and generic
-    const vaultData = readStorageWithFallback("vault");
-    let vault = JSON.parse(vaultData || "[]");
-    vault.forEach((item, idx) => {
-      const sourcePage = item.source_page || "";
-      let type = "";
-      let displaySource = "";
-      
-      if (sourcePage === "Promises" || sourcePage === "promise") { type = "promise"; displaySource = "Promises"; }
-      else if (sourcePage === "Love Questions" || sourcePage === "questions" || sourcePage === "Questions") { type = "question"; displaySource = "Love Questions"; }
-      else if (sourcePage === "Messages" || sourcePage === "messages") { type = "message"; displaySource = "Messages"; }
-      else if (sourcePage === "Songs" || sourcePage === "songs") { type = "song"; displaySource = "Songs"; }
-      else if (sourcePage === "Plans" || sourcePage === "plans") { type = "plan"; displaySource = "Plans"; }
-      
-      if (type) {
-        allEntries.push({
-          id: `${type}_${Date.now()}_${idx}_${Math.random()}`,
-          source: displaySource,
-          content: item.content || "",
-          rawContent: item.content || "",
-          type: type,
-          created_at: item.created_at || new Date().toISOString(),
-          author: item.author || username,
-          link: item.link || null
+    // 1. PLANS from couplePlans
+    const plansData = localStorage.getItem("couplePlans");
+    if (plansData) {
+      try {
+        const plans = JSON.parse(plansData);
+        debugLog(`📝 Found ${plans.length} plans in localStorage`);
+        plans.forEach((plan, index) => {
+          let contentText = plan.title ? `${plan.title}: ${plan.text}` : (plan.text || plan.content || "");
+          if (contentText) {
+            allEntries.push({
+              id: `plan_${Date.now()}_${index}_${Math.random()}`,
+              source: "Plans",
+              content: contentText,
+              rawContent: plan.text || plan.content || "",
+              type: "plan",
+              created_at: plan.created_at || plan.date || new Date().toISOString(),
+              author: plan.author || username,
+              link: null,
+              fromLocal: true
+            });
+          }
         });
+      } catch (e) {
+        debugLog(`❌ Error parsing couplePlans: ${e.message}`);
       }
-    });
+    } else {
+      debugLog(`⚠️ No couplePlans found in localStorage`);
+    }
+
+    // 2. VAULT from localStorage
+    const vaultData = localStorage.getItem("vault");
+    if (vaultData) {
+      try {
+        const vault = JSON.parse(vaultData);
+        debugLog(`💾 Found ${vault.length} items in vault localStorage`);
+        vault.forEach((item, idx) => {
+          const sourcePage = item.source_page || "";
+          let type = "";
+          let displaySource = "";
+          
+          if (sourcePage === "Promises" || sourcePage === "promise") { type = "promise"; displaySource = "Promises"; }
+          else if (sourcePage === "Love Questions" || sourcePage === "questions" || sourcePage === "Questions") { type = "question"; displaySource = "Love Questions"; }
+          else if (sourcePage === "Messages" || sourcePage === "messages") { type = "message"; displaySource = "Messages"; }
+          else if (sourcePage === "Songs" || sourcePage === "songs") { type = "song"; displaySource = "Songs"; }
+          else if (sourcePage === "Plans" || sourcePage === "plans") { type = "plan"; displaySource = "Plans"; }
+          
+          if (type && item.content) {
+            allEntries.push({
+              id: `${type}_${Date.now()}_${idx}_${Math.random()}`,
+              source: displaySource,
+              content: item.content || "",
+              rawContent: item.content || "",
+              type: type,
+              created_at: item.created_at || new Date().toISOString(),
+              author: item.author || username,
+              link: item.link || null,
+              fromLocal: true
+            });
+          }
+        });
+      } catch (e) {
+        debugLog(`❌ Error parsing vault: ${e.message}`);
+      }
+    } else {
+      debugLog(`⚠️ No vault found in localStorage`);
+    }
+
+    debugLog(`📊 Total local entries collected: ${allEntries.length}`);
     return allEntries;
   }
 
   // =============== LOAD FROM CLOUD (ALL USERS) ===============
   async function loadFromCloud() {
     try {
+      debugLog("☁️ Fetching all entries from Supabase...");
+      setSyncStatus("syncing");
+      
       let { data, error } = await supabase
         .from("love_vault")
         .select("*")
@@ -505,8 +567,13 @@
       
       if (error) {
         console.error("Cloud load error:", error);
+        debugLog(`❌ Cloud load error: ${error.message}`);
+        setSyncStatus("error");
         return [];
       }
+      
+      debugLog(`✅ Loaded ${data?.length || 0} entries from Supabase`);
+      setSyncStatus("synced");
       
       return (data || []).map(item => ({
         id: item.id,
@@ -521,50 +588,45 @@
       }));
     } catch (err) {
       console.error(err);
+      debugLog(`❌ Exception loading from cloud: ${err.message}`);
+      setSyncStatus("error");
       return [];
     }
   }
 
-  // =============== DEDUPLICATED MERGE ===============
-  async function loadAndDisplay() {
-    const localMemories = collectFromAllPages();
-    const cloudMemories = await loadFromCloud();
-    
-    let merged = [...cloudMemories];
-    
-    for (const local of localMemories) {
-      const isDuplicate = merged.some(cloud => 
-        cloud.rawContent === local.rawContent && 
-        Math.abs(new Date(cloud.created_at) - new Date(local.created_at)) < 60000 &&
-        cloud.author === local.author
-      );
-      if (!isDuplicate) {
-        merged.push({ ...local, isLocal: true });
-      }
+  // =============== SYNC LOCAL TO CLOUD ===============
+  async function syncToCloud(showToast = false) {
+    if (isAutoSyncing) {
+      debugLog("⏳ Sync already in progress, skipping...");
+      return;
     }
     
-    merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    allMemories = merged;
-    updateStats();
-    applyFiltersAndSearch();
-  }
-
-  // =============== AUTO SYNC ===============
-  async function autoSyncToCloud(showToast = false) {
-    if (isAutoSyncing) return;
     isAutoSyncing = true;
+    setSyncStatus("syncing");
     const notifyDiv = document.getElementById("notify");
-    if (showToast) {
-      notifyDiv.style.display = "block";
-      notifyDiv.innerText = "☁️ Auto-syncing memories to shared cloud...";
-    }
+    
     try {
       const username = localStorage.getItem("loveUser") || "MyLove";
+      debugLog(`🔄 Starting sync for ${username}...`);
+      
       const localMemories = collectFromAllPages();
       
+      if (localMemories.length === 0) {
+        debugLog("ℹ️ No local memories to sync");
+        setSyncStatus("synced");
+        if (showToast) {
+          notifyDiv.style.display = "block";
+          notifyDiv.innerText = "ℹ️ No local memories to sync";
+          setTimeout(() => { notifyDiv.style.display = "none"; }, 1500);
+        }
+        isAutoSyncing = false;
+        return;
+      }
+      
+      // Get existing cloud entries to check duplicates
       const { data: existingCloud } = await supabase
         .from("love_vault")
-        .select("content, created_at, type, link, username");
+        .select("content, created_at, type, username");
       
       const existingSet = new Set();
       if (existingCloud) {
@@ -575,93 +637,119 @@
       }
       
       let syncedCount = 0;
+      let errorCount = 0;
+      
       for (const mem of localMemories) {
         const contentStr = mem.rawContent || mem.content || "";
+        if (!contentStr) continue;
+        
         const timeKey = new Date(mem.created_at).toISOString().slice(0,19);
         const dupKey = `${contentStr}|${timeKey}|${mem.type}|${username}`;
-        if (existingSet.has(dupKey)) continue;
         
+        if (existingSet.has(dupKey)) {
+          debugLog(`⏭️ Skipping duplicate: ${contentStr.substring(0, 20)}...`);
+          continue;
+        }
+        
+        debugLog(`📤 Syncing: ${contentStr.substring(0, 30)}...`);
         const { error } = await supabase
           .from("love_vault")
           .insert({
             username: username,
-            source_page: mem.source,
-            section: mem.type,
+            source_page: mem.source || "Memory",
+            section: mem.type || "memory",
             content: contentStr,
-            type: mem.type,
-            created_at: mem.created_at,
+            type: mem.type || "memory",
+            created_at: mem.created_at || new Date().toISOString(),
             link: mem.link || null
           });
+        
         if (!error) {
           syncedCount++;
           existingSet.add(dupKey);
+          debugLog(`✅ Synced #${syncedCount}`);
+        } else {
+          errorCount++;
+          debugLog(`❌ Sync error: ${error.message}`);
         }
       }
       
-      if (syncedCount > 0 && showToast) {
-        notifyDiv.innerText = `✅ Synced ${syncedCount} new memories to shared vault!`;
-        setTimeout(() => { notifyDiv.style.display = "none"; }, 2500);
-      } else if (showToast && syncedCount === 0) {
-        notifyDiv.innerText = `✨ Shared vault is already up to date ✨`;
-        setTimeout(() => { notifyDiv.style.display = "none"; }, 1500);
-      } else if (!showToast && syncedCount > 0) {
+      const message = `✅ Synced ${syncedCount} new memories to cloud${errorCount > 0 ? ` (${errorCount} errors)` : ''}`;
+      debugLog(message);
+      
+      if (syncedCount > 0 || errorCount > 0) {
+        setSyncStatus("synced");
+        if (showToast) {
+          notifyDiv.style.display = "block";
+          notifyDiv.innerText = message;
+          setTimeout(() => { notifyDiv.style.display = "none"; }, 3000);
+        }
         await loadAndDisplay();
+      } else {
+        setSyncStatus("synced");
+        if (showToast) {
+          notifyDiv.style.display = "block";
+          notifyDiv.innerText = `✨ Cloud is up to date (${existingCloud?.length || 0} memories)`;
+          setTimeout(() => { notifyDiv.style.display = "none"; }, 2000);
+        }
       }
-      if (syncedCount > 0) await loadAndDisplay();
     } catch (err) {
-      console.warn("Auto-sync error", err);
+      console.warn("Sync error", err);
+      debugLog(`❌ Sync error: ${err.message}`);
+      setSyncStatus("error");
       if (showToast) {
-        notifyDiv.innerText = `⚠️ Sync issue: ${err.message}`;
-        setTimeout(() => { notifyDiv.style.display = "none"; }, 2000);
+        notifyDiv.style.display = "block";
+        notifyDiv.innerText = `⚠️ Sync error: ${err.message}`;
+        setTimeout(() => { notifyDiv.style.display = "none"; }, 3000);
       }
     } finally {
       isAutoSyncing = false;
     }
   }
 
+  // =============== LOAD AND DISPLAY ===============
+  async function loadAndDisplay() {
+    debugLog("📖 Loading and displaying memories...");
+    const localMemories = collectFromAllPages();
+    const cloudMemories = await loadFromCloud();
+    
+    let merged = [...cloudMemories];
+    let localAdded = 0;
+    
+    for (const local of localMemories) {
+      const isDuplicate = merged.some(cloud => 
+        cloud.rawContent === local.rawContent && 
+        Math.abs(new Date(cloud.created_at) - new Date(local.created_at)) < 60000 &&
+        cloud.author === local.author
+      );
+      if (!isDuplicate) {
+        merged.push({ ...local, isLocal: true });
+        localAdded++;
+      }
+    }
+    
+    debugLog(`📊 Merged: ${cloudMemories.length} from cloud + ${localAdded} new local = ${merged.length} total`);
+    
+    merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    allMemories = merged;
+    updateStats();
+    applyFiltersAndSearch();
+  }
+
   // =============== MANUAL FORCE SYNC ===============
   window.manualSyncNow = async function() {
-    const notifyDiv = document.getElementById("notify");
-    notifyDiv.style.display = "block";
-    notifyDiv.innerText = "🔄 Force syncing all memories to shared cloud...";
-    try {
-      const username = localStorage.getItem("loveUser") || "MyLove";
-      const localMemories = collectFromAllPages();
-      let upsertCount = 0;
-      for (const mem of localMemories) {
-        const { error } = await supabase
-          .from("love_vault")
-          .upsert({
-            username: username,
-            source_page: mem.source,
-            section: mem.type,
-            content: mem.rawContent || mem.content,
-            type: mem.type,
-            created_at: mem.created_at,
-            link: mem.link || null
-          }, {
-            onConflict: "username,content,created_at"
-          });
-        if (!error) upsertCount++;
-      }
-      notifyDiv.innerText = `✅ Force sync complete: ${upsertCount} memories in shared vault.`;
-      await loadAndDisplay();
-      setTimeout(() => { notifyDiv.style.display = "none"; }, 2500);
-    } catch (err) {
-      notifyDiv.innerText = `❌ Sync failed: ${err.message}`;
-      setTimeout(() => { notifyDiv.style.display = "none"; }, 3000);
-    }
+    debugLog("🔨 Manual force sync triggered");
+    await syncToCloud(true);
   };
 
   // =============== LOGOUT ===============
   window.logoutUser = function() {
     if (confirm("Logout from the shared vault?")) {
       const username = localStorage.getItem("loveUser") || "MyLove";
-      localStorage.removeItem(`couplePlans_${username}`);
-      localStorage.removeItem(`vault_${username}`);
       localStorage.removeItem("loveUser");
       localStorage.removeItem("loveUserId");
       localStorage.removeItem("loveEmail");
+      debugLog(`👋 User ${username} logged out`);
       location.reload();
     }
   };
@@ -829,18 +917,25 @@
 
   // =============== REALTIME & AUTO SYNC ===============
   function initRealtimeAndAutoSync() {
+    debugLog("🔌 Setting up real-time subscription...");
     supabase.channel("vault-changes-global")
       .on("postgres_changes", { event: "*", schema: "public", table: "love_vault" }, () => {
+        debugLog("🔄 Real-time update received from Supabase");
         loadAndDisplay();
       })
-      .subscribe();
+      .subscribe((status) => {
+        debugLog(`📡 Real-time subscription status: ${status}`);
+      });
     
+    // Auto-sync every 15 seconds
     setInterval(async () => {
-      await autoSyncToCloud(false);
-    }, 12000);
+      await syncToCloud(false);
+    }, 15000);
     
+    // Initial sync after 2 seconds
     setTimeout(async () => {
-      await autoSyncToCloud(true);
+      debugLog("🚀 Performing initial auto-sync...");
+      await syncToCloud(true);
     }, 2000);
   }
 
@@ -860,12 +955,11 @@
   });
   
   window.addEventListener("storage", (event) => {
-    const username = localStorage.getItem("loveUser") || "MyLove";
-    // Check both user-specific and generic keys
-    if (event.key === `couplePlans_${username}` || event.key === `vault_${username}` ||
-        event.key === "couplePlans" || event.key === "vault") {
+    // Watch for changes to localStorage from other pages
+    if (event.key === "couplePlans" || event.key === "vault") {
+      debugLog(`📝 localStorage changed: ${event.key}`);
       loadAndDisplay();
-      setTimeout(() => autoSyncToCloud(false), 500);
+      setTimeout(() => syncToCloud(false), 500);
     }
   });
   
