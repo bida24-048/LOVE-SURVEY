@@ -185,113 +185,123 @@ const MAX_PER_DAY = 5;
 let currentQuestion = questions[Math.floor(Math.random() * questions.length)];
 let todayAnswers = [];
 
-// Load existing answers for today from localStorage
+/* ================= LOAD TODAY ================= */
 function loadTodayAnswers() {
   const today = new Date().toLocaleDateString();
   const saved = localStorage.getItem(`questions_${today}`);
-  if (saved) {
-    todayAnswers = JSON.parse(saved);
-  } else {
-    todayAnswers = [];
-  }
-  updateProgress();
+  todayAnswers = saved ? JSON.parse(saved) : [];
+
+  updateUI();
 }
 
-function updateProgress() {
+/* ================= UPDATE UI ================= */
+function updateUI() {
   const remaining = MAX_PER_DAY - todayAnswers.length;
-  document.getElementById("progress").innerHTML = `📊 ${todayAnswers.length} of ${MAX_PER_DAY} questions answered today<br>${remaining > 0 ? remaining + ' more to go! 💖' : '🎉 Survey Complete! 🎉'}`;
-}
 
-function saveLoveAnswer(selectedAnswer) {
-  // Load fresh answers
-  loadTodayAnswers();
-  
+  document.getElementById("progress").innerHTML =
+    `📊 ${todayAnswers.length} of ${MAX_PER_DAY} answered<br>` +
+    (remaining > 0 ? `${remaining} more to go 💖` : "🎉 Complete! 🎉");
+
+  // ✅ IF DONE: STOP EVERYTHING
   if (todayAnswers.length >= MAX_PER_DAY) {
-    document.getElementById("question").innerHTML = "🎉 Survey Complete for Today! 🎉";
-    document.getElementById("status").innerHTML = "Come back tomorrow for more questions! 💖";
+    document.getElementById("question").innerHTML =
+      "🎉 You've completed today's questions! 💖";
+
+    document.getElementById("status").innerHTML =
+      "Come back tomorrow for more 💌";
+
+    // ✅ HIDE YES/NO BUTTONS
+    document.querySelector(".yes").style.display = "none";
+    document.querySelector(".no").style.display = "none";
+
     return;
   }
 
-  // Add to today's answers
+  // ✅ otherwise show current question
+  document.getElementById("question").innerHTML = currentQuestion;
+}
+
+/* ================= SAVE ANSWER ================= */
+function saveLoveAnswer(selectedAnswer) {
+  loadTodayAnswers();
+
+  if (todayAnswers.length >= MAX_PER_DAY) {
+    updateUI();
+    return;
+  }
+
   todayAnswers.push({
     question: currentQuestion,
     answer: selectedAnswer,
     timestamp: new Date().toISOString()
   });
 
-  // Save to localStorage for today
   const today = new Date().toLocaleDateString();
   localStorage.setItem(`questions_${today}`, JSON.stringify(todayAnswers));
-  
-  document.getElementById("status").innerHTML = "✅ Answer saved! 💌";
+
+  document.getElementById("status").innerHTML = "✅ Saved 💌";
   document.getElementById("status").style.color = "#2c6e2c";
 
-  // If all 5 answers collected, save to vault
-  if (todayAnswers.length >= MAX_PER_DAY) {
-    const currentUser = localStorage.getItem("loveUser") || localStorage.getItem("loveUserName") || "Anonymous";
+  /* ✅ SAVE TO VAULT AFTER 5 */
+  if (todayAnswers.length === MAX_PER_DAY) {
+
+    const currentUser =
+      localStorage.getItem("loveUser") ||
+      localStorage.getItem("loveUserName") ||
+      "Anonymous";
+
     let vault = JSON.parse(localStorage.getItem("vault") || "[]");
-    
+
     vault.push({
       source_page: "Love Questions",
       section: "Love Questions",
-      content: JSON.stringify(todayAnswers, null, 2),
+      content: JSON.stringify(todayAnswers),
       created_at: new Date().toISOString(),
       author: currentUser,
-      type: "love-questions"
+      type: "question"
     });
-    
+
     localStorage.setItem("vault", JSON.stringify(vault));
-    
-    document.getElementById("question").innerHTML = "🎉 Survey Complete! 🎉";
-    document.getElementById("status").innerHTML = "✅ Your answers have been saved to the Love Vault! 💖";
-    document.getElementById("progress").innerHTML = "🎉 All 5 questions answered today! 🎉";
-    return;
   }
-  
-  // Load next question (different from previous ones)
-  const remainingQuestions = questions.filter(q => !todayAnswers.some(a => a.question === q));
-  if (remainingQuestions.length > 0) {
-    currentQuestion = remainingQuestions[Math.floor(Math.random() * remainingQuestions.length)];
-    document.getElementById("question").innerHTML = currentQuestion;
-  } else {
-    // If all questions exhausted, just pick a random one
-    currentQuestion = questions[Math.floor(Math.random() * questions.length)];
-    document.getElementById("question").innerHTML = currentQuestion;
+
+  /* ✅ LOAD NEXT QUESTION ONLY IF NOT DONE */
+  if (todayAnswers.length < MAX_PER_DAY) {
+    const remainingQuestions = questions.filter(q =>
+      !todayAnswers.some(a => a.question === q)
+    );
+
+    currentQuestion =
+      remainingQuestions.length > 0
+        ? remainingQuestions[Math.floor(Math.random() * remainingQuestions.length)]
+        : questions[Math.floor(Math.random() * questions.length)];
   }
-  
-  updateProgress();
-  
-  // Clear status after 2 seconds
+
+  updateUI();
+
   setTimeout(() => {
-    if (todayAnswers.length < MAX_PER_DAY) {
-      document.getElementById("status").innerHTML = "";
-    }
+    document.getElementById("status").innerHTML = "";
   }, 2000);
 }
 
-// Reset today's answers (for testing or if user wants to restart)
+/* ================= RESET ================= */
 function resetToday() {
-  if (confirm("Are you sure you want to reset today's answers? This cannot be undone.")) {
+  if (confirm("Reset today's answers?")) {
     const today = new Date().toLocaleDateString();
     localStorage.removeItem(`questions_${today}`);
     todayAnswers = [];
     currentQuestion = questions[Math.floor(Math.random() * questions.length)];
-    document.getElementById("question").innerHTML = currentQuestion;
-    document.getElementById("status").innerHTML = "🔄 Today's answers have been reset!";
-    document.getElementById("status").style.color = "#ff9800";
-    updateProgress();
-    
-    setTimeout(() => {
-      document.getElementById("status").innerHTML = "";
-    }, 3000);
+
+    // ✅ SHOW BUTTONS AGAIN
+    document.querySelector(".yes").style.display = "inline-block";
+    document.querySelector(".no").style.display = "inline-block";
+
+    updateUI();
   }
 }
 
-// Make reset function global
 window.resetToday = resetToday;
 
-// Initialize
-document.getElementById("question").innerHTML = currentQuestion;
+/* ================= INIT ================= */
 loadTodayAnswers();
 </script>
 </body>
