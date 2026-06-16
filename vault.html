@@ -652,27 +652,32 @@
         }
         
         debugLog(`📤 Syncing: ${contentStr.substring(0, 30)}...`);
-        const { error } = await supabase
-          .from("love_vault")
-          .insert({
-            username: username,
-            source_page: mem.source || "Memory",
-            section: mem.type || "memory",
-            content: contentStr,
-            type: mem.type || "memory",
-            created_at: mem.created_at || new Date().toISOString(),
-            link: mem.link || null
-          });
-        
-        if (!error) {
-          syncedCount++;
-          existingSet.add(dupKey);
-          debugLog(`✅ Synced #${syncedCount}`);
-        } else {
-          errorCount++;
-          debugLog(`❌ Sync error: ${error.message}`);
-        }
-      }
+       const { error } = await supabase
+  .from("love_vault")
+  .insert({
+    username: username,
+    source_page: mem.source || "Memory",
+    section: mem.type || "memory",
+    content: contentStr,
+    type: mem.type || "memory",
+    created_at: mem.created_at || new Date().toISOString(),
+    link: mem.link || null
+  });
+
+if (!error) {
+  syncedCount++;
+} else {
+  errorCount++;
+
+  console.error("FULL INSERT ERROR:", error);
+
+  alert(
+    "Supabase Error:\n" +
+    error.message
+  );
+
+  debugLog(`❌ ${error.message}`);
+} 
       
       const message = `✅ Synced ${syncedCount} new memories to cloud${errorCount > 0 ? ` (${errorCount} errors)` : ''}`;
       debugLog(message);
