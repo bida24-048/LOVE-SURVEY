@@ -14,15 +14,52 @@ body{
 .container{
     max-width:700px;
     margin:auto;
+    background:#fff5f5;
+    border-radius:16px;
+    padding:30px;
+    box-shadow:0 4px 20px rgba(179,0,0,0.1);
 }
-textarea,input{
-    width:90%;
-    padding:12px;
-    margin:8px;
-    border-radius:8px;
+h1{
+    color:#b30000;
+    font-size:2.2rem;
+    margin-bottom:25px;
+}
+.profile-card{
+    background:white;
+    border-radius:12px;
+    padding:25px;
     border:2px solid #b30000;
+    text-align:left;
 }
-
+.profile-item{
+    padding:15px 0;
+    border-bottom:1px solid #ffe0e0;
+    display:flex;
+    align-items:center;
+}
+.profile-item:last-child{
+    border-bottom:none;
+}
+.profile-label{
+    font-weight:bold;
+    width:120px;
+    color:#b30000;
+}
+.profile-value{
+    color:#333;
+    font-size:1.1rem;
+}
+.loading{
+    color:#999;
+    font-style:italic;
+}
+.error{
+    color:#cc0000;
+    background:#ffe0e0;
+    padding:10px;
+    border-radius:8px;
+    margin:10px 0;
+}
 </style>
 </head>
 <body>
@@ -30,10 +67,22 @@ textarea,input{
 <div class="container">
 <h1>💖 My Profile</h1>
 
-<!-- Supabase fields -->
-<p><strong>👤 Username:</strong> <span id="profileUsername"></span></p>
-<p><strong>📧 Email:</strong> <span id="profileEmail"></span></p>
+<div class="profile-card">
+    <div class="profile-item">
+        <span class="profile-label">👤 Username:</span>
+        <span class="profile-value" id="profileUsername">Loading...</span>
+    </div>
+    <div class="profile-item">
+        <span class="profile-label">📧 Email:</span>
+        <span class="profile-value" id="profileEmail">Loading...</span>
+    </div>
+</div>
 
+<div id="errorMessage" class="error" style="display:none;"></div>
+
+<p style="margin-top:25px;color:#666;font-size:0.9rem;">
+    <a href="#" onclick="localStorage.clear();alert('Logged out!');location.reload();" style="color:#b30000;">Logout</a>
+</p>
 </div>
 
 <script type="module">
@@ -47,22 +96,58 @@ const username = localStorage.getItem("loveUser");
 const email = localStorage.getItem("loveEmail");
 
 async function loadProfile(){
-  const { data, error } = await supabase
-    .from("love_users")
-    .select("username,email")
-    .eq("username", username)
-    .maybeSingle();
+    const usernameEl = document.getElementById("profileUsername");
+    const emailEl = document.getElementById("profileEmail");
+    const errorEl = document.getElementById("errorMessage");
 
-  if(error){ console.error(error); }
+    // Check if user is logged in
+    if (!username) {
+        usernameEl.innerText = "Not logged in";
+        emailEl.innerText = "Not logged in";
+        errorEl.style.display = "block";
+        errorEl.innerText = "⚠️ Please log in first";
+        return;
+    }
 
-  // Use Supabase data if found, otherwise fallback to localStorage
-  document.getElementById("profileUsername").innerText = data?.username || username || "Unknown";
-  document.getElementById("profileEmail").innerText = data?.email || email || "";
+    try {
+        const { data, error } = await supabase
+            .from("love_users")
+            .select("username, email")
+            .eq("username", username)
+            .maybeSingle();
+
+        if (error) {
+            console.error("Supabase error:", error);
+            errorEl.style.display = "block";
+            errorEl.innerText = "⚠️ Error loading profile: " + error.message;
+            // Fallback to localStorage
+            usernameEl.innerText = username || "Unknown";
+            emailEl.innerText = email || "Not provided";
+            return;
+        }
+
+        // Use Supabase data if found, otherwise fallback to localStorage
+        if (data) {
+            usernameEl.innerText = data.username || username || "Unknown";
+            emailEl.innerText = data.email || email || "Not provided";
+        } else {
+            usernameEl.innerText = username || "Unknown";
+            emailEl.innerText = email || "Not provided";
+        }
+        
+        errorEl.style.display = "none";
+
+    } catch (err) {
+        console.error("Unexpected error:", err);
+        errorEl.style.display = "block";
+        errorEl.innerText = "⚠️ Unexpected error occurred";
+        // Fallback to localStorage
+        usernameEl.innerText = username || "Unknown";
+        emailEl.innerText = email || "Not provided";
+    }
+}
+
+loadProfile();
 </script>
 </body>
 </html>
-
-
-
-
-
