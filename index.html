@@ -166,11 +166,9 @@ const supabase = createClient(
 
 const SECRET = "GL2025";
 
-// =============== IMPROVED DEVICE INFO ===============
+// =============== DEVICE INFO ===============
 function getDevice() {
   const ua = navigator.userAgent;
-  
-  // More accurate device detection
   if (/iPhone/i.test(ua)) return "📱 iPhone";
   if (/iPad/i.test(ua)) return "📱 iPad";
   if (/Android/i.test(ua)) {
@@ -188,7 +186,6 @@ function getDevice() {
 
 function getBrowser() {
   const ua = navigator.userAgent;
-  
   if (ua.includes("Edg")) return "🔷 Edge";
   if (ua.includes("Chrome") && !ua.includes("Edg")) return "🌐 Chrome";
   if (ua.includes("Firefox")) return "🦊 Firefox";
@@ -198,34 +195,17 @@ function getBrowser() {
   return "🌐 " + (navigator.browser || "Browser");
 }
 
-// Get detailed OS info
-function getOS() {
-  const ua = navigator.userAgent;
-  if (ua.includes("Windows NT 10.0")) return "Windows 10";
-  if (ua.includes("Windows NT 11.0")) return "Windows 11";
-  if (ua.includes("Mac OS X")) return "macOS";
-  if (ua.includes("Android")) return "Android";
-  if (ua.includes("iOS")) return "iOS";
-  if (ua.includes("Linux")) return "Linux";
-  return "Unknown OS";
-}
-
-// Combine device info for display and storage
 function getFullDeviceInfo() {
-  const device = getDevice();
-  const browser = getBrowser();
-  const os = getOS();
   return {
-    device: device,
-    browser: browser,
-    fullString: `${device} | ${browser}`
+    device: getDevice(),
+    browser: getBrowser()
   };
 }
 
 // Update device info display
 function updateDeviceDisplay() {
   const info = getFullDeviceInfo();
-  document.getElementById("deviceInfo").innerHTML = `🔌 ${info.fullString}`;
+  document.getElementById("deviceInfo").innerHTML = `🔌 ${info.device} | ${info.browser}`;
 }
 updateDeviceDisplay();
 
@@ -294,39 +274,59 @@ document.getElementById("loginBtn").onclick = async () => {
       return;
     }
 
-    // ✅ Get device info
+    // Get device info
     const deviceInfo = getFullDeviceInfo();
     const now = new Date().toISOString();
 
-    // ✅ Save session
+    // ✅ Save session to localStorage
     localStorage.setItem("loveLogin", "true");
     localStorage.setItem("loveUser", user.username);
     localStorage.setItem("loveUserId", user.id);
     localStorage.setItem("loveLastDevice", deviceInfo.device);
     localStorage.setItem("loveLastBrowser", deviceInfo.browser);
+    localStorage.setItem("loveLoginTime", now);
 
-    // ✅ CRITICAL FIX: Record login with correct field names
-    // The devices page expects: username, device, browser, logged_in_at
+    // ✅ CORRECTED: Insert device log with ONLY the fields that exist in your table
     try {
       const { error: logError } = await supabase
         .from("login_logs")
         .insert({
-          username: user.username,        // ← FIXED: Use username, not user_id
-          user_id: user.id,               // Keep for reference
-          device: deviceInfo.device,
-          browser: deviceInfo.browser,
-          logged_in_at: now,
-          event_type: "login"
+          username: user.username,      // ✅ This matches devices.html query
+          device: deviceInfo.device,    // ✅ This matches devices.html query
+          browser: deviceInfo.browser,  // ✅ This matches devices.html query
+          logged_in_at: now             // ✅ This matches devices.html query
+          // ❌ REMOVED: user_id (may not exist in table)
+          // ❌ REMOVED: event_type (may not exist in table)
         });
 
       if (logError) {
-        console.warn("Login log error:", logError);
-        // Don't block login if logging fails
+        console.error("❌ Login log error:", logError);
+        // Show error but don't block login
+        loginError.innerText = "⚠️ Login succeeded but device log failed";
+        setTimeout(() => { loginError.innerText = ""; }, 3000);
       } else {
-        console.log("✅ Login recorded successfully");
+        console.log("✅ Login recorded successfully!");
       }
     } catch (logErr) {
       console.warn("Could not save login log:", logErr);
+    }
+
+    // ✅ Verify the log was saved (optional but helps debug)
+    try {
+      const { data: verifyData, error: verifyError } = await supabase
+        .from("login_logs")
+        .select("*")
+        .eq("username", user.username)
+        .order("logged_in_at", { ascending: false })
+        .limit(1);
+      
+      if (!verifyError && verifyData && verifyData.length > 0) {
+        console.log("✅ Device log verified:", verifyData[0]);
+      } else {
+        console.warn("⚠️ Device log not found after insert");
+      }
+    } catch (verifyErr) {
+      console.warn("Could not verify log:", verifyErr);
     }
 
     goHome();
@@ -399,24 +399,23 @@ document.getElementById("registerBtn").onclick = async () => {
     localStorage.setItem("loveUserId", newUser.id);
     localStorage.setItem("loveLastDevice", deviceInfo.device);
     localStorage.setItem("loveLastBrowser", deviceInfo.browser);
+    localStorage.setItem("loveLoginTime", now);
 
-    // ✅ Record registration as login log
+    // ✅ CORRECTED: Record registration as login log
     try {
       const { error: logError } = await supabase
         .from("login_logs")
         .insert({
-          username: newUser.username,      // ← FIXED: Use username
-          user_id: newUser.id,
+          username: newUser.username,
           device: deviceInfo.device,
           browser: deviceInfo.browser,
-          logged_in_at: now,
-          event_type: "register"
+          logged_in_at: now
         });
 
       if (logError) {
-        console.warn("Registration log error:", logError);
+        console.error("❌ Registration log error:", logError);
       } else {
-        console.log("✅ Registration recorded successfully");
+        console.log("✅ Registration recorded successfully!");
       }
     } catch (logErr) {
       console.warn("Could not save registration log:", logErr);
@@ -431,7 +430,6 @@ document.getElementById("registerBtn").onclick = async () => {
 };
 
 // =============== AUTO-LOGIN CHECK ===============
-// If already logged in, redirect to home
 if (localStorage.getItem("loveLogin") === "true") {
   const user = localStorage.getItem("loveUser");
   if (user && user !== "null") {
@@ -442,5 +440,3 @@ if (localStorage.getItem("loveLogin") === "true") {
 
 </body>
 </html>
-
-
