@@ -370,7 +370,6 @@
   <input id="search" type="text" placeholder="🔍 Search all memories...">
   <button onclick="shareVaultUI()" class="action-btn share-btn">📲 Share Vault</button>
   <button onclick="manualSyncNow()" class="action-btn sync-btn">🔄 Force Sync</button>
-  <button onclick="logoutUser()" class="action-btn logout-btn">🚪 Logout</button>
 </div>
 
 <div class="filter-buttons">
@@ -383,14 +382,14 @@
   <button class="filter-btn" data-filter="mine">👤 My Entries</button>
 </div>
 
-<h2>💌 Shared Love Memories</h2>
+<h2>💌 Love Memories</h2>
 <div id="vault">
   <div style="text-align:center; padding: 2rem;">✨ Loading shared memories from everyone... ✨</div>
 </div>
-<div class="refresh-note">🔄 Auto‑refresh every 3 sec | 🌍 Everyone sees all memories | ✍️ Each entry shows who wrote it</div>
+<div class="refresh-note">🔄 Auto‑refresh every 3 sec</div>
 
 <div id="notify" style="display: none;"></div>
-<div class="footer-meta">❤️ Everything is backed up to the shared cloud — see what your love writes!</div>
+<div class="footer-meta">❤️ Everything is backed up to the shared cloud </div>
 <div class="debug-info" id="debugInfo">📡 Initializing...</div>
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
