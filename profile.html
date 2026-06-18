@@ -54,17 +54,7 @@ button:hover{
 <!-- Supabase fields -->
 <p><strong>👤 Username:</strong> <span id="profileUsername"></span></p>
 <p><strong>📧 Email:</strong> <span id="profileEmail"></span></p>
-<textarea id="bio" placeholder="About Me"></textarea><br>
-<input type="file" id="photo"><br><br>
 
-<!-- Local-only fields -->
-<h2>📝 My Private Notes (Local Only)</h2>
-<input type="text" id="localNote1" placeholder="Favorite Quote">
-<input type="text" id="localNote2" placeholder="Secret Dream">
-<textarea id="localNote3" placeholder="Private Thoughts"></textarea>
-
-<br><br>
-<button onclick="saveProfile()">💖 Save Profile</button>
 </div>
 
 <script type="module">
@@ -80,7 +70,7 @@ const email = localStorage.getItem("loveEmail");
 async function loadProfile(){
   const { data, error } = await supabase
     .from("love_users")
-    .select("username,email,profile_pic,bio")
+    .select("username,email")
     .eq("username", username)
     .maybeSingle();
 
@@ -89,50 +79,7 @@ async function loadProfile(){
   // Use Supabase data if found, otherwise fallback to localStorage
   document.getElementById("profileUsername").innerText = data?.username || username || "Unknown";
   document.getElementById("profileEmail").innerText = data?.email || email || "";
-  document.getElementById("bio").value = data?.bio || "";
-  if(data?.profile_pic){
-    document.getElementById("profilePreview").src = data.profile_pic;
-  }
-
-  // Load local-only notes
-  document.getElementById("localNote1").value = localStorage.getItem("localNote1") || "";
-  document.getElementById("localNote2").value = localStorage.getItem("localNote2") || "";
-  document.getElementById("localNote3").value = localStorage.getItem("localNote3") || "";
-}
-
-async function saveProfile(){
-  const file = document.getElementById("photo").files[0];
-  let imageUrl = null;
-
-  if(file){
-    const fileName = Date.now()+"_"+file.name;
-    await supabase.storage.from("profile-pictures").upload(fileName, file);
-    const { data } = supabase.storage.from("profile-pictures").getPublicUrl(fileName);
-    imageUrl = data.publicUrl;
-  }
-
-  const profileData = {
-    bio: document.getElementById("bio").value
-  };
-  if(imageUrl){
-    profileData.profile_pic = imageUrl;
-  }
-
-  await supabase.from("love_users").update(profileData).eq("username", username);
-
-  // Save local-only notes
-  localStorage.setItem("localNote1", document.getElementById("localNote1").value);
-  localStorage.setItem("localNote2", document.getElementById("localNote2").value);
-  localStorage.setItem("localNote3", document.getElementById("localNote3").value);
-
-  alert("💖 Profile Saved (Supabase + Local Notes)");
-  loadProfile();
-}
-
-loadProfile();
-window.saveProfile = saveProfile;
 </script>
-
 </body>
 </html>
 
